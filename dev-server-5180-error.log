@@ -1,0 +1,12 @@
+$ vite --host 0.0.0.0 "--" "--host" "0.0.0.0" "--port" "5180"
+warnings
+  One of the glob patterns doesn't match any files. Please remove or fix the following: {
+  "globDirectory": "C:/Users/uluna/Documents/Aplicacion desde Cero/medical-study-pwa/dev-dist",
+  "globPattern": "**/*.{js,css,html,svg,png,ico}",
+  "globIgnores": [
+    "**/node_modules/**/*",
+    "sw.js",
+    "workbox-*.js"
+  ]
+}
+
