@@ -99,6 +99,7 @@ Reemplazá los valores por los de tu proyecto. El archivo `.env.example` muestra
 8. Si ya habías creado las tablas de temas antes de la mejora a JSON de TipTap, ejecutá también `supabase/003_tiptap_json_content.sql`.
 9. Para habilitar archivos e imágenes, ejecutá `supabase/004_attachments_storage.sql`.
 10. Para vincular explícitamente imágenes y archivos con temas, ejecutá `supabase/005_topic_image_links.sql`.
+11. Para activar la aprobación manual de usuarios, ejecutá `supabase/006_profile_approval_status.sql`.
 
 Esto crea perfiles, metadatos de sincronización, temas médicos, carpetas, categorías, etiquetas, relaciones e índices. También activa políticas para que cada usuario acceda solo a sus propios datos.
 

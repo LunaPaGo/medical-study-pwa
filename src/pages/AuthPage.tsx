@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Github, KeyRound, LogIn, MailPlus } from 'lucide-react';
 import { env } from '../config/env';
+import { LoadingScreen } from '../components/ui/LoadingScreen';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabase';
 import { authSchema, resetPasswordSchema } from '../validation/auth';
@@ -9,7 +10,7 @@ import { authSchema, resetPasswordSchema } from '../validation/auth';
 type AuthMode = 'login' | 'register' | 'reset';
 
 export function AuthPage() {
-  const { session } = useAuth();
+  const { session, profileStatus } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,8 +23,32 @@ export function AuthPage() {
     setMessage('');
   }, [mode]);
 
-  if (session) {
+  if (session && profileStatus === 'approved') {
     return <Navigate to="/" replace />;
+  }
+
+  if (session && !profileStatus) {
+    return <LoadingScreen message="Comprobando aprobación..." />;
+  }
+
+  if (session && profileStatus === 'pending') {
+    return (
+      <main className="auth-page">
+        <section className="auth-panel" aria-labelledby="auth-title">
+          <div className="auth-brand">
+            <div className="brand-mark">+</div>
+            <div>
+              <span>Estudio Médico</span>
+              <strong>Tu biblioteca clínica, lista para crecer.</strong>
+            </div>
+          </div>
+          <h1 id="auth-title">Cuenta pendiente</h1>
+          <div className="notice warning">
+            Tu cuenta fue creada correctamente, pero está pendiente de aprobación por el administrador.
+          </div>
+        </section>
+      </main>
+    );
   }
 
   const title =
@@ -66,7 +91,7 @@ export function AuthPage() {
       mode === 'reset'
         ? 'Te enviamos un correo para restablecer la contraseña.'
         : mode === 'register'
-          ? 'Cuenta creada. Si Supabase pide confirmación, revisá tu correo.'
+          ? 'Tu cuenta fue creada correctamente, pero está pendiente de aprobación por el administrador.'
           : 'Sesión iniciada.'
     );
   }

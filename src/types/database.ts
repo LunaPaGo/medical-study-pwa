@@ -8,6 +8,7 @@ export type Database = {
           id: string;
           user_id: string;
           display_name: string | null;
+          status: 'pending' | 'approved';
           created_at: string;
           updated_at: string;
         };
@@ -15,11 +16,13 @@ export type Database = {
           id?: string;
           user_id: string;
           display_name?: string | null;
+          status?: 'pending' | 'approved';
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           display_name?: string | null;
+          status?: 'pending' | 'approved';
           updated_at?: string;
         };
         Relationships: [];
