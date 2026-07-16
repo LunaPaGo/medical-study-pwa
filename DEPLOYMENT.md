@@ -138,6 +138,8 @@ supabase/003_tiptap_json_content.sql
 supabase/004_attachments_storage.sql
 supabase/005_topic_image_links.sql
 supabase/006_profile_approval_status.sql
+supabase/007_backfill_profiles_and_fix_signup_trigger.sql
+supabase/008_pharmacology.sql
 ```
 
 El bucket de archivos debe ser privado. La aplicación usa URLs firmadas cuando necesita mostrar o descargar archivos.

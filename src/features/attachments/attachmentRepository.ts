@@ -1,7 +1,14 @@
 import { supabase } from '../../services/supabase';
 import { localDbPromise } from '../../storage/localDb';
 import type { Json } from '../../types/database';
-import type { Attachment, AttachmentLink, AttachmentOwnerType, PendingAttachmentFile, TopicAttachment } from '../../types/attachment';
+import type {
+  Attachment,
+  AttachmentLink,
+  AttachmentOwnerType,
+  MedicationAttachment,
+  PendingAttachmentFile,
+  TopicAttachment
+} from '../../types/attachment';
 import type { SyncAction } from '../../types/topic';
 import { processImage } from './imageProcessing';
 
@@ -11,6 +18,7 @@ type AttachmentPayload = {
   attachment: Attachment;
   link?: Omit<AttachmentLink, 'id' | 'created_at'>;
   topicAttachment?: TopicAttachment;
+  medicationAttachment?: MedicationAttachment;
 };
 
 function nowIso() {
@@ -61,6 +69,16 @@ function createTopicAttachment(userId: string, topicId: string, attachmentId: st
     id: generateId(),
     user_id: userId,
     topic_id: topicId,
+    attachment_id: attachmentId,
+    created_at: nowIso()
+  };
+}
+
+function createMedicationAttachment(userId: string, medicationId: string, attachmentId: string): MedicationAttachment {
+  return {
+    id: generateId(),
+    user_id: userId,
+    medication_id: medicationId,
     attachment_id: attachmentId,
     created_at: nowIso()
   };
@@ -151,6 +169,12 @@ async function pushAttachmentToSupabase(payload: AttachmentPayload) {
     await db.put('topic_attachments', payload.topicAttachment);
   }
 
+  if (payload.medicationAttachment) {
+    const { error: medicationLinkError } = await supabase.from('medication_attachments').upsert(payload.medicationAttachment);
+    if (medicationLinkError) throw medicationLinkError;
+    await db.put('medication_attachments', payload.medicationAttachment);
+  }
+
   await db.put('attachments', { ...payload.attachment, sync_status: 'synced', error_message: null });
   await db.delete('pending_attachment_files', payload.attachment.id);
 }
@@ -205,11 +229,18 @@ export async function createAttachment(
     payload.topicAttachment = createTopicAttachment(userId, owner.ownerId, id);
   }
 
+  if (owner?.ownerType === 'medication') {
+    payload.medicationAttachment = createMedicationAttachment(userId, owner.ownerId, id);
+  }
+
   const db = await localDbPromise;
   await db.put('attachments', attachment);
   await db.put('pending_attachment_files', pending);
   if (payload.topicAttachment) {
     await db.put('topic_attachments', payload.topicAttachment);
+  }
+  if (payload.medicationAttachment) {
+    await db.put('medication_attachments', payload.medicationAttachment);
   }
 
   if (navigator.onLine) {
@@ -246,7 +277,7 @@ export async function renameAttachment(userId: string, attachment: Attachment, f
 export async function deleteAttachment(userId: string, attachment: Attachment) {
   const usageCount = await getAttachmentUsageCount(userId, attachment.id);
   if (usageCount > 0) {
-    throw new Error(`Este archivo está usado en ${usageCount} tema(s). Quitalo primero del contenido antes de eliminarlo definitivamente.`);
+    throw new Error(`Este archivo está usado en ${usageCount} elemento(s). Quitalo primero del contenido antes de eliminarlo definitivamente.`);
   }
 
   const db = await localDbPromise;
@@ -296,15 +327,49 @@ export async function linkAttachmentToTopic(userId: string, topicId: string, att
   }
 }
 
+export async function linkAttachmentToMedication(userId: string, medicationId: string, attachmentId: string) {
+  const link = createMedicationAttachment(userId, medicationId, attachmentId);
+  const db = await localDbPromise;
+  await db.put('medication_attachments', link);
+
+  const attachment = await db.get('attachments', attachmentId);
+  if (!attachment) return;
+
+  const payload: AttachmentPayload = {
+    attachment,
+    medicationAttachment: link,
+    link: {
+      user_id: userId,
+      attachment_id: attachmentId,
+      owner_type: 'medication',
+      owner_id: medicationId
+    }
+  };
+
+  if (navigator.onLine) {
+    try {
+      await pushAttachmentToSupabase(payload);
+    } catch {
+      await enqueueAttachment(userId, 'upsert', payload);
+    }
+  } else {
+    await enqueueAttachment(userId, 'upsert', payload);
+  }
+}
+
 export async function getAttachmentUsageCount(userId: string, attachmentId: string) {
   const db = await localDbPromise;
-  const localCount = (await db.getAllFromIndex('topic_attachments', 'attachment_id', attachmentId)).filter((item) => item.user_id === userId).length;
+  const topicCount = (await db.getAllFromIndex('topic_attachments', 'attachment_id', attachmentId)).filter((item) => item.user_id === userId).length;
+  const medicationCount = (await db.getAllFromIndex('medication_attachments', 'attachment_id', attachmentId)).filter(
+    (item) => item.user_id === userId
+  ).length;
+  const localCount = topicCount + medicationCount;
 
   if (!navigator.onLine) return localCount;
 
   try {
     const { count, error } = await supabase
-      .from('topic_attachments')
+      .from('attachment_links')
       .select('id', { count: 'exact', head: true })
       .eq('attachment_id', attachmentId)
       .eq('user_id', userId);

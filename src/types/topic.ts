@@ -1,6 +1,6 @@
 export type TopicStatus = 'draft' | 'complete';
 export type TopicSort = 'updated_desc' | 'title_asc';
-export type SyncEntity = 'topic' | 'folder' | 'category' | 'tag' | 'attachment';
+export type SyncEntity = 'topic' | 'folder' | 'category' | 'tag' | 'attachment' | 'medication';
 export type SyncAction = 'upsert' | 'delete';
 
 export type TipTapDocument = {

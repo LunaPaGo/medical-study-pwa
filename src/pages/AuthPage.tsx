@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Github, KeyRound, LogIn, MailPlus } from 'lucide-react';
+import { Github, KeyRound, LogIn, LogOut, MailPlus } from 'lucide-react';
 import { env } from '../config/env';
 import { LoadingScreen } from '../components/ui/LoadingScreen';
 import { useAuth } from '../hooks/useAuth';
@@ -10,7 +10,7 @@ import { authSchema, resetPasswordSchema } from '../validation/auth';
 type AuthMode = 'login' | 'register' | 'reset';
 
 export function AuthPage() {
-  const { session, profileStatus } = useAuth();
+  const { session, profileStatus, profileError, isLoading, signOut } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,8 +27,30 @@ export function AuthPage() {
     return <Navigate to="/" replace />;
   }
 
-  if (session && !profileStatus) {
+  if (session && isLoading) {
     return <LoadingScreen message="Comprobando aprobación..." />;
+  }
+
+  if (session && profileError) {
+    return (
+      <main className="auth-page">
+        <section className="auth-panel" aria-labelledby="auth-title">
+          <div className="auth-brand">
+            <div className="brand-mark">+</div>
+            <div>
+              <span>Estudio Médico</span>
+              <strong>Tu biblioteca clínica, lista para crecer.</strong>
+            </div>
+          </div>
+          <h1 id="auth-title">No se pudo comprobar la cuenta</h1>
+          <div className="notice error">{profileError}</div>
+          <button className="primary-button" type="button" onClick={signOut}>
+            <LogOut size={18} aria-hidden="true" />
+            Cerrar sesión
+          </button>
+        </section>
+      </main>
+    );
   }
 
   if (session && profileStatus === 'pending') {
@@ -46,6 +68,10 @@ export function AuthPage() {
           <div className="notice warning">
             Tu cuenta fue creada correctamente, pero está pendiente de aprobación por el administrador.
           </div>
+          <button className="primary-button" type="button" onClick={signOut}>
+            <LogOut size={18} aria-hidden="true" />
+            Cerrar sesión
+          </button>
         </section>
       </main>
     );

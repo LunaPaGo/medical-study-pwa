@@ -5,6 +5,10 @@ import { ProtectedRoute } from '../components/routing/ProtectedRoute';
 import { AuthPage } from '../pages/AuthPage';
 import { AttachmentsPage } from '../pages/AttachmentsPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { MedicationComparePage } from '../pages/MedicationComparePage';
+import { MedicationDetailPage } from '../pages/MedicationDetailPage';
+import { MedicationFormPage } from '../pages/MedicationFormPage';
+import { MedicationsPage } from '../pages/MedicationsPage';
 import { PlaceholderPage } from '../pages/PlaceholderPage';
 import { TopicDetailPage } from '../pages/TopicDetailPage';
 import { TopicFormPage } from '../pages/TopicFormPage';
@@ -26,7 +30,11 @@ export const router = createBrowserRouter([
       { path: 'temas/nuevo', element: <TopicFormPage /> },
       { path: 'temas/:topicId', element: <TopicDetailPage /> },
       { path: 'temas/:topicId/editar', element: <TopicFormPage /> },
-      { path: 'farmacologia', element: <PlaceholderPage title="Farmacología" stage="Etapa 3" /> },
+      { path: 'farmacologia', element: <MedicationsPage /> },
+      { path: 'farmacologia/nuevo', element: <MedicationFormPage /> },
+      { path: 'farmacologia/comparar', element: <MedicationComparePage /> },
+      { path: 'farmacologia/:medicationId', element: <MedicationDetailPage /> },
+      { path: 'farmacologia/:medicationId/editar', element: <MedicationFormPage /> },
       { path: 'buscar', element: <PlaceholderPage title="Buscador global" stage="Etapa 6" /> },
       { path: 'favoritos', element: <TopicsPage favoritesOnly /> },
       { path: 'archivos', element: <AttachmentsPage /> },

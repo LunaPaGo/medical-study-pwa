@@ -6,6 +6,7 @@ import { supabase } from '../../services/supabase';
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profileStatus, setProfileStatus] = useState<ProfileStatus | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -18,6 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setIsLoading(true);
       setSession(nextSession);
+      setProfileError(null);
 
       if (!nextSession) {
         setProfileStatus(null);
@@ -35,7 +37,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      setProfileStatus(!error && data?.status === 'approved' ? 'approved' : 'pending');
+      if (error) {
+        console.error('No se pudo consultar el perfil del usuario.', error);
+        setProfileStatus(null);
+        setProfileError('No pudimos comprobar el estado de aprobación de tu cuenta.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!data) {
+        console.error('No existe un perfil asociado a la sesión actual.', {
+          userId: nextSession.user.id
+        });
+        setProfileStatus(null);
+        setProfileError('No encontramos un perfil asociado a esta cuenta.');
+        setIsLoading(false);
+        return;
+      }
+
+      setProfileStatus(data.status);
       setIsLoading(false);
     }
 
@@ -60,12 +80,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session,
       user: session?.user ?? null,
       profileStatus,
+      profileError,
       isLoading,
       signOut: async () => {
+        setSession(null);
+        setProfileStatus(null);
+        setProfileError(null);
+        setIsLoading(false);
         await supabase.auth.signOut();
       }
     }),
-    [isLoading, profileStatus, session]
+    [isLoading, profileError, profileStatus, session]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

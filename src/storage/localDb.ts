@@ -1,5 +1,6 @@
 import { openDB } from 'idb';
-import type { Attachment, AttachmentLink, PendingAttachmentFile, TopicAttachment } from '../types/attachment';
+import type { Attachment, AttachmentLink, MedicationAttachment, PendingAttachmentFile, TopicAttachment } from '../types/attachment';
+import type { Medication, MedicationTag } from '../types/medication';
 import type { Category, Folder, SyncQueueItem, Tag, Topic, TopicTag } from '../types/topic';
 
 type MedicalStudyDb = {
@@ -57,9 +58,24 @@ type MedicalStudyDb = {
     value: TopicAttachment;
     indexes: { user_id: string; topic_id: string; attachment_id: string };
   };
+  medications: {
+    key: string;
+    value: Medication;
+    indexes: { user_id: string; updated_at: string; generic_name: string; pharmacologic_group: string; status: string; is_favorite: string };
+  };
+  medication_tags: {
+    key: [string, string];
+    value: MedicationTag;
+    indexes: { medication_id: string; tag_id: string; user_id: string };
+  };
+  medication_attachments: {
+    key: string;
+    value: MedicationAttachment;
+    indexes: { user_id: string; medication_id: string; attachment_id: string };
+  };
 };
 
-export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 5, {
+export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 6, {
   upgrade(db) {
     if (!db.objectStoreNames.contains('sync_queue')) {
       const queue = db.createObjectStore('sync_queue', { keyPath: 'id' });
@@ -129,6 +145,30 @@ export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 5
       topicAttachments.createIndex('user_id', 'user_id');
       topicAttachments.createIndex('topic_id', 'topic_id');
       topicAttachments.createIndex('attachment_id', 'attachment_id');
+    }
+
+    if (!db.objectStoreNames.contains('medications')) {
+      const medications = db.createObjectStore('medications', { keyPath: 'id' });
+      medications.createIndex('user_id', 'user_id');
+      medications.createIndex('updated_at', 'updated_at');
+      medications.createIndex('generic_name', 'generic_name');
+      medications.createIndex('pharmacologic_group', 'pharmacologic_group');
+      medications.createIndex('status', 'status');
+      medications.createIndex('is_favorite', 'is_favorite');
+    }
+
+    if (!db.objectStoreNames.contains('medication_tags')) {
+      const medicationTags = db.createObjectStore('medication_tags', { keyPath: ['medication_id', 'tag_id'] });
+      medicationTags.createIndex('medication_id', 'medication_id');
+      medicationTags.createIndex('tag_id', 'tag_id');
+      medicationTags.createIndex('user_id', 'user_id');
+    }
+
+    if (!db.objectStoreNames.contains('medication_attachments')) {
+      const medicationAttachments = db.createObjectStore('medication_attachments', { keyPath: 'id' });
+      medicationAttachments.createIndex('user_id', 'user_id');
+      medicationAttachments.createIndex('medication_id', 'medication_id');
+      medicationAttachments.createIndex('attachment_id', 'attachment_id');
     }
   }
 });

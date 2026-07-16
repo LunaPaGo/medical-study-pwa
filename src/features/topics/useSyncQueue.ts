@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { medicationDataKey } from '../medications/useMedicationData';
 import { flushSyncQueue, getPendingSyncCount } from './topicRepository';
 import { topicDataKey } from './useTopicData';
 
@@ -36,7 +37,10 @@ export function useAutomaticTopicSync() {
 
     setIsSyncing(true);
     flushSyncQueue(user.id)
-      .then(() => queryClient.invalidateQueries({ queryKey: topicDataKey }))
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: topicDataKey });
+        queryClient.invalidateQueries({ queryKey: medicationDataKey });
+      })
       .finally(() => setIsSyncing(false));
   }, [isOnline, isSyncing, pendingCount, queryClient, user?.id]);
 

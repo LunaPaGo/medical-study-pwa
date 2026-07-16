@@ -7,6 +7,7 @@ export type AuthContextValue = {
   session: Session | null;
   user: User | null;
   profileStatus: ProfileStatus | null;
+  profileError: string | null;
   isLoading: boolean;
   signOut: () => Promise<void>;
 };

@@ -100,6 +100,8 @@ Reemplazá los valores por los de tu proyecto. El archivo `.env.example` muestra
 9. Para habilitar archivos e imágenes, ejecutá `supabase/004_attachments_storage.sql`.
 10. Para vincular explícitamente imágenes y archivos con temas, ejecutá `supabase/005_topic_image_links.sql`.
 11. Para activar la aprobación manual de usuarios, ejecutá `supabase/006_profile_approval_status.sql`.
+12. Si ya tenías usuarios creados antes de activar la aprobación manual, ejecutá `supabase/007_backfill_profiles_and_fix_signup_trigger.sql`.
+13. Para habilitar Farmacología, ejecutá `supabase/008_pharmacology.sql`.
 
 Esto crea perfiles, metadatos de sincronización, temas médicos, carpetas, categorías, etiquetas, relaciones e índices. También activa políticas para que cada usuario acceda solo a sus propios datos.
 

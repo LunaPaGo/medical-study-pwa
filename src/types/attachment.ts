@@ -36,6 +36,14 @@ export type TopicAttachment = {
   created_at: string;
 };
 
+export type MedicationAttachment = {
+  id: string;
+  user_id: string;
+  medication_id: string;
+  attachment_id: string;
+  created_at: string;
+};
+
 export type PendingAttachmentFile = {
   attachment_id: string;
   user_id: string;
