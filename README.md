@@ -15,6 +15,7 @@ Aplicación web progresiva para organizar y estudiar contenido médico, con aute
 - Módulo de Temas Médicos de la Etapa 2: CRUD, duplicado, favoritos, carpetas, categorías, etiquetas, búsqueda, filtros y editor enriquecido.
 - Contenido principal de TipTap guardado como JSON estructurado en `content_json`; `content_html` queda como representación derivada para lectura y búsqueda.
 - Módulo genérico de archivos e imágenes de la Etapa 3 con Supabase Storage privado, adjuntos offline, galería, lista, vista previa, descarga e integración con TipTap.
+- Módulo de Farmacología de la Etapa 4 con fichas de medicamentos, adjuntos, favoritos, búsqueda y comparador.
 - Configuración de producción para publicar en Vercel como PWA instalable.
 
 Las secciones de farmacología, buscador global avanzado, historial y respaldo quedan preparadas como pantallas base para las próximas etapas.
