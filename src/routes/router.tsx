@@ -5,6 +5,7 @@ import { ProtectedRoute } from '../components/routing/ProtectedRoute';
 import { AuthPage } from '../pages/AuthPage';
 import { AttachmentsPage } from '../pages/AttachmentsPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { BackupPage } from '../features/backups/BackupPage';
 import { MedicationComparePage } from '../pages/MedicationComparePage';
 import { MedicationDetailPage } from '../pages/MedicationDetailPage';
 import { MedicationFormPage } from '../pages/MedicationFormPage';
@@ -39,7 +40,7 @@ export const router = createBrowserRouter([
       { path: 'favoritos', element: <TopicsPage favoritesOnly /> },
       { path: 'archivos', element: <AttachmentsPage /> },
       { path: 'historial', element: <PlaceholderPage title="Historial" stage="Etapa 7" /> },
-      { path: 'respaldo', element: <PlaceholderPage title="Respaldo" stage="Etapa 7" /> }
+      { path: 'respaldo', element: <BackupPage /> }
     ]
   },
   {

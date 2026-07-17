@@ -879,6 +879,27 @@ button:disabled,
   color: var(--muted);
 }
 
+.backup-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.backup-warning-list {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.backup-warning-list ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
 .attachment-filter {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
