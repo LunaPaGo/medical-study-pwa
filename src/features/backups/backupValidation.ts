@@ -7,6 +7,7 @@ const uuidSchema = z.string().uuid();
 const isoDateSchema = z.string().min(1);
 const nullableString = z.string().nullable();
 const tiptapSchema: z.ZodType<unknown> = z.unknown();
+const defaultTipTapDocument = { type: 'doc', content: [{ type: 'paragraph' }] };
 
 const baseUserRecord = {
   id: uuidSchema,
@@ -36,6 +37,16 @@ const topicSchema = z.object({
   subtitle: nullableString,
   content_json: tiptapSchema,
   content_html: z.string(),
+  definition_epidemiology_json: tiptapSchema.optional().default(defaultTipTapDocument),
+  definition_epidemiology_html: z.string().optional().default('<p></p>'),
+  clinical_json: tiptapSchema.optional().default(defaultTipTapDocument),
+  clinical_html: z.string().optional().default('<p></p>'),
+  diagnosis_criteria_json: tiptapSchema.optional().default(defaultTipTapDocument),
+  diagnosis_criteria_html: z.string().optional().default('<p></p>'),
+  treatment_management_json: tiptapSchema.optional().default(defaultTipTapDocument),
+  treatment_management_html: z.string().optional().default('<p></p>'),
+  differential_diagnosis_json: tiptapSchema.optional().default(defaultTipTapDocument),
+  differential_diagnosis_html: z.string().optional().default('<p></p>'),
   folder_id: uuidSchema.nullable(),
   category_id: uuidSchema.nullable(),
   specialty: nullableString,
@@ -116,6 +127,14 @@ const medicationSchema = z.object({
   status: z.enum(['draft', 'complete']),
   is_favorite: z.boolean(),
   search_text: z.string(),
+  classification_mechanism_json: tiptapSchema.optional().default(defaultTipTapDocument),
+  classification_mechanism_html: z.string().optional().default('<p></p>'),
+  clinical_uses_json: tiptapSchema.optional().default(defaultTipTapDocument),
+  clinical_uses_html: z.string().optional().default('<p></p>'),
+  dosing_administration_json: tiptapSchema.optional().default(defaultTipTapDocument),
+  dosing_administration_html: z.string().optional().default('<p></p>'),
+  safety_json: tiptapSchema.optional().default(defaultTipTapDocument),
+  safety_html: z.string().optional().default('<p></p>'),
   ...medicationRichFields
 });
 
@@ -246,9 +265,9 @@ export async function validateBackupZip(file: File): Promise<BackupValidationRes
     manifest = parsedManifest.data as BackupManifest;
     checks.push(check('Manifest', 'ok', 'manifest.json es válido.'));
 
-    if (![1, backupVersion].includes(manifest.backup_version)) {
+    if (![1, 2, backupVersion].includes(manifest.backup_version)) {
       errors.push(`Versión de respaldo no compatible: ${manifest.backup_version}.`);
-      checks.push(check('Versión', 'error', `Se esperaba versión 1 o ${backupVersion}.`));
+      checks.push(check('Versión', 'error', `Se esperaba versión 1, 2 o ${backupVersion}.`));
     } else {
       checks.push(check('Versión', 'ok', `Formato ${manifest.backup_format} v${manifest.backup_version}.`));
     }

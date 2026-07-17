@@ -4,6 +4,18 @@ import type { Tag, TipTapDocument } from './topic';
 export type MedicationStatus = 'draft' | 'complete';
 export type MedicationSort = 'generic_name_asc' | 'updated_desc' | 'created_desc' | 'favorite_desc';
 export type MedicationViewMode = 'grid' | 'list';
+export type MedicationStudySectionKey = 'classification_mechanism' | 'clinical_uses' | 'dosing_administration' | 'safety';
+
+export type MedicationStudySections = {
+  classification_mechanism_json: TipTapDocument;
+  classification_mechanism_html: string;
+  clinical_uses_json: TipTapDocument;
+  clinical_uses_html: string;
+  dosing_administration_json: TipTapDocument;
+  dosing_administration_html: string;
+  safety_json: TipTapDocument;
+  safety_html: string;
+};
 
 export type MedicationRichField =
   | 'mechanism_of_action'
@@ -27,7 +39,7 @@ export type MedicationRichField =
 
 export type MedicationRichFields = Record<MedicationRichField, TipTapDocument>;
 
-export type Medication = MedicationRichFields & {
+export type Medication = MedicationRichFields & MedicationStudySections & {
   id: string;
   user_id: string;
   generic_name: string | null;
@@ -61,7 +73,7 @@ export type MedicationWithRelations = Medication & {
   attachments: Attachment[];
 };
 
-export type MedicationFormValues = Partial<MedicationRichFields> & {
+export type MedicationFormValues = Partial<MedicationRichFields> & MedicationStudySections & {
   id?: string;
   generic_name: string;
   pharmacologic_group: string;

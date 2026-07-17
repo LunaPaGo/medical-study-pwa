@@ -1,6 +1,7 @@
 import { emptyTipTapDocument, isEmptyTipTapDocument } from '../topics/tiptapDocument';
 import type { MedicationRichField } from '../../types/medication';
 import type { TipTapDocument } from '../../types/topic';
+import { medicationStudySections } from './medicationStudySectionCatalog';
 
 export type MedicationSection = {
   id: string;
@@ -81,6 +82,7 @@ export const medicationSections: MedicationSection[] = [
 ];
 
 export const medicationCompareSections = medicationSections.filter((section) => section.id !== 'notes');
+export const medicationStructuredSections = medicationStudySections;
 
 export function emptyRichFields() {
   return medicationRichFields.reduce(
@@ -89,6 +91,17 @@ export function emptyRichFields() {
       [key]: emptyTipTapDocument
     }),
     {} as Record<MedicationRichField, TipTapDocument>
+  );
+}
+
+export function emptyMedicationStudySections() {
+  return medicationStudySections.reduce(
+    (fields, section) => ({
+      ...fields,
+      [section.jsonField]: emptyTipTapDocument,
+      [section.htmlField]: '<p></p>'
+    }),
+    {}
   );
 }
 

@@ -14,10 +14,24 @@ import type {
 import type { SyncAction, Tag, TipTapDocument } from '../../types/topic';
 import { emptyTipTapDocument, getTopicDocument } from '../topics/tiptapDocument';
 import { emptyRichFields, medicationRichFields, tiptapToText } from './medicationFields';
+import { medicationStudySections } from './medicationStudySectionCatalog';
 
 type MedicationPayload = { medication: Medication; tagIds: string[] };
 type QueuedMedicationPayload = MedicationPayload | { id: string; user_id: string };
-type SupabaseMedicationPayload = Omit<Medication, MedicationRichField> & Record<MedicationRichField, Json>;
+type MedicationStudyJsonField = (typeof medicationStudySections)[number]['jsonField'];
+type SupabaseMedicationPayload = Omit<Medication, MedicationRichField | MedicationStudyJsonField> &
+  Record<MedicationRichField | MedicationStudyJsonField, Json>;
+
+function medicationStudyValues(source: Pick<Medication, MedicationStudyJsonField | (typeof medicationStudySections)[number]['htmlField']>) {
+  return medicationStudySections.reduce(
+    (fields, section) => ({
+      ...fields,
+      [section.jsonField]: getTopicDocument(source[section.jsonField]),
+      [section.htmlField]: source[section.htmlField] || '<p></p>'
+    }),
+    {} as Pick<Medication, MedicationStudyJsonField | (typeof medicationStudySections)[number]['htmlField']>
+  );
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -36,13 +50,14 @@ function emitSyncQueueChanged() {
 }
 
 function medicationForSupabase(medication: Medication): SupabaseMedicationPayload {
-  return medicationRichFields.reduce(
+  const payload = medicationRichFields.reduce(
     (payload, key) => ({
       ...payload,
       [key]: medication[key] as Json
     }),
     { ...medication } as unknown as SupabaseMedicationPayload
   );
+  return medicationStudySections.reduce((next, section) => ({ ...next, [section.jsonField]: medication[section.jsonField] as Json }), payload);
 }
 
 function normalizeMedication(item: Medication): Medication {
@@ -51,7 +66,11 @@ function normalizeMedication(item: Medication): Medication {
       ...medication,
       [key]: getTopicDocument(item[key])
     }),
-    { ...item, search_text: item.search_text ?? '' } as Medication
+    {
+      ...item,
+      search_text: item.search_text ?? '',
+      ...medicationStudyValues(item)
+    } as Medication
   );
 }
 
@@ -105,7 +124,8 @@ function buildSearchText(values: {
     medication.pharmacologic_subgroup,
     medication.short_description,
     ...tags.map((tag) => tag.name),
-    ...medicationRichFields.map((key) => tiptapToText(medication[key]))
+    ...medicationRichFields.map((key) => tiptapToText(medication[key])),
+    ...medicationStudySections.map((section) => tiptapToText(medication[section.jsonField]))
   ]
     .filter(Boolean)
     .join(' ')
@@ -234,6 +254,7 @@ export async function saveMedication(userId: string, values: MedicationFormValue
     search_text: '',
     created_at: existing?.created_at ?? timestamp,
     updated_at: timestamp,
+    ...medicationStudyValues(values),
     ...richFields
   };
 
@@ -269,7 +290,8 @@ export async function duplicateMedication(userId: string, medication: Medication
     status: medication.status,
     is_favorite: false,
     tag_ids: medication.tags.map((tag) => tag.id),
-    ...medicationRichFields.reduce((fields, key) => ({ ...fields, [key]: medication[key] }), {} as Record<MedicationRichField, TipTapDocument>)
+    ...medicationRichFields.reduce((fields, key) => ({ ...fields, [key]: medication[key] }), {} as Record<MedicationRichField, TipTapDocument>),
+    ...medicationStudyValues(medication)
   });
 }
 
@@ -307,7 +329,8 @@ export async function toggleMedicationFavorite(userId: string, medication: Medic
       status: medication.status,
       is_favorite: !medication.is_favorite,
       tag_ids: medication.tags.map((tag) => tag.id),
-      ...medicationRichFields.reduce((fields, key) => ({ ...fields, [key]: medication[key] }), {} as Record<MedicationRichField, TipTapDocument>)
+      ...medicationRichFields.reduce((fields, key) => ({ ...fields, [key]: medication[key] }), {} as Record<MedicationRichField, TipTapDocument>),
+      ...medicationStudyValues(medication)
     },
     medication
   );
@@ -322,7 +345,7 @@ export function filterMedications(medications: MedicationWithRelations[], option
     const matchesFavorite = !options.favoriteOnly || medication.is_favorite;
     const matchesStatus = !options.status || medication.status === options.status;
     const matchesAdministration =
-      !options.administration || tiptapToText(medication.administration).toLowerCase().includes(options.administration.toLowerCase());
+      !options.administration || tiptapToText(medication.dosing_administration_json).toLowerCase().includes(options.administration.toLowerCase());
 
     return matchesSearch && matchesGroup && matchesTag && matchesFavorite && matchesStatus && matchesAdministration;
   });
@@ -362,6 +385,10 @@ export function createEmptyMedicationValues(id = generateId()): MedicationFormVa
     status: 'draft',
     is_favorite: false,
     tag_ids: [],
+    ...medicationStudySections.reduce(
+      (fields, section) => ({ ...fields, [section.jsonField]: emptyTipTapDocument, [section.htmlField]: '<p></p>' }),
+      {} as Pick<MedicationFormValues, MedicationStudyJsonField | (typeof medicationStudySections)[number]['htmlField']>
+    ),
     ...emptyRichFields()
   };
 }

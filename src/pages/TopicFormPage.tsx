@@ -1,8 +1,9 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Save, Star } from 'lucide-react';
-import { RichTextEditor } from '../features/topics/RichTextEditor';
+import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
 import { emptyTipTapDocument, getTopicDocument } from '../features/topics/tiptapDocument';
+import { topicSections } from '../features/topics/topicSectionCatalog';
 import { useTopicData, useTopicMutations } from '../features/topics/useTopicData';
 import { useAuth } from '../hooks/useAuth';
 import type { TopicFormValues } from '../types/topic';
@@ -13,6 +14,16 @@ const emptyValues: TopicFormValues = {
   subtitle: '',
   content_json: emptyTipTapDocument,
   content_html: '<p></p>',
+  definition_epidemiology_json: emptyTipTapDocument,
+  definition_epidemiology_html: '<p></p>',
+  clinical_json: emptyTipTapDocument,
+  clinical_html: '<p></p>',
+  diagnosis_criteria_json: emptyTipTapDocument,
+  diagnosis_criteria_html: '<p></p>',
+  treatment_management_json: emptyTipTapDocument,
+  treatment_management_html: '<p></p>',
+  differential_diagnosis_json: emptyTipTapDocument,
+  differential_diagnosis_html: '<p></p>',
   folder_id: '',
   category_id: '',
   tag_ids: [],
@@ -37,6 +48,16 @@ export function TopicFormPage() {
       subtitle: existing.subtitle ?? '',
       content_json: getTopicDocument(existing.content_json),
       content_html: existing.content_html,
+      definition_epidemiology_json: getTopicDocument(existing.definition_epidemiology_json),
+      definition_epidemiology_html: existing.definition_epidemiology_html,
+      clinical_json: getTopicDocument(existing.clinical_json),
+      clinical_html: existing.clinical_html,
+      diagnosis_criteria_json: getTopicDocument(existing.diagnosis_criteria_json),
+      diagnosis_criteria_html: existing.diagnosis_criteria_html,
+      treatment_management_json: getTopicDocument(existing.treatment_management_json),
+      treatment_management_html: existing.treatment_management_html,
+      differential_diagnosis_json: getTopicDocument(existing.differential_diagnosis_json),
+      differential_diagnosis_html: existing.differential_diagnosis_html,
       folder_id: existing.folder_id ?? '',
       category_id: existing.category_id ?? '',
       tag_ids: existing.tags.map((tag) => tag.id),
@@ -48,6 +69,7 @@ export function TopicFormPage() {
 
   const [values, setValues] = useState<TopicFormValues>(initialValues);
   const [error, setError] = useState('');
+  const topicOwnerId = values.id ?? existing?.id ?? draftTopicId.current;
 
   useEffect(() => {
     setValues(initialValues);
@@ -165,18 +187,28 @@ export function TopicFormPage() {
           </div>
         </section>
 
-        <section className="panel">
-          <div className="panel-title">
-            <h2>Contenido enriquecido</h2>
-          </div>
-          <RichTextEditor
-            value={values.content_json}
-            owner={{ ownerType: 'topic', ownerId: values.id ?? existing?.id ?? draftTopicId.current }}
-            onChange={({ json, html }) => {
-              setValues((current) => ({ ...current, content_json: json, content_html: html }));
-            }}
-          />
-        </section>
+        <div className="rich-section-stack">
+          {topicSections.map((section) => (
+            <RichTextSectionPanel
+              key={section.key}
+              storageKey={`topic-section-state:${topicOwnerId}`}
+              sectionKey={section.key}
+              title={section.title}
+              mode="edit"
+              value={values[section.jsonField]}
+              owner={{ ownerType: 'topic', ownerId: topicOwnerId }}
+              onChange={({ json, html }) => {
+                setValues((current) => ({
+                  ...current,
+                  [section.jsonField]: json,
+                  [section.htmlField]: html,
+                  content_json: current.content_json,
+                  content_html: current.content_html
+                }));
+              }}
+            />
+          ))}
+        </div>
 
         {error && <div className="notice error">{error}</div>}
 

@@ -1,8 +1,9 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Copy, Edit3, GitCompare, Heart, Trash2 } from 'lucide-react';
 import { MedicationAttachmentsPanel } from '../features/medications/MedicationAttachmentsPanel';
-import { MedicationRichViewer } from '../features/medications/MedicationRichViewer';
-import { isRichFieldEmpty, medicationSections } from '../features/medications/medicationFields';
+import { isRichFieldEmpty } from '../features/medications/medicationFields';
+import { medicationStudySections } from '../features/medications/medicationStudySectionCatalog';
+import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
 import { useMedicationData, useMedicationMutations } from '../features/medications/useMedicationData';
 import { formatDate } from '../features/topics/topicUtils';
 import { useAuth } from '../hooks/useAuth';
@@ -24,7 +25,7 @@ export function MedicationDetailPage() {
   }
 
   const name = medication.generic_name || 'Medicamento sin nombre';
-  const visibleSections = medicationSections.filter((section) => section.fields.some((field) => !isRichFieldEmpty(medication[field.key])));
+  const visibleSections = medicationStudySections.filter((section) => !isRichFieldEmpty(medication[section.jsonField]));
 
   const remove = () => {
     if (window.confirm(`¿Eliminar "${name}"?`)) {
@@ -86,19 +87,14 @@ export function MedicationDetailPage() {
       </div>
 
       {visibleSections.map((section) => (
-        <details className="panel medication-section read-section" key={section.id} open>
-          <summary>{section.title}</summary>
-          <div className="medication-read-fields">
-            {section.fields
-              .filter((field) => !isRichFieldEmpty(medication[field.key]))
-              .map((field) => (
-                <section key={field.key} className="medication-read-field">
-                  <h2>{field.label}</h2>
-                  <MedicationRichViewer content={medication[field.key]} />
-                </section>
-              ))}
-          </div>
-        </details>
+        <RichTextSectionPanel
+          key={section.key}
+          storageKey={`medication-read-section-state:${medication.id}`}
+          sectionKey={section.key}
+          title={section.title}
+          mode="read"
+          value={medication[section.jsonField]}
+        />
       ))}
 
       {visibleSections.length === 0 && <div className="panel empty-state">La ficha todavía no tiene secciones clínicas cargadas.</div>}

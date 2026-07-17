@@ -3,7 +3,7 @@ import type { Medication, MedicationTag } from '../../types/medication';
 import type { Category, Folder, Tag, Topic, TopicRelation, TopicTag } from '../../types/topic';
 
 export const backupFormat = 'medical-study-pwa';
-export const backupVersion = 2;
+export const backupVersion = 3;
 
 export type BackupProgressStep =
   | 'idle'

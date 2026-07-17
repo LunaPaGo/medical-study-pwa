@@ -1,8 +1,10 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Copy, Edit3, Heart, Trash2 } from 'lucide-react';
-import { TopicContentViewer } from '../features/topics/TopicContentViewer';
+import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
 import { TopicRelationsPanel } from '../features/topics/TopicRelationsPanel';
+import { topicSections } from '../features/topics/topicSectionCatalog';
 import { formatDate } from '../features/topics/topicUtils';
+import { isEmptyTipTapDocument } from '../features/topics/tiptapDocument';
 import { useTopicData, useTopicMutations } from '../features/topics/useTopicData';
 import { useAuth } from '../hooks/useAuth';
 
@@ -27,6 +29,7 @@ export function TopicDetailPage() {
       mutations.deleteTopic.mutate(topic.id, { onSuccess: () => navigate('/temas') });
     }
   };
+  const visibleSections = topicSections.filter((section) => !isEmptyTipTapDocument(topic[section.jsonField]));
 
   return (
     <article className="reader-page">
@@ -78,7 +81,22 @@ export function TopicDetailPage() {
         ))}
       </div>
 
-      <TopicContentViewer content={topic.content_json} />
+      {visibleSections.length > 0 ? (
+        <div className="rich-section-stack">
+          {visibleSections.map((section) => (
+            <RichTextSectionPanel
+              key={section.key}
+              storageKey={`topic-read-section-state:${topic.id}`}
+              sectionKey={section.key}
+              title={section.title}
+              mode="read"
+              value={topic[section.jsonField]}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="panel empty-state">El tema todavía no tiene secciones cargadas.</div>
+      )}
 
       <TopicRelationsPanel
         topic={topic}

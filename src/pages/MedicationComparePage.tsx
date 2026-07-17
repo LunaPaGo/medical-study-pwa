@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { GitCompare } from 'lucide-react';
 import { MedicationRichViewer } from '../features/medications/MedicationRichViewer';
-import { isRichFieldEmpty, medicationCompareSections } from '../features/medications/medicationFields';
+import { isRichFieldEmpty } from '../features/medications/medicationFields';
+import { medicationStudySections } from '../features/medications/medicationStudySectionCatalog';
 import { useMedicationData } from '../features/medications/useMedicationData';
 import type { MedicationWithRelations } from '../types/medication';
 
@@ -50,12 +51,7 @@ export function MedicationComparePage() {
 
   const visibleSections = useMemo(
     () =>
-      medicationCompareSections
-        .map((section) => ({
-          ...section,
-          fields: section.fields.filter((field) => left && right && (!isRichFieldEmpty(left[field.key]) || !isRichFieldEmpty(right[field.key])))
-        }))
-        .filter((section) => section.fields.length > 0),
+      medicationStudySections.filter((section) => left && right && (!isRichFieldEmpty(left[section.jsonField]) || !isRichFieldEmpty(right[section.jsonField]))),
     [left, right]
   );
 
@@ -135,15 +131,13 @@ export function MedicationComparePage() {
           ))}
 
           {visibleSections.map((section) => (
-            <details className="panel medication-section compare-section" key={section.id} open>
+            <details className="panel medication-section compare-section" key={section.key} open>
               <summary>{section.title}</summary>
-              {section.fields.map((field) => (
-                <div className="compare-row rich-compare-row" key={field.key}>
-                  <div className="compare-label">{field.label}</div>
-                  <div>{isRichFieldEmpty(left[field.key]) ? <span className="empty-state">Sin información cargada</span> : <MedicationRichViewer content={left[field.key]} />}</div>
-                  <div>{isRichFieldEmpty(right[field.key]) ? <span className="empty-state">Sin información cargada</span> : <MedicationRichViewer content={right[field.key]} />}</div>
-                </div>
-              ))}
+              <div className="compare-row rich-compare-row">
+                <div className="compare-label">{section.title}</div>
+                <div>{isRichFieldEmpty(left[section.jsonField]) ? <span className="empty-state">Sin información cargada</span> : <MedicationRichViewer content={left[section.jsonField]} />}</div>
+                <div>{isRichFieldEmpty(right[section.jsonField]) ? <span className="empty-state">Sin información cargada</span> : <MedicationRichViewer content={right[section.jsonField]} />}</div>
+              </div>
             </details>
           ))}
         </section>

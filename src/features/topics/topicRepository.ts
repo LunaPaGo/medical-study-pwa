@@ -18,12 +18,28 @@ import type {
 import { getDocumentForTopic, getTopicDocument } from './tiptapDocument';
 import { cleanupOrphanedAttachmentSyncItems, flushAttachmentQueueItem } from '../attachments/attachmentRepository';
 import { flushMedicationQueueItem } from '../medications/medicationRepository';
+import { topicSections } from './topicSectionCatalog';
 
 type OrganizationRecord = Folder | Category | Tag;
 type TopicPayload = { topic: Topic; tagIds: string[] };
 type QueuedPayload = TopicPayload | OrganizationRecord | { id: string; user_id: string };
 
-type SupabaseTopicPayload = Omit<Topic, 'content_json'> & { content_json: Json };
+type SupabaseTopicPayload = Omit<
+  Topic,
+  | 'content_json'
+  | 'definition_epidemiology_json'
+  | 'clinical_json'
+  | 'diagnosis_criteria_json'
+  | 'treatment_management_json'
+  | 'differential_diagnosis_json'
+> & {
+  content_json: Json;
+  definition_epidemiology_json: Json;
+  clinical_json: Json;
+  diagnosis_criteria_json: Json;
+  treatment_management_json: Json;
+  differential_diagnosis_json: Json;
+};
 
 const organizationTables = {
   folders: 'folders',
@@ -62,7 +78,12 @@ function emitSyncQueueChanged() {
 function topicForSupabase(topic: Topic): SupabaseTopicPayload {
   return {
     ...topic,
-    content_json: topic.content_json as Json
+    content_json: topic.content_json as Json,
+    definition_epidemiology_json: topic.definition_epidemiology_json as Json,
+    clinical_json: topic.clinical_json as Json,
+    diagnosis_criteria_json: topic.diagnosis_criteria_json as Json,
+    treatment_management_json: topic.treatment_management_json as Json,
+    differential_diagnosis_json: topic.differential_diagnosis_json as Json
   };
 }
 
@@ -72,7 +93,15 @@ function normalizeTopic(topic: Topic): { topic: Topic; wasConvertedFromHtml: boo
   return {
     topic: {
       ...topic,
-      content_json: document
+      content_json: document,
+      ...topicSections.reduce(
+        (sections, section) => ({
+          ...sections,
+          [section.jsonField]: getTopicDocument(topic[section.jsonField]),
+          [section.htmlField]: topic[section.htmlField] || '<p></p>'
+        }),
+        {}
+      )
     },
     wasConvertedFromHtml
   };
@@ -273,6 +302,16 @@ export async function saveTopic(userId: string, values: TopicFormValues, existin
     subtitle: normalizeOptional(values.subtitle),
     content_json: getTopicDocument(values.content_json),
     content_html: values.content_html,
+    definition_epidemiology_json: getTopicDocument(values.definition_epidemiology_json),
+    definition_epidemiology_html: values.definition_epidemiology_html,
+    clinical_json: getTopicDocument(values.clinical_json),
+    clinical_html: values.clinical_html,
+    diagnosis_criteria_json: getTopicDocument(values.diagnosis_criteria_json),
+    diagnosis_criteria_html: values.diagnosis_criteria_html,
+    treatment_management_json: getTopicDocument(values.treatment_management_json),
+    treatment_management_html: values.treatment_management_html,
+    differential_diagnosis_json: getTopicDocument(values.differential_diagnosis_json),
+    differential_diagnosis_html: values.differential_diagnosis_html,
     folder_id: values.folder_id || null,
     category_id: values.category_id || null,
     specialty: normalizeOptional(values.specialty),
@@ -306,6 +345,16 @@ export async function duplicateTopic(userId: string, topic: TopicWithRelations) 
     subtitle: topic.subtitle ?? '',
     content_json: getTopicDocument(topic.content_json),
     content_html: topic.content_html,
+    definition_epidemiology_json: getTopicDocument(topic.definition_epidemiology_json),
+    definition_epidemiology_html: topic.definition_epidemiology_html,
+    clinical_json: getTopicDocument(topic.clinical_json),
+    clinical_html: topic.clinical_html,
+    diagnosis_criteria_json: getTopicDocument(topic.diagnosis_criteria_json),
+    diagnosis_criteria_html: topic.diagnosis_criteria_html,
+    treatment_management_json: getTopicDocument(topic.treatment_management_json),
+    treatment_management_html: topic.treatment_management_html,
+    differential_diagnosis_json: getTopicDocument(topic.differential_diagnosis_json),
+    differential_diagnosis_html: topic.differential_diagnosis_html,
     folder_id: topic.folder_id ?? '',
     category_id: topic.category_id ?? '',
     tag_ids: topic.tags.map((tag) => tag.id),
@@ -390,6 +439,16 @@ export async function toggleFavorite(userId: string, topic: TopicWithRelations) 
     subtitle: topic.subtitle ?? '',
     content_json: getTopicDocument(topic.content_json),
     content_html: topic.content_html,
+    definition_epidemiology_json: getTopicDocument(topic.definition_epidemiology_json),
+    definition_epidemiology_html: topic.definition_epidemiology_html,
+    clinical_json: getTopicDocument(topic.clinical_json),
+    clinical_html: topic.clinical_html,
+    diagnosis_criteria_json: getTopicDocument(topic.diagnosis_criteria_json),
+    diagnosis_criteria_html: topic.diagnosis_criteria_html,
+    treatment_management_json: getTopicDocument(topic.treatment_management_json),
+    treatment_management_html: topic.treatment_management_html,
+    differential_diagnosis_json: getTopicDocument(topic.differential_diagnosis_json),
+    differential_diagnosis_html: topic.differential_diagnosis_html,
     folder_id: topic.folder_id ?? '',
     category_id: topic.category_id ?? '',
     tag_ids: topic.tags.map((tag) => tag.id),

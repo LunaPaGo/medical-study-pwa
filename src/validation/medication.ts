@@ -29,5 +29,13 @@ export const medicationSchema = z.object({
   contraindications: richField,
   antidote: richField,
   personal_notes: richField,
-  bibliography: richField
+  bibliography: richField,
+  classification_mechanism_json: richField,
+  classification_mechanism_html: z.string().default('<p></p>'),
+  clinical_uses_json: richField,
+  clinical_uses_html: z.string().default('<p></p>'),
+  dosing_administration_json: richField,
+  dosing_administration_html: z.string().default('<p></p>'),
+  safety_json: richField,
+  safety_html: z.string().default('<p></p>')
 });

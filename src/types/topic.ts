@@ -2,6 +2,7 @@ export type TopicStatus = 'draft' | 'complete';
 export type TopicSort = 'updated_desc' | 'title_asc';
 export type SyncEntity = 'topic' | 'folder' | 'category' | 'tag' | 'attachment' | 'medication';
 export type SyncAction = 'upsert' | 'delete';
+export type TopicSectionKey = 'definition_epidemiology' | 'clinical' | 'diagnosis_criteria' | 'treatment_management' | 'differential_diagnosis';
 export type TopicRelationType =
   | 'related'
   | 'differential_diagnosis'
@@ -40,6 +41,16 @@ export type Topic = {
   subtitle: string | null;
   content_json: TipTapDocument;
   content_html: string;
+  definition_epidemiology_json: TipTapDocument;
+  definition_epidemiology_html: string;
+  clinical_json: TipTapDocument;
+  clinical_html: string;
+  diagnosis_criteria_json: TipTapDocument;
+  diagnosis_criteria_html: string;
+  treatment_management_json: TipTapDocument;
+  treatment_management_html: string;
+  differential_diagnosis_json: TipTapDocument;
+  differential_diagnosis_html: string;
   folder_id: string | null;
   category_id: string | null;
   specialty: string | null;
@@ -84,6 +95,16 @@ export type TopicFormValues = {
   subtitle: string;
   content_json: TipTapDocument;
   content_html: string;
+  definition_epidemiology_json: TipTapDocument;
+  definition_epidemiology_html: string;
+  clinical_json: TipTapDocument;
+  clinical_html: string;
+  diagnosis_criteria_json: TipTapDocument;
+  diagnosis_criteria_html: string;
+  treatment_management_json: TipTapDocument;
+  treatment_management_html: string;
+  differential_diagnosis_json: TipTapDocument;
+  differential_diagnosis_html: string;
   folder_id: string;
   category_id: string;
   tag_ids: string[];

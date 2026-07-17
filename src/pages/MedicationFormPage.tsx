@@ -5,12 +5,15 @@ import { Save, Star } from 'lucide-react';
 import { MedicationAttachmentsPanel } from '../features/medications/MedicationAttachmentsPanel';
 import { createEmptyMedicationValues } from '../features/medications/medicationRepository';
 import { medicationDataKey, useMedicationData, useMedicationMutations } from '../features/medications/useMedicationData';
-import { medicationRichFields, medicationSections } from '../features/medications/medicationFields';
-import { RichTextEditor } from '../features/topics/RichTextEditor';
-import { emptyTipTapDocument } from '../features/topics/tiptapDocument';
+import { medicationRichFields } from '../features/medications/medicationFields';
+import { medicationStudySections } from '../features/medications/medicationStudySectionCatalog';
+import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
 import { useAuth } from '../hooks/useAuth';
 import type { MedicationFormValues, MedicationRichField } from '../types/medication';
 import { medicationSchema } from '../validation/medication';
+
+type MedicationStudyJsonField = (typeof medicationStudySections)[number]['jsonField'];
+type MedicationStudyHtmlField = (typeof medicationStudySections)[number]['htmlField'];
 
 export function MedicationFormPage() {
   const { medicationId } = useParams();
@@ -39,6 +42,14 @@ export function MedicationFormPage() {
           [key]: existing[key]
         }),
         {} as Pick<MedicationFormValues, MedicationRichField>
+      ),
+      ...medicationStudySections.reduce(
+        (sections, section) => ({
+          ...sections,
+          [section.jsonField]: existing[section.jsonField],
+          [section.htmlField]: existing[section.htmlField]
+        }),
+        {} as Pick<MedicationFormValues, MedicationStudyJsonField | MedicationStudyHtmlField>
       )
     };
   }, [existing]);
@@ -151,23 +162,26 @@ export function MedicationFormPage() {
           </div>
         </details>
 
-        {medicationSections.map((section) => (
-          <details className="panel medication-section" key={section.id}>
-            <summary>{section.title}</summary>
-            <div className="medication-editor-stack">
-              {section.fields.map((field) => (
-                <div className="medication-rich-label" key={field.key}>
-                  <span>{field.label}</span>
-                  <RichTextEditor
-                    value={values[field.key] ?? emptyTipTapDocument}
-                    owner={{ ownerType: 'medication', ownerId: medicationOwnerId }}
-                    onChange={({ json }) => update(field.key, json)}
-                  />
-                </div>
-              ))}
-            </div>
-          </details>
-        ))}
+        <div className="rich-section-stack">
+          {medicationStudySections.map((section) => (
+            <RichTextSectionPanel
+              key={section.key}
+              storageKey={`medication-section-state:${medicationOwnerId}`}
+              sectionKey={section.key}
+              title={section.title}
+              mode="edit"
+              value={values[section.jsonField]}
+              owner={{ ownerType: 'medication', ownerId: medicationOwnerId }}
+              onChange={({ json, html }) => {
+                setValues((current) => ({
+                  ...current,
+                  [section.jsonField]: json,
+                  [section.htmlField]: html
+                }));
+              }}
+            />
+          ))}
+        </div>
 
         <MedicationAttachmentsPanel
           medicationId={medicationOwnerId}

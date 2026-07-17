@@ -80,7 +80,7 @@ type MedicalStudyDb = {
   };
 };
 
-export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 7, {
+export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 8, {
   upgrade(db) {
     if (!db.objectStoreNames.contains('sync_queue')) {
       const queue = db.createObjectStore('sync_queue', { keyPath: 'id' });
