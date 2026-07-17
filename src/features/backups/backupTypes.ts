@@ -76,3 +76,21 @@ export type BackupExportResult = {
   filename: string;
   manifest: BackupManifest;
 };
+
+export type BackupValidationStatus = 'valid' | 'valid-with-warnings' | 'invalid';
+
+export type BackupValidationCheck = {
+  label: string;
+  status: 'ok' | 'warning' | 'error';
+  message: string;
+};
+
+export type BackupValidationResult = {
+  status: BackupValidationStatus;
+  manifest: BackupManifest | null;
+  checks: BackupValidationCheck[];
+  errors: string[];
+  warnings: string[];
+  counts: Record<string, number>;
+  size: number;
+};

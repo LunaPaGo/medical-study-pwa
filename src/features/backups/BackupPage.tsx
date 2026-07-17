@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Archive, CheckCircle2, DownloadCloud } from 'lucide-react';
+import { AlertTriangle, Archive, CheckCircle2, DownloadCloud, FileSearch, XCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { createCompleteBackup, getLastBackupExport } from './backupExportService';
-import type { BackupExportResult, BackupProgress } from './backupTypes';
+import { validateBackupZip } from './backupValidation';
+import type { BackupExportResult, BackupProgress, BackupValidationResult } from './backupTypes';
 
 type LastExport = {
   filename: string;
@@ -39,6 +40,9 @@ export function BackupPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [lastExport, setLastExport] = useState<LastExport | null>(null);
   const [result, setResult] = useState<BackupExportResult | null>(null);
+  const [selectedZip, setSelectedZip] = useState<File | null>(null);
+  const [validation, setValidation] = useState<BackupValidationResult | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -73,6 +77,29 @@ export function BackupPage() {
       setIsExporting(false);
     }
   };
+
+  const analyzeBackup = async () => {
+    if (!selectedZip || isValidating) return;
+    setIsValidating(true);
+    setValidation(null);
+    setError('');
+    try {
+      setValidation(await validateBackupZip(selectedZip));
+    } catch (validationError) {
+      setError(validationError instanceof Error ? validationError.message : 'No se pudo analizar el respaldo.');
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const validationTitle =
+    validation?.status === 'valid'
+      ? 'Respaldo válido.'
+      : validation?.status === 'valid-with-warnings'
+        ? 'Respaldo válido con advertencias.'
+        : validation?.status === 'invalid'
+          ? 'Respaldo inválido.'
+          : '';
 
   return (
     <section className="page-stack">
@@ -145,7 +172,98 @@ export function BackupPage() {
           <Archive size={20} aria-hidden="true" />
           <h2>Restaurar copia de seguridad</h2>
         </div>
-        <p>La restauración se implementará en la siguiente etapa, después de probar la exportación.</p>
+        <p>En esta etapa solo se analiza el ZIP. No se modifica Supabase, IndexedDB ni Storage.</p>
+
+        <div className="backup-file-picker">
+          <input
+            type="file"
+            accept=".zip,application/zip,application/x-zip-compressed"
+            onChange={(event) => {
+              setSelectedZip(event.target.files?.[0] ?? null);
+              setValidation(null);
+            }}
+          />
+          <button className="primary-button" type="button" onClick={analyzeBackup} disabled={!selectedZip || isValidating}>
+            <FileSearch size={18} aria-hidden="true" />
+            {isValidating ? 'Analizando...' : 'Analizar copia'}
+          </button>
+        </div>
+
+        {selectedZip && <div className="notice">Archivo seleccionado: {selectedZip.name} · {formatSize(selectedZip.size)}</div>}
+
+        {validation && (
+          <div className="backup-validation">
+            <div className={`notice ${validation.status === 'invalid' ? 'error' : validation.status === 'valid-with-warnings' ? 'warning' : 'success'}`}>
+              {validation.status === 'invalid' ? <XCircle size={18} aria-hidden="true" /> : <CheckCircle2 size={18} aria-hidden="true" />}
+              {validationTitle}
+            </div>
+
+            {validation.manifest && (
+              <div className="backup-summary-grid">
+                <div>
+                  <span>Fecha</span>
+                  <strong>{new Date(validation.manifest.created_at).toLocaleString('es')}</strong>
+                </div>
+                <div>
+                  <span>Usuario exportador</span>
+                  <strong>{validation.manifest.exported_by_user_id}</strong>
+                </div>
+                <div>
+                  <span>Versión</span>
+                  <strong>
+                    {validation.manifest.backup_format} v{validation.manifest.backup_version}
+                  </strong>
+                </div>
+                <div>
+                  <span>Tamaño</span>
+                  <strong>{formatSize(validation.size)}</strong>
+                </div>
+              </div>
+            )}
+
+            {Object.keys(validation.counts).length > 0 && (
+              <div className="backup-count-grid">
+                {Object.entries(validation.counts).map(([key, value]) => (
+                  <div key={key}>
+                    <span>{key}</span>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="backup-check-list">
+              {validation.checks.map((item) => (
+                <div className={`backup-check ${item.status}`} key={`${item.label}-${item.message}`}>
+                  <strong>{item.label}</strong>
+                  <span>{item.message}</span>
+                </div>
+              ))}
+            </div>
+
+            {validation.errors.length > 0 && (
+              <div className="panel backup-warning-list">
+                <strong>Errores</strong>
+                <ul>
+                  {validation.errors.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {validation.warnings.length > 0 && (
+              <div className="panel backup-warning-list">
+                <strong>Advertencias</strong>
+                <ul>
+                  {validation.warnings.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </section>
     </section>
   );
