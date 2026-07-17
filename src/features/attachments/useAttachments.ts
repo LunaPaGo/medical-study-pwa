@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import type { Attachment, AttachmentOwnerType } from '../../types/attachment';
+import { medicationDataKey } from '../medications/useMedicationData';
+import { topicDataKey } from '../topics/useTopicData';
 import { createAttachment, deleteAttachment, getAttachments, renameAttachment } from './attachmentRepository';
 
 export const attachmentsKey = ['attachments'];
@@ -18,7 +20,11 @@ export function useAttachments() {
 export function useAttachmentMutations() {
   const { user, isReadOnly } = useAuth();
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: attachmentsKey });
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: attachmentsKey });
+    queryClient.invalidateQueries({ queryKey: topicDataKey });
+    queryClient.invalidateQueries({ queryKey: medicationDataKey });
+  };
   const ensureWritable = () => {
     if (isReadOnly) throw new Error('Modo sin conexión: solo lectura.');
   };

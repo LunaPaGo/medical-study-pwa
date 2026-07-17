@@ -9,16 +9,51 @@ import type {
   PendingAttachmentFile,
   TopicAttachment
 } from '../../types/attachment';
-import type { SyncAction } from '../../types/topic';
+import type { Medication, MedicationRichField } from '../../types/medication';
+import type { SyncAction, Topic } from '../../types/topic';
 import { processImage } from './imageProcessing';
 
 const bucketName = 'study-attachments';
+const medicationAttachmentFields: MedicationRichField[] = [
+  'mechanism_of_action',
+  'therapeutic_targets',
+  'pharmacologic_effects',
+  'indications',
+  'clinical_application',
+  'adult_dose',
+  'pediatric_dose',
+  'dose_and_dilution',
+  'administration',
+  'onset_time',
+  'transport',
+  'metabolism',
+  'elimination',
+  'adverse_effects',
+  'contraindications',
+  'antidote',
+  'personal_notes',
+  'bibliography'
+];
 
 type AttachmentPayload = {
   attachment: Attachment;
   link?: Omit<AttachmentLink, 'id' | 'created_at'>;
   topicAttachment?: TopicAttachment;
   medicationAttachment?: MedicationAttachment;
+};
+
+export type AttachmentUsageSummary = {
+  topics: number;
+  medications: number;
+  total: number;
+};
+
+export type AttachmentReconciliationReport = {
+  localOnly: number;
+  remoteOnly: number;
+  invalidStoragePath: number;
+  remoteLinksMissingLocally: number;
+  storageObjectsWithoutRecord: number;
 };
 
 function nowIso() {
@@ -41,8 +76,9 @@ function extensionFromName(name: string) {
 
 function pathsFor(userId: string, attachmentId: string, originalName: string) {
   const ext = extensionFromName(originalName);
+  const filename = `${safeFileName(originalName.replace(/\.[^/.]+$/, '')) || 'archivo'}${ext}`;
   return {
-    storagePath: `${userId}/originals/${attachmentId}${ext}`,
+    storagePath: `${userId}/${attachmentId}/${filename}`,
     thumbnailPath: `${userId}/thumbnails/${attachmentId}.jpg`
   };
 }
@@ -89,15 +125,67 @@ export async function getAttachments(userId: string) {
 
   if (navigator.onLine) {
     try {
-      const { data, error } = await supabase.from('attachments').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-      if (error) throw error;
-      await Promise.all((data ?? []).map((item) => db.put('attachments', { ...(item as Attachment), sync_status: 'synced' })));
-    } catch {
+      await syncAttachmentsFromSupabase(userId);
+    } catch (error) {
+      console.warn('ATTACHMENTS_SYNC_FAILED', error);
       // Offline cache remains available.
     }
   }
 
   return (await db.getAllFromIndex('attachments', 'user_id', userId)).sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+export async function syncAttachmentsFromSupabase(userId: string) {
+  const [attachmentsResult, topicAttachmentsResult, medicationAttachmentsResult, linksResult] = await Promise.all([
+    supabase.from('attachments').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('topic_attachments').select('*').eq('user_id', userId),
+    supabase.from('medication_attachments').select('*').eq('user_id', userId),
+    supabase.from('attachment_links').select('*').eq('user_id', userId)
+  ]);
+
+  const firstError = attachmentsResult.error ?? topicAttachmentsResult.error ?? medicationAttachmentsResult.error ?? linksResult.error;
+  if (firstError) throw firstError;
+
+  const db = await localDbPromise;
+  const remoteAttachments = (attachmentsResult.data ?? []) as Attachment[];
+  const remoteTopicLinks = (topicAttachmentsResult.data ?? []) as TopicAttachment[];
+  const remoteMedicationLinks = (medicationAttachmentsResult.data ?? []) as MedicationAttachment[];
+  const remoteGenericLinks = (linksResult.data ?? []) as AttachmentLink[];
+  const remoteAttachmentIds = new Set(remoteAttachments.map((attachment) => attachment.id));
+  const remoteTopicLinkIds = new Set(remoteTopicLinks.map((link) => link.id));
+  const remoteMedicationLinkIds = new Set(remoteMedicationLinks.map((link) => link.id));
+  const remoteGenericLinkIds = new Set(remoteGenericLinks.map((link) => link.id));
+
+  const writeTx = db.transaction(['attachments', 'topic_attachments', 'medication_attachments', 'attachment_links'], 'readwrite');
+  await Promise.all(remoteAttachments.map((item) => writeTx.objectStore('attachments').put({ ...item, sync_status: 'synced', error_message: null })));
+  await Promise.all(remoteTopicLinks.map((item) => writeTx.objectStore('topic_attachments').put(item)));
+  await Promise.all(remoteMedicationLinks.map((item) => writeTx.objectStore('medication_attachments').put(item)));
+  await Promise.all(remoteGenericLinks.map((item) => writeTx.objectStore('attachment_links').put(item)));
+  await writeTx.done;
+
+  const [localAttachments, localTopicLinks, localMedicationLinks, localGenericLinks] = await Promise.all([
+    db.getAllFromIndex('attachments', 'user_id', userId),
+    db.getAllFromIndex('topic_attachments', 'user_id', userId),
+    db.getAllFromIndex('medication_attachments', 'user_id', userId),
+    db.getAllFromIndex('attachment_links', 'user_id', userId)
+  ]);
+
+  const deleteTx = db.transaction(['attachments', 'topic_attachments', 'medication_attachments', 'attachment_links'], 'readwrite');
+  await Promise.all(
+    localAttachments
+      .filter((item) => item.sync_status === 'synced' && !remoteAttachmentIds.has(item.id))
+      .map((item) => deleteTx.objectStore('attachments').delete(item.id))
+  );
+  await Promise.all(
+    localTopicLinks.filter((item) => !remoteTopicLinkIds.has(item.id)).map((item) => deleteTx.objectStore('topic_attachments').delete(item.id))
+  );
+  await Promise.all(
+    localMedicationLinks.filter((item) => !remoteMedicationLinkIds.has(item.id)).map((item) => deleteTx.objectStore('medication_attachments').delete(item.id))
+  );
+  await Promise.all(
+    localGenericLinks.filter((item) => !remoteGenericLinkIds.has(item.id)).map((item) => deleteTx.objectStore('attachment_links').delete(item.id))
+  );
+  await deleteTx.done;
 }
 
 export async function getAttachmentFile(attachmentId: string) {
@@ -136,8 +224,11 @@ async function uploadAttachmentFiles(attachment: Attachment, pending: PendingAtt
 async function pushAttachmentToSupabase(payload: AttachmentPayload) {
   const db = await localDbPromise;
   const pending = await db.get('pending_attachment_files', payload.attachment.id);
+  const uploadedPaths: string[] = [];
   if (pending) {
     await uploadAttachmentFiles(payload.attachment, pending);
+    uploadedPaths.push(payload.attachment.storage_path);
+    if (payload.attachment.thumbnail_path) uploadedPaths.push(payload.attachment.thumbnail_path);
   }
 
   const record = {
@@ -156,7 +247,12 @@ async function pushAttachmentToSupabase(payload: AttachmentPayload) {
   };
 
   const { error } = await supabase.from('attachments').upsert(record);
-  if (error) throw error;
+  if (error) {
+    if (uploadedPaths.length > 0) {
+      await supabase.storage.from(bucketName).remove(uploadedPaths).catch(() => undefined);
+    }
+    throw error;
+  }
 
   if (payload.link) {
     const { error: linkError } = await supabase.from('attachment_links').upsert(payload.link);
@@ -275,25 +371,47 @@ export async function renameAttachment(userId: string, attachment: Attachment, f
 }
 
 export async function deleteAttachment(userId: string, attachment: Attachment) {
-  const usageCount = await getAttachmentUsageCount(userId, attachment.id);
-  if (usageCount > 0) {
-    throw new Error(`Este archivo está usado en ${usageCount} elemento(s). Quitalo primero del contenido antes de eliminarlo definitivamente.`);
-  }
-
   const db = await localDbPromise;
-  await db.delete('attachments', attachment.id);
-  await db.delete('pending_attachment_files', attachment.id);
 
   if (navigator.onLine) {
     try {
-      await supabase.storage.from(bucketName).remove([attachment.storage_path, attachment.thumbnail_path].filter(Boolean) as string[]);
+      await removeAttachmentFromLinkedTopics(userId, attachment.id);
+      await removeAttachmentFromLinkedMedications(userId, attachment.id);
+      await deleteLocalAttachmentRelations(userId, attachment.id);
+
+      const { error: genericLinkError } = await supabase.from('attachment_links').delete().eq('attachment_id', attachment.id).eq('user_id', userId);
+      if (genericLinkError) throw genericLinkError;
+
+      const { error: topicLinkError } = await supabase.from('topic_attachments').delete().eq('attachment_id', attachment.id).eq('user_id', userId);
+      if (topicLinkError) throw topicLinkError;
+
+      const { error: medicationLinkError } = await supabase.from('medication_attachments').delete().eq('attachment_id', attachment.id).eq('user_id', userId);
+      if (medicationLinkError) throw medicationLinkError;
+
+      const pathsToRemove = [attachment.storage_path, attachment.thumbnail_path].filter(Boolean) as string[];
+      if (pathsToRemove.length > 0) {
+        const { error: storageError } = await supabase.storage.from(bucketName).remove(pathsToRemove);
+        if (storageError) throw storageError;
+      }
+
       const { error } = await supabase.from('attachments').delete().eq('id', attachment.id).eq('user_id', userId);
       if (error) throw error;
-    } catch {
-      await enqueueAttachment(userId, 'delete', { id: attachment.id, user_id: userId });
+      await db.delete('attachments', attachment.id);
+      await db.delete('pending_attachment_files', attachment.id);
+    } catch (error) {
+      console.error('ATTACHMENT_DELETE_FAILED', error);
+      throw error instanceof Error ? error : new Error('No se pudo eliminar el archivo. Intentá nuevamente.');
     }
   } else {
-    await enqueueAttachment(userId, 'delete', { id: attachment.id, user_id: userId });
+    try {
+      await deleteLocalAttachmentRelations(userId, attachment.id);
+      await db.delete('attachments', attachment.id);
+      await db.delete('pending_attachment_files', attachment.id);
+      await enqueueAttachment(userId, 'delete', { id: attachment.id, user_id: userId });
+    } catch (error) {
+      console.error('ATTACHMENT_DELETE_QUEUE_FAILED', error);
+      throw error instanceof Error ? error : new Error('No se pudo dejar la eliminación pendiente.');
+    }
   }
 }
 
@@ -357,26 +475,199 @@ export async function linkAttachmentToMedication(userId: string, medicationId: s
   }
 }
 
-export async function getAttachmentUsageCount(userId: string, attachmentId: string) {
+export async function getAttachmentUsageSummary(userId: string, attachmentId: string): Promise<AttachmentUsageSummary> {
   const db = await localDbPromise;
   const topicCount = (await db.getAllFromIndex('topic_attachments', 'attachment_id', attachmentId)).filter((item) => item.user_id === userId).length;
   const medicationCount = (await db.getAllFromIndex('medication_attachments', 'attachment_id', attachmentId)).filter(
     (item) => item.user_id === userId
   ).length;
-  const localCount = topicCount + medicationCount;
+  const local = { topics: topicCount, medications: medicationCount };
 
-  if (!navigator.onLine) return localCount;
+  if (!navigator.onLine) return { ...local, total: local.topics + local.medications };
 
   try {
-    const { count, error } = await supabase
-      .from('attachment_links')
-      .select('id', { count: 'exact', head: true })
-      .eq('attachment_id', attachmentId)
+    const [topicResult, medicationResult] = await Promise.all([
+      supabase
+        .from('topic_attachments')
+        .select('id', { count: 'exact', head: true })
+        .eq('attachment_id', attachmentId)
+        .eq('user_id', userId),
+      supabase
+        .from('medication_attachments')
+        .select('id', { count: 'exact', head: true })
+        .eq('attachment_id', attachmentId)
+        .eq('user_id', userId)
+    ]);
+    if (topicResult.error) throw topicResult.error;
+    if (medicationResult.error) throw medicationResult.error;
+    const topics = Math.max(local.topics, topicResult.count ?? 0);
+    const medications = Math.max(local.medications, medicationResult.count ?? 0);
+    return { topics, medications, total: topics + medications };
+  } catch {
+    return { ...local, total: local.topics + local.medications };
+  }
+}
+
+export async function getAttachmentUsageCount(userId: string, attachmentId: string) {
+  return (await getAttachmentUsageSummary(userId, attachmentId)).total;
+}
+
+export async function diagnoseAttachmentReconciliation(userId: string): Promise<AttachmentReconciliationReport> {
+  const db = await localDbPromise;
+  const localAttachments = await db.getAllFromIndex('attachments', 'user_id', userId);
+  const localTopicLinks = await db.getAllFromIndex('topic_attachments', 'user_id', userId);
+  const localMedicationLinks = await db.getAllFromIndex('medication_attachments', 'user_id', userId);
+
+  if (!navigator.onLine) {
+    return {
+      localOnly: localAttachments.length,
+      remoteOnly: 0,
+      invalidStoragePath: 0,
+      remoteLinksMissingLocally: 0,
+      storageObjectsWithoutRecord: 0
+    };
+  }
+
+  const [attachmentsResult, topicLinksResult, medicationLinksResult, storageResult] = await Promise.all([
+    supabase.from('attachments').select('*').eq('user_id', userId),
+    supabase.from('topic_attachments').select('*').eq('user_id', userId),
+    supabase.from('medication_attachments').select('*').eq('user_id', userId),
+    supabase.storage.from(bucketName).list(userId, { limit: 1000 })
+  ]);
+
+  const firstError = attachmentsResult.error ?? topicLinksResult.error ?? medicationLinksResult.error ?? storageResult.error;
+  if (firstError) throw firstError;
+
+  const remoteAttachments = (attachmentsResult.data ?? []) as Attachment[];
+  const remoteIds = new Set(remoteAttachments.map((item) => item.id));
+  const localIds = new Set(localAttachments.map((item) => item.id));
+  const localTopicLinkIds = new Set(localTopicLinks.map((item) => item.id));
+  const localMedicationLinkIds = new Set(localMedicationLinks.map((item) => item.id));
+  const remoteTopicLinks = (topicLinksResult.data ?? []) as TopicAttachment[];
+  const remoteMedicationLinks = (medicationLinksResult.data ?? []) as MedicationAttachment[];
+
+  return {
+    localOnly: localAttachments.filter((item) => !remoteIds.has(item.id)).length,
+    remoteOnly: remoteAttachments.filter((item) => !localIds.has(item.id)).length,
+    invalidStoragePath: remoteAttachments.filter((item) => !item.storage_path.startsWith(`${userId}/`)).length,
+    remoteLinksMissingLocally:
+      remoteTopicLinks.filter((item) => !localTopicLinkIds.has(item.id)).length +
+      remoteMedicationLinks.filter((item) => !localMedicationLinkIds.has(item.id)).length,
+    storageObjectsWithoutRecord: (storageResult.data ?? []).filter((item) => !remoteIds.has(item.name)).length
+  };
+}
+
+async function deleteLocalAttachmentRelations(userId: string, attachmentId: string) {
+  const db = await localDbPromise;
+  const [topicLinks, medicationLinks, genericLinks] = await Promise.all([
+    db.getAllFromIndex('topic_attachments', 'attachment_id', attachmentId),
+    db.getAllFromIndex('medication_attachments', 'attachment_id', attachmentId),
+    db.getAllFromIndex('attachment_links', 'attachment_id', attachmentId)
+  ]);
+  const tx = db.transaction(['topic_attachments', 'medication_attachments', 'attachment_links'], 'readwrite');
+  await Promise.all(topicLinks.filter((item) => item.user_id === userId).map((item) => tx.objectStore('topic_attachments').delete(item.id)));
+  await Promise.all(medicationLinks.filter((item) => item.user_id === userId).map((item) => tx.objectStore('medication_attachments').delete(item.id)));
+  await Promise.all(genericLinks.filter((item) => item.user_id === userId).map((item) => tx.objectStore('attachment_links').delete(item.id)));
+  await tx.done;
+}
+
+function removeAttachmentNodes(document: unknown, attachmentId: string): { document: unknown; changed: boolean } {
+  if (!document || typeof document !== 'object') return { document, changed: false };
+  const node = document as { type?: string; attrs?: Record<string, unknown>; content?: unknown[] };
+  if (node.type === 'medicalImage' && node.attrs?.attachmentId === attachmentId) {
+    return { document: null, changed: true };
+  }
+
+  if (!Array.isArray(node.content)) return { document, changed: false };
+
+  let changed = false;
+  const content = node.content
+    .map((child) => {
+      const result = removeAttachmentNodes(child, attachmentId);
+      changed = changed || result.changed;
+      return result.document;
+    })
+    .filter(Boolean);
+
+  return changed ? { document: { ...node, content }, changed } : { document, changed: false };
+}
+
+async function removeAttachmentFromLinkedTopics(userId: string, attachmentId: string) {
+  const db = await localDbPromise;
+  if (navigator.onLine) {
+    const { data, error } = await supabase.from('topic_attachments').select('*').eq('attachment_id', attachmentId).eq('user_id', userId);
+    if (error) throw error;
+    await Promise.all(((data ?? []) as TopicAttachment[]).map((item) => db.put('topic_attachments', item)));
+  }
+
+  const links = (await db.getAllFromIndex('topic_attachments', 'attachment_id', attachmentId)).filter((item) => item.user_id === userId);
+  if (links.length === 0) return;
+  const topicIds = [...new Set(links.map((item) => item.topic_id))];
+
+  for (const topicId of topicIds) {
+    let topic: Topic | undefined = await db.get('topics', topicId);
+    if (!topic && navigator.onLine) {
+      const { data, error } = await supabase.from('topics').select('*').eq('id', topicId).eq('user_id', userId).single();
+      if (error && error.code !== 'PGRST116') throw error;
+      if (data) {
+        topic = data as Topic;
+        await db.put('topics', topic);
+      }
+    }
+    if (!topic) continue;
+    const result = removeAttachmentNodes(topic.content_json, attachmentId);
+    if (!result.changed) continue;
+    const updated = { ...topic, content_json: result.document as typeof topic.content_json, updated_at: nowIso() };
+    await db.put('topics', updated);
+    const { error } = await supabase
+      .from('topics')
+      .update({ content_json: updated.content_json as Json, updated_at: updated.updated_at })
+      .eq('id', topicId)
       .eq('user_id', userId);
     if (error) throw error;
-    return Math.max(localCount, count ?? 0);
-  } catch {
-    return localCount;
+  }
+}
+
+async function removeAttachmentFromLinkedMedications(userId: string, attachmentId: string) {
+  const db = await localDbPromise;
+  if (navigator.onLine) {
+    const { data, error } = await supabase.from('medication_attachments').select('*').eq('attachment_id', attachmentId).eq('user_id', userId);
+    if (error) throw error;
+    await Promise.all(((data ?? []) as MedicationAttachment[]).map((item) => db.put('medication_attachments', item)));
+  }
+
+  const links = (await db.getAllFromIndex('medication_attachments', 'attachment_id', attachmentId)).filter((item) => item.user_id === userId);
+  const medicationIds = [...new Set(links.map((item) => item.medication_id))];
+
+  for (const medicationId of medicationIds) {
+    let medication: Medication | undefined = await db.get('medications', medicationId);
+    if (!medication && navigator.onLine) {
+      const { data, error } = await supabase.from('medications').select('*').eq('id', medicationId).eq('user_id', userId).single();
+      if (error && error.code !== 'PGRST116') throw error;
+      if (data) {
+        medication = data as Medication;
+        await db.put('medications', medication);
+      }
+    }
+    if (!medication) continue;
+
+    let changed = false;
+    const updated = { ...medication, updated_at: nowIso() };
+    for (const field of medicationAttachmentFields) {
+      const result = removeAttachmentNodes(updated[field], attachmentId);
+      if (result.changed) {
+        updated[field] = result.document as (typeof updated)[typeof field];
+        changed = true;
+      }
+    }
+    if (!changed) continue;
+    await db.put('medications', updated);
+    const changes = medicationAttachmentFields.reduce(
+      (payload, field) => ({ ...payload, [field]: updated[field] as Json }),
+      { updated_at: updated.updated_at } as Record<string, Json | string>
+    );
+    const { error } = await supabase.from('medications').update(changes as never).eq('id', medicationId).eq('user_id', userId);
+    if (error) throw error;
   }
 }
 
@@ -400,6 +691,9 @@ export async function flushAttachmentQueueItem(item: { action: SyncAction; paylo
   if (item.action === 'delete') {
     const payload = item.payload as { id: string; user_id: string };
     const { data } = await supabase.from('attachments').select('storage_path, thumbnail_path').eq('id', payload.id).eq('user_id', item.user_id).single();
+    await supabase.from('attachment_links').delete().eq('attachment_id', payload.id).eq('user_id', item.user_id);
+    await supabase.from('topic_attachments').delete().eq('attachment_id', payload.id).eq('user_id', item.user_id);
+    await supabase.from('medication_attachments').delete().eq('attachment_id', payload.id).eq('user_id', item.user_id);
     if (data) {
       await supabase.storage.from(bucketName).remove([data.storage_path, data.thumbnail_path].filter(Boolean) as string[]);
     }

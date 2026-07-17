@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Grid2X2, List, Search } from 'lucide-react';
+import { Grid2X2, List, Search, ShieldCheck } from 'lucide-react';
 import type { Attachment, AttachmentViewMode } from '../../types/attachment';
 import { useAuth } from '../../hooks/useAuth';
-import { getAttachmentUsageCount } from './attachmentRepository';
+import { diagnoseAttachmentReconciliation, getAttachmentUsageSummary } from './attachmentRepository';
 import { AttachmentCard } from './AttachmentCard';
 import { AttachmentPreview } from './AttachmentPreview';
 import { FileDropzone } from './FileDropzone';
@@ -11,10 +11,11 @@ import { useAttachmentMutations, useAttachments } from './useAttachments';
 export function AttachmentLibrary() {
   const { data = [], isLoading } = useAttachments();
   const mutations = useAttachmentMutations();
-  const { isReadOnly } = useAuth();
+  const { isReadOnly, user } = useAuth();
   const [query, setQuery] = useState('');
   const [viewMode, setViewMode] = useState<AttachmentViewMode>('grid');
   const [preview, setPreview] = useState<Attachment | null>(null);
+  const [statusMessage, setStatusMessage] = useState('');
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -30,13 +31,28 @@ export function AttachmentLibrary() {
   };
 
   const remove = async (attachment: Attachment) => {
-    const usageCount = await getAttachmentUsageCount(attachment.user_id, attachment.id);
-    if (usageCount > 0) {
-      window.alert(`Este archivo está asociado a ${usageCount} tema(s). Quitalo primero del contenido del tema para evitar referencias rotas.`);
+    const usage = await getAttachmentUsageSummary(attachment.user_id, attachment.id);
+    const usageText =
+      usage.total > 0
+        ? `\n\nEstá asociado a ${usage.topics} tema(s) y ${usage.medications} medicamento(s). Se quitarán esas asociaciones, pero no se eliminarán los temas ni medicamentos.`
+        : '';
+    if (!window.confirm(`¿Eliminar definitivamente "${attachment.filename}"?${usageText}`)) return;
+    mutations.remove.mutate(attachment);
+  };
+
+  const diagnose = async () => {
+    if (!user?.id) {
+      setStatusMessage('Necesitás iniciar sesión para revisar la consistencia.');
       return;
     }
-    if (!window.confirm(`¿Eliminar "${attachment.filename}"?`)) return;
-    mutations.remove.mutate(attachment);
+    try {
+      const report = await diagnoseAttachmentReconciliation(user.id);
+      setStatusMessage(
+        `Revisión: ${report.localOnly} solo locales, ${report.remoteOnly} solo remotos, ${report.invalidStoragePath} rutas inválidas, ${report.remoteLinksMissingLocally} asociaciones remotas no locales, ${report.storageObjectsWithoutRecord} objetos sin registro.`
+      );
+    } catch {
+      setStatusMessage('No se pudo completar la revisión de consistencia.');
+    }
   };
 
   return (
@@ -54,10 +70,17 @@ export function AttachmentLibrary() {
           <button className="ghost-button icon-button" type="button" onClick={() => setViewMode('list')} title="Lista">
             <List size={18} />
           </button>
+          {!isReadOnly && (
+            <button className="ghost-button" type="button" onClick={diagnose}>
+              <ShieldCheck size={18} />
+              Revisar consistencia
+            </button>
+          )}
         </div>
       </div>
 
       {isReadOnly ? <div className="notice warning">Modo sin conexión: solo podés consultar archivos ya disponibles en este dispositivo.</div> : <FileDropzone />}
+      {statusMessage && <div className="notice">{statusMessage}</div>}
 
       <section className="panel filter-panel attachment-filter">
         <Search size={20} />

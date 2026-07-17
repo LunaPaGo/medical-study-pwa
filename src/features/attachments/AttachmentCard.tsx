@@ -1,7 +1,7 @@
 import { Copy, Download, Edit3, Eye, File, Image as ImageIcon, RefreshCcw, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Attachment } from '../../types/attachment';
-import { attachmentToInternalLink, getAttachmentFile, getSignedAttachmentUrl, isImageAttachment } from './attachmentRepository';
+import { attachmentToInternalLink, getAttachmentFile, getAttachmentUsageSummary, getSignedAttachmentUrl, isImageAttachment } from './attachmentRepository';
 
 type Props = {
   attachment: Attachment;
@@ -15,6 +15,7 @@ type Props = {
 export function AttachmentCard({ attachment, viewMode, onPreview, onRename, onRemove, readOnly = false }: Props) {
   const [thumbUrl, setThumbUrl] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
+  const [usageCount, setUsageCount] = useState(0);
 
   useEffect(() => {
     let objectUrl = '';
@@ -47,6 +48,21 @@ export function AttachmentCard({ attachment, viewMode, onPreview, onRename, onRe
     };
   }, [attachment]);
 
+  useEffect(() => {
+    let active = true;
+    getAttachmentUsageSummary(attachment.user_id, attachment.id)
+      .then((summary) => {
+        if (active) setUsageCount(summary.total);
+      })
+      .catch(() => {
+        if (active) setUsageCount(0);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [attachment.id, attachment.user_id]);
+
   const copyInternalLink = async () => {
     await navigator.clipboard.writeText(await attachmentToInternalLink(attachment));
   };
@@ -59,6 +75,8 @@ export function AttachmentCard({ attachment, viewMode, onPreview, onRename, onRe
       <div className="attachment-info">
         <strong>{attachment.filename}</strong>
         <span>{attachment.mime_type || 'archivo'} · {(attachment.size / 1024 / 1024).toFixed(2)} MB</span>
+        <span>Fecha: {new Date(attachment.created_at).toLocaleDateString('es')}</span>
+        <span>{usageCount === 1 ? 'Asociado a 1 elemento' : `Asociado a ${usageCount} elementos`}</span>
         {attachment.sync_status && attachment.sync_status !== 'synced' && (
           <span className={`status-pill ${attachment.sync_status === 'error' ? '' : 'complete'}`}>
             {attachment.sync_status === 'pending' && 'Pendiente de sincronización'}
