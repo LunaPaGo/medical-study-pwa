@@ -7,7 +7,26 @@ import { queryClient } from './services/queryClient';
 import { router } from './routes/router';
 import './styles/global.css';
 
-registerSW({ immediate: true });
+console.info('APP_BOOT_START');
+
+registerSW({
+  immediate: true,
+  onRegisteredSW(_swUrl, registration) {
+    if (registration) {
+      console.info('SERVICE_WORKER_READY');
+    }
+  },
+  onNeedRefresh() {
+    console.info('SERVICE_WORKER_UPDATE_READY');
+    window.location.reload();
+  },
+  onOfflineReady() {
+    console.info('SERVICE_WORKER_OFFLINE_READY');
+  },
+  onRegisterError(error) {
+    console.error('SERVICE_WORKER_ERROR', error);
+  }
+});
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -22,28 +22,42 @@ export function useMedicationData() {
 }
 
 export function useMedicationMutations() {
-  const { user } = useAuth();
+  const { user, isReadOnly } = useAuth();
   const queryClient = useQueryClient();
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: medicationDataKey });
   };
+  const ensureWritable = () => {
+    if (isReadOnly) throw new Error('Modo sin conexión: solo lectura.');
+  };
 
   return {
     saveMedication: useMutation({
-      mutationFn: ({ values, existing }: { values: MedicationFormValues; existing?: MedicationWithRelations }) =>
-        saveMedication(user!.id, values, existing),
+      mutationFn: ({ values, existing }: { values: MedicationFormValues; existing?: MedicationWithRelations }) => {
+        ensureWritable();
+        return saveMedication(user!.id, values, existing);
+      },
       onSuccess: invalidate
     }),
     deleteMedication: useMutation({
-      mutationFn: (medicationId: string) => deleteMedication(user!.id, medicationId),
+      mutationFn: (medicationId: string) => {
+        ensureWritable();
+        return deleteMedication(user!.id, medicationId);
+      },
       onSuccess: invalidate
     }),
     duplicateMedication: useMutation({
-      mutationFn: (medication: MedicationWithRelations) => duplicateMedication(user!.id, medication),
+      mutationFn: (medication: MedicationWithRelations) => {
+        ensureWritable();
+        return duplicateMedication(user!.id, medication);
+      },
       onSuccess: invalidate
     }),
     toggleFavorite: useMutation({
-      mutationFn: (medication: MedicationWithRelations) => toggleMedicationFavorite(user!.id, medication),
+      mutationFn: (medication: MedicationWithRelations) => {
+        ensureWritable();
+        return toggleMedicationFavorite(user!.id, medication);
+      },
       onSuccess: invalidate
     })
   };

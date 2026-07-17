@@ -58,7 +58,9 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/auth\/v1\//, /^\/rest\/v1\//, /^\/storage\/v1\//],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true

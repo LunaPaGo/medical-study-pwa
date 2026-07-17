@@ -6,13 +6,14 @@ import { formatDate } from '../topics/topicUtils';
 type Props = {
   medication: MedicationWithRelations;
   selected: boolean;
+  readOnly?: boolean;
   onSelect: (medication: MedicationWithRelations, selected: boolean) => void;
   onDelete: (medication: MedicationWithRelations) => void;
   onDuplicate: (medication: MedicationWithRelations) => void;
   onToggleFavorite: (medication: MedicationWithRelations) => void;
 };
 
-export function MedicationCard({ medication, selected, onSelect, onDelete, onDuplicate, onToggleFavorite }: Props) {
+export function MedicationCard({ medication, selected, readOnly = false, onSelect, onDelete, onDuplicate, onToggleFavorite }: Props) {
   const name = medication.generic_name || 'Medicamento sin nombre';
 
   return (
@@ -27,6 +28,7 @@ export function MedicationCard({ medication, selected, onSelect, onDelete, onDup
         </div>
         <button
           className={`favorite-button ${medication.is_favorite ? 'active' : ''}`}
+          disabled={readOnly}
           type="button"
           onClick={() => onToggleFavorite(medication)}
           title={medication.is_favorite ? 'Quitar de favoritos' : 'Marcar favorito'}
@@ -55,18 +57,24 @@ export function MedicationCard({ medication, selected, onSelect, onDelete, onDup
           <GitCompare size={18} />
           Comparar
         </label>
-        <Link className="ghost-button" to={`/farmacologia/${medication.id}/editar`}>
-          <Pencil size={18} />
-          Editar
-        </Link>
-        <button className="ghost-button" type="button" onClick={() => onDuplicate(medication)}>
-          <Copy size={18} />
-          Duplicar
-        </button>
-        <button className="ghost-button danger-action" type="button" onClick={() => onDelete(medication)}>
-          <Trash2 size={18} />
-          Eliminar
-        </button>
+        {readOnly ? (
+          <span className="notice warning readonly-inline">Solo lectura</span>
+        ) : (
+          <>
+            <Link className="ghost-button" to={`/farmacologia/${medication.id}/editar`}>
+              <Pencil size={18} />
+              Editar
+            </Link>
+            <button className="ghost-button" type="button" onClick={() => onDuplicate(medication)}>
+              <Copy size={18} />
+              Duplicar
+            </button>
+            <button className="ghost-button danger-action" type="button" onClick={() => onDelete(medication)}>
+              <Trash2 size={18} />
+              Eliminar
+            </button>
+          </>
+        )}
       </div>
     </article>
   );

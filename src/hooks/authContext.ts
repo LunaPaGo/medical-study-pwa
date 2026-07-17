@@ -2,13 +2,17 @@ import { createContext } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 
 export type ProfileStatus = 'pending' | 'approved';
+export type AuthMode = 'online' | 'offline-readonly';
 
 export type AuthContextValue = {
   session: Session | null;
   user: User | null;
   profileStatus: ProfileStatus | null;
   profileError: string | null;
+  authMode: AuthMode;
+  isReadOnly: boolean;
   isLoading: boolean;
+  bootStep: string;
   signOut: () => Promise<void>;
 };
 

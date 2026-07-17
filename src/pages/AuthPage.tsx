@@ -4,13 +4,15 @@ import { Github, KeyRound, LogIn, LogOut, MailPlus } from 'lucide-react';
 import { env } from '../config/env';
 import { LoadingScreen } from '../components/ui/LoadingScreen';
 import { useAuth } from '../hooks/useAuth';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { supabase } from '../services/supabase';
 import { authSchema, resetPasswordSchema } from '../validation/auth';
 
 type AuthMode = 'login' | 'register' | 'reset';
 
 export function AuthPage() {
-  const { session, profileStatus, profileError, isLoading, signOut } = useAuth();
+  const { session, profileStatus, profileError, isLoading, bootStep, signOut } = useAuth();
+  const isOnline = useOnlineStatus();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +30,7 @@ export function AuthPage() {
   }
 
   if (session && isLoading) {
-    return <LoadingScreen message="Comprobando aprobación..." />;
+    return <LoadingScreen message={bootStep || 'Comprobando aprobación...'} />;
   }
 
   if (session && profileError) {
@@ -158,6 +160,9 @@ export function AuthPage() {
           {!env.isSupabaseConfigured && (
             <div className="notice warning">Falta configurar Supabase en el archivo .env.local.</div>
           )}
+          {!session && !isOnline && (
+            <div className="notice warning">Necesitás conexión a Internet para iniciar sesión y validar tu cuenta.</div>
+          )}
 
           <label>
             Email
@@ -187,7 +192,7 @@ export function AuthPage() {
           {error && <div className="notice error">{error}</div>}
           {message && <div className="notice success">{message}</div>}
 
-          <button className="primary-button" disabled={isSubmitting} type="submit">
+          <button className="primary-button" disabled={isSubmitting || !isOnline} type="submit">
             {mode === 'login' && <LogIn size={18} aria-hidden="true" />}
             {mode === 'register' && <MailPlus size={18} aria-hidden="true" />}
             {mode === 'reset' && <KeyRound size={18} aria-hidden="true" />}
@@ -202,7 +207,7 @@ export function AuthPage() {
           <button type="button" onClick={() => setMode('reset')}>
             Recuperar contraseña
           </button>
-          <button type="button" onClick={signInWithGithub}>
+          <button type="button" onClick={signInWithGithub} disabled={!isOnline}>
             <Github size={18} aria-hidden="true" />
             Continuar con GitHub
           </button>

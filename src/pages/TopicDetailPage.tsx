@@ -3,12 +3,14 @@ import { Copy, Edit3, Heart, Trash2 } from 'lucide-react';
 import { TopicContentViewer } from '../features/topics/TopicContentViewer';
 import { formatDate } from '../features/topics/topicUtils';
 import { useTopicData, useTopicMutations } from '../features/topics/useTopicData';
+import { useAuth } from '../hooks/useAuth';
 
 export function TopicDetailPage() {
   const { topicId } = useParams();
   const navigate = useNavigate();
   const { data, isLoading } = useTopicData();
   const mutations = useTopicMutations();
+  const { isReadOnly } = useAuth();
   const topic = data?.topics.find((item) => item.id === topicId);
 
   if (!isLoading && !topic) {
@@ -34,22 +36,28 @@ export function TopicDetailPage() {
           {topic.subtitle && <p>{topic.subtitle}</p>}
         </div>
         <div className="heading-actions">
-          <button className={`ghost-button ${topic.is_favorite ? 'favorite-active' : ''}`} type="button" onClick={() => mutations.toggleFavorite.mutate(topic)}>
+          <button className={`ghost-button ${topic.is_favorite ? 'favorite-active' : ''}`} type="button" disabled={isReadOnly} onClick={() => mutations.toggleFavorite.mutate(topic)}>
             <Heart size={18} fill="currentColor" />
             Favorito
           </button>
-          <Link className="ghost-button" to={`/temas/${topic.id}/editar`}>
-            <Edit3 size={18} />
-            Editar
-          </Link>
-          <button className="ghost-button" type="button" onClick={() => mutations.duplicateTopic.mutate(topic)}>
-            <Copy size={18} />
-            Duplicar
-          </button>
-          <button className="ghost-button danger-action" type="button" onClick={remove}>
-            <Trash2 size={18} />
-            Eliminar
-          </button>
+          {isReadOnly ? (
+            <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
+          ) : (
+            <>
+              <Link className="ghost-button" to={`/temas/${topic.id}/editar`}>
+                <Edit3 size={18} />
+                Editar
+              </Link>
+              <button className="ghost-button" type="button" onClick={() => mutations.duplicateTopic.mutate(topic)}>
+                <Copy size={18} />
+                Duplicar
+              </button>
+              <button className="ghost-button danger-action" type="button" onClick={remove}>
+                <Trash2 size={18} />
+                Eliminar
+              </button>
+            </>
+          )}
         </div>
       </div>
 

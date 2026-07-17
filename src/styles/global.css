@@ -372,6 +372,18 @@ a:focus-visible {
   color: var(--success);
 }
 
+.readonly-inline {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+button:disabled,
+.favorite-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .spinner {
   width: 38px;
   height: 38px;

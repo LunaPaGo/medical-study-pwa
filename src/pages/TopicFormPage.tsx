@@ -4,6 +4,7 @@ import { Save, Star } from 'lucide-react';
 import { RichTextEditor } from '../features/topics/RichTextEditor';
 import { emptyTipTapDocument, getTopicDocument } from '../features/topics/tiptapDocument';
 import { useTopicData, useTopicMutations } from '../features/topics/useTopicData';
+import { useAuth } from '../hooks/useAuth';
 import type { TopicFormValues } from '../types/topic';
 import { topicSchema } from '../validation/topic';
 
@@ -26,6 +27,7 @@ export function TopicFormPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useTopicData();
   const mutations = useTopicMutations();
+  const { isReadOnly } = useAuth();
   const existing = data?.topics.find((topic) => topic.id === topicId);
   const initialValues = useMemo<TopicFormValues>(() => {
     if (!existing) return { ...emptyValues, id: draftTopicId.current };
@@ -53,6 +55,10 @@ export function TopicFormPage() {
 
   if (!isLoading && topicId && !existing) {
     return <Navigate to="/temas" replace />;
+  }
+
+  if (isReadOnly) {
+    return <Navigate to={existing ? `/temas/${existing.id}` : '/temas'} replace />;
   }
 
   const update = <K extends keyof TopicFormValues>(key: K, value: TopicFormValues[K]) => {

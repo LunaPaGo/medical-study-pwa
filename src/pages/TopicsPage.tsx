@@ -5,6 +5,7 @@ import { OrganizationManager } from '../features/topics/OrganizationManager';
 import { TopicCard } from '../features/topics/TopicCard';
 import { filterTopics } from '../features/topics/topicUtils';
 import { useTopicData, useTopicMutations } from '../features/topics/useTopicData';
+import { useAuth } from '../hooks/useAuth';
 import type { TopicSort, TopicWithRelations } from '../types/topic';
 
 type Props = {
@@ -14,6 +15,7 @@ type Props = {
 export function TopicsPage({ favoritesOnly = false }: Props) {
   const { data, isLoading } = useTopicData();
   const mutations = useTopicMutations();
+  const { isReadOnly } = useAuth();
   const [search, setSearch] = useState('');
   const [folderId, setFolderId] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -61,16 +63,20 @@ export function TopicsPage({ favoritesOnly = false }: Props) {
           </p>
         </div>
         <div className="heading-actions">
-          {!favoritesOnly && (
+          {!favoritesOnly && !isReadOnly && (
             <button className="ghost-button" type="button" onClick={() => setShowOrganization((value) => !value)}>
               <SlidersHorizontal size={18} />
               Organización
             </button>
           )}
-          <Link className="primary-button" to="/temas/nuevo">
-            <BookPlus size={18} />
-            Nuevo tema
-          </Link>
+          {isReadOnly ? (
+            <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
+          ) : (
+            <Link className="primary-button" to="/temas/nuevo">
+              <BookPlus size={18} />
+              Nuevo tema
+            </Link>
+          )}
         </div>
       </div>
 
@@ -121,6 +127,7 @@ export function TopicsPage({ favoritesOnly = false }: Props) {
           <TopicCard
             key={topic.id}
             topic={topic}
+            readOnly={isReadOnly}
             onDelete={remove}
             onDuplicate={(item) => mutations.duplicateTopic.mutate(item)}
             onToggleFavorite={(item) => mutations.toggleFavorite.mutate(item)}

@@ -5,12 +5,14 @@ import { MedicationRichViewer } from '../features/medications/MedicationRichView
 import { isRichFieldEmpty, medicationSections } from '../features/medications/medicationFields';
 import { useMedicationData, useMedicationMutations } from '../features/medications/useMedicationData';
 import { formatDate } from '../features/topics/topicUtils';
+import { useAuth } from '../hooks/useAuth';
 
 export function MedicationDetailPage() {
   const { medicationId } = useParams();
   const navigate = useNavigate();
   const { data, isLoading } = useMedicationData();
   const mutations = useMedicationMutations();
+  const { isReadOnly } = useAuth();
   const medication = data?.medications.find((item) => item.id === medicationId);
 
   if (!isLoading && !medication) {
@@ -39,7 +41,7 @@ export function MedicationDetailPage() {
           {medication.short_description && <p>{medication.short_description}</p>}
         </div>
         <div className="heading-actions">
-          <button className={`ghost-button ${medication.is_favorite ? 'favorite-active' : ''}`} type="button" onClick={() => mutations.toggleFavorite.mutate(medication)}>
+          <button className={`ghost-button ${medication.is_favorite ? 'favorite-active' : ''}`} type="button" disabled={isReadOnly} onClick={() => mutations.toggleFavorite.mutate(medication)}>
             <Heart size={18} fill="currentColor" />
             Favorito
           </button>
@@ -47,18 +49,24 @@ export function MedicationDetailPage() {
             <GitCompare size={18} />
             Comparar
           </Link>
-          <Link className="ghost-button" to={`/farmacologia/${medication.id}/editar`}>
-            <Edit3 size={18} />
-            Editar
-          </Link>
-          <button className="ghost-button" type="button" onClick={() => mutations.duplicateMedication.mutate(medication)}>
-            <Copy size={18} />
-            Duplicar
-          </button>
-          <button className="ghost-button danger-action" type="button" onClick={remove}>
-            <Trash2 size={18} />
-            Eliminar
-          </button>
+          {isReadOnly ? (
+            <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
+          ) : (
+            <>
+              <Link className="ghost-button" to={`/farmacologia/${medication.id}/editar`}>
+                <Edit3 size={18} />
+                Editar
+              </Link>
+              <button className="ghost-button" type="button" onClick={() => mutations.duplicateMedication.mutate(medication)}>
+                <Copy size={18} />
+                Duplicar
+              </button>
+              <button className="ghost-button danger-action" type="button" onClick={remove}>
+                <Trash2 size={18} />
+                Eliminar
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -95,7 +103,7 @@ export function MedicationDetailPage() {
 
       {visibleSections.length === 0 && <div className="panel empty-state">La ficha todavía no tiene secciones clínicas cargadas.</div>}
 
-      <MedicationAttachmentsPanel medicationId={medication.id} attached={medication.attachments} />
+      <MedicationAttachmentsPanel medicationId={medication.id} attached={medication.attachments} readOnly={isReadOnly} />
     </article>
   );
 }

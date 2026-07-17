@@ -3,10 +3,10 @@ import { useAuth } from '../../hooks/useAuth';
 import { LoadingScreen } from '../ui/LoadingScreen';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, profileStatus, profileError, isLoading } = useAuth();
+  const { session, profileStatus, profileError, isLoading, bootStep } = useAuth();
 
   if (isLoading) {
-    return <LoadingScreen message="Comprobando sesión..." />;
+    return <LoadingScreen message={bootStep || 'Comprobando sesión...'} />;
   }
 
   if (!session) {

@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react';
 import { Edit3, Plus, Trash2, X } from 'lucide-react';
 import type { Folder, OrganizationKind, TopicWithRelations } from '../../types/topic';
 import { organizationSchema } from '../../validation/topic';
+import { useAuth } from '../../hooks/useAuth';
 import { useTopicMutations } from './useTopicData';
 
 type Props = {
@@ -19,6 +20,7 @@ function isItemUsed(kind: OrganizationKind, id: string, topics: TopicWithRelatio
 
 export function OrganizationManager({ kind, title, items, topics }: Props) {
   const mutations = useTopicMutations();
+  const { isReadOnly } = useAuth();
   const [name, setName] = useState('');
   const [color, setColor] = useState('#0f766e');
   const [editing, setEditing] = useState<Folder | null>(null);
@@ -66,31 +68,39 @@ export function OrganizationManager({ kind, title, items, topics }: Props) {
       <div className="panel-title">
         <h2>{title}</h2>
       </div>
-      <form className="inline-form" onSubmit={handleSubmit}>
-        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nombre" />
-        <input className="color-input" value={color} onChange={(event) => setColor(event.target.value)} type="color" />
-        <button className="primary-button" type="submit">
-          <Plus size={17} />
-          {editing ? 'Guardar' : 'Crear'}
-        </button>
-        {editing && (
-          <button className="ghost-button icon-button" type="button" onClick={reset} title="Cancelar edición">
-            <X size={17} />
+      {!isReadOnly ? (
+        <form className="inline-form" onSubmit={handleSubmit}>
+          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nombre" />
+          <input className="color-input" value={color} onChange={(event) => setColor(event.target.value)} type="color" />
+          <button className="primary-button" type="submit">
+            <Plus size={17} />
+            {editing ? 'Guardar' : 'Crear'}
           </button>
-        )}
-      </form>
+          {editing && (
+            <button className="ghost-button icon-button" type="button" onClick={reset} title="Cancelar edición">
+              <X size={17} />
+            </button>
+          )}
+        </form>
+      ) : (
+        <div className="notice warning">Modo sin conexión: organización en solo lectura.</div>
+      )}
       {error && <div className="notice error">{error}</div>}
       <div className="chip-list">
         {items.map((item) => (
           <span className="editable-chip" key={item.id}>
             <span className="chip-color" style={{ background: item.color ?? '#0f766e' }} />
             {item.name}
-            <button type="button" title="Editar" onClick={() => startEdit(item)}>
-              <Edit3 size={15} />
-            </button>
-            <button type="button" title="Eliminar" onClick={() => remove(item)}>
-              <Trash2 size={15} />
-            </button>
+            {!isReadOnly && (
+              <>
+                <button type="button" title="Editar" onClick={() => startEdit(item)}>
+                  <Edit3 size={15} />
+                </button>
+                <button type="button" title="Eliminar" onClick={() => remove(item)}>
+                  <Trash2 size={15} />
+                </button>
+              </>
+            )}
           </span>
         ))}
         {items.length === 0 && <p className="empty-state">Todavía no hay elementos.</p>}

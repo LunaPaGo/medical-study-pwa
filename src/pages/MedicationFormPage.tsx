@@ -8,6 +8,7 @@ import { medicationDataKey, useMedicationData, useMedicationMutations } from '..
 import { medicationRichFields, medicationSections } from '../features/medications/medicationFields';
 import { RichTextEditor } from '../features/topics/RichTextEditor';
 import { emptyTipTapDocument } from '../features/topics/tiptapDocument';
+import { useAuth } from '../hooks/useAuth';
 import type { MedicationFormValues, MedicationRichField } from '../types/medication';
 import { medicationSchema } from '../validation/medication';
 
@@ -18,6 +19,7 @@ export function MedicationFormPage() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useMedicationData();
   const mutations = useMedicationMutations();
+  const { isReadOnly } = useAuth();
   const existing = data?.medications.find((medication) => medication.id === medicationId);
 
   const initialValues = useMemo<MedicationFormValues>(() => {
@@ -50,6 +52,10 @@ export function MedicationFormPage() {
 
   if (!isLoading && medicationId && !existing) {
     return <Navigate to="/farmacologia" replace />;
+  }
+
+  if (isReadOnly) {
+    return <Navigate to={existing ? `/farmacologia/${existing.id}` : '/farmacologia'} replace />;
   }
 
   const medicationOwnerId = values.id ?? existing?.id ?? draftMedicationId.current;

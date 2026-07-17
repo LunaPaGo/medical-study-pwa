@@ -4,12 +4,14 @@ import { GitCompare, Grid2X2, List, Pill, Search } from 'lucide-react';
 import { MedicationCard } from '../features/medications/MedicationCard';
 import { filterMedications } from '../features/medications/medicationRepository';
 import { useMedicationData, useMedicationMutations } from '../features/medications/useMedicationData';
+import { useAuth } from '../hooks/useAuth';
 import type { MedicationSort, MedicationViewMode, MedicationWithRelations } from '../types/medication';
 
 export function MedicationsPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useMedicationData();
   const mutations = useMedicationMutations();
+  const { isReadOnly } = useAuth();
   const [search, setSearch] = useState('');
   const [group, setGroup] = useState('');
   const [administration, setAdministration] = useState('');
@@ -86,10 +88,14 @@ export function MedicationsPage() {
             <GitCompare size={18} />
             Comparar
           </button>
-          <Link className="primary-button" to="/farmacologia/nuevo">
-            <Pill size={18} />
-            Nuevo medicamento
-          </Link>
+          {isReadOnly ? (
+            <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
+          ) : (
+            <Link className="primary-button" to="/farmacologia/nuevo">
+              <Pill size={18} />
+              Nuevo medicamento
+            </Link>
+          )}
         </div>
       </div>
 
@@ -155,6 +161,7 @@ export function MedicationsPage() {
             key={medication.id}
             medication={medication}
             selected={selectedIds.includes(medication.id)}
+            readOnly={isReadOnly}
             onSelect={toggleSelected}
             onDelete={remove}
             onDuplicate={(item) => mutations.duplicateMedication.mutate(item)}

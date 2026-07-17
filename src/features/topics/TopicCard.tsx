@@ -5,12 +5,13 @@ import { formatDate, stripHtml } from './topicUtils';
 
 type Props = {
   topic: TopicWithRelations;
+  readOnly?: boolean;
   onDelete: (topic: TopicWithRelations) => void;
   onDuplicate: (topic: TopicWithRelations) => void;
   onToggleFavorite: (topic: TopicWithRelations) => void;
 };
 
-export function TopicCard({ topic, onDelete, onDuplicate, onToggleFavorite }: Props) {
+export function TopicCard({ topic, readOnly = false, onDelete, onDuplicate, onToggleFavorite }: Props) {
   const summary = stripHtml(topic.content_html);
 
   return (
@@ -23,6 +24,7 @@ export function TopicCard({ topic, onDelete, onDuplicate, onToggleFavorite }: Pr
         </div>
         <button
           className={`favorite-button ${topic.is_favorite ? 'active' : ''}`}
+          disabled={readOnly}
           type="button"
           title={topic.is_favorite ? 'Quitar favorito' : 'Marcar favorito'}
           onClick={() => onToggleFavorite(topic)}
@@ -49,18 +51,24 @@ export function TopicCard({ topic, onDelete, onDuplicate, onToggleFavorite }: Pr
           <Eye size={17} />
           Ver
         </Link>
-        <Link className="ghost-button" to={`/temas/${topic.id}/editar`}>
-          <Edit3 size={17} />
-          Editar
-        </Link>
-        <button className="ghost-button" type="button" onClick={() => onDuplicate(topic)}>
-          <Copy size={17} />
-          Duplicar
-        </button>
-        <button className="ghost-button danger-action" type="button" onClick={() => onDelete(topic)}>
-          <Trash2 size={17} />
-          Eliminar
-        </button>
+        {readOnly ? (
+          <span className="notice warning readonly-inline">Solo lectura</span>
+        ) : (
+          <>
+            <Link className="ghost-button" to={`/temas/${topic.id}/editar`}>
+              <Edit3 size={17} />
+              Editar
+            </Link>
+            <button className="ghost-button" type="button" onClick={() => onDuplicate(topic)}>
+              <Copy size={17} />
+              Duplicar
+            </button>
+            <button className="ghost-button danger-action" type="button" onClick={() => onDelete(topic)}>
+              <Trash2 size={17} />
+              Eliminar
+            </button>
+          </>
+        )}
       </div>
     </article>
   );

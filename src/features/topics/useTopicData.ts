@@ -24,26 +24,40 @@ export function useTopicData() {
 }
 
 export function useTopicMutations() {
-  const { user } = useAuth();
+  const { user, isReadOnly } = useAuth();
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: topicDataKey });
+  const ensureWritable = () => {
+    if (isReadOnly) throw new Error('Modo sin conexión: solo lectura.');
+  };
 
   return {
     saveTopic: useMutation({
-      mutationFn: ({ values, existing }: { values: TopicFormValues; existing?: TopicWithRelations }) =>
-        saveTopic(user!.id, values, existing),
+      mutationFn: ({ values, existing }: { values: TopicFormValues; existing?: TopicWithRelations }) => {
+        ensureWritable();
+        return saveTopic(user!.id, values, existing);
+      },
       onSuccess: invalidate
     }),
     deleteTopic: useMutation({
-      mutationFn: (topicId: string) => deleteTopic(user!.id, topicId),
+      mutationFn: (topicId: string) => {
+        ensureWritable();
+        return deleteTopic(user!.id, topicId);
+      },
       onSuccess: invalidate
     }),
     duplicateTopic: useMutation({
-      mutationFn: (topic: TopicWithRelations) => duplicateTopic(user!.id, topic),
+      mutationFn: (topic: TopicWithRelations) => {
+        ensureWritable();
+        return duplicateTopic(user!.id, topic);
+      },
       onSuccess: invalidate
     }),
     toggleFavorite: useMutation({
-      mutationFn: (topic: TopicWithRelations) => toggleFavorite(user!.id, topic),
+      mutationFn: (topic: TopicWithRelations) => {
+        ensureWritable();
+        return toggleFavorite(user!.id, topic);
+      },
       onSuccess: invalidate
     }),
     saveOrganizationItem: useMutation({
@@ -55,11 +69,17 @@ export function useTopicMutations() {
         kind: OrganizationKind;
         values: { name: string; color?: string };
         existing?: { id: string; user_id: string; name: string; color: string | null; created_at: string; updated_at: string };
-      }) => saveOrganizationItem(user!.id, kind, values, existing),
+      }) => {
+        ensureWritable();
+        return saveOrganizationItem(user!.id, kind, values, existing);
+      },
       onSuccess: invalidate
     }),
     deleteOrganizationItem: useMutation({
-      mutationFn: ({ kind, id }: { kind: OrganizationKind; id: string }) => deleteOrganizationItem(user!.id, kind, id),
+      mutationFn: ({ kind, id }: { kind: OrganizationKind; id: string }) => {
+        ensureWritable();
+        return deleteOrganizationItem(user!.id, kind, id);
+      },
       onSuccess: invalidate
     })
   };

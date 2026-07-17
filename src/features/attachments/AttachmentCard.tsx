@@ -9,9 +9,10 @@ type Props = {
   onPreview: (attachment: Attachment) => void;
   onRename: (attachment: Attachment) => void;
   onRemove: (attachment: Attachment) => void;
+  readOnly?: boolean;
 };
 
-export function AttachmentCard({ attachment, viewMode, onPreview, onRename, onRemove }: Props) {
+export function AttachmentCard({ attachment, viewMode, onPreview, onRename, onRemove, readOnly = false }: Props) {
   const [thumbUrl, setThumbUrl] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
 
@@ -71,10 +72,12 @@ export function AttachmentCard({ attachment, viewMode, onPreview, onRename, onRe
           <Eye size={17} />
           Ver
         </button>
-        <button className="ghost-button" type="button" onClick={() => onRename(attachment)}>
-          <Edit3 size={17} />
-          Renombrar
-        </button>
+        {!readOnly && (
+          <button className="ghost-button" type="button" onClick={() => onRename(attachment)}>
+            <Edit3 size={17} />
+            Renombrar
+          </button>
+        )}
         <button className="ghost-button" type="button" onClick={copyInternalLink}>
           <Copy size={17} />
           Copiar enlace
@@ -91,10 +94,14 @@ export function AttachmentCard({ attachment, viewMode, onPreview, onRename, onRe
             Reintento automático
           </span>
         )}
-        <button className="ghost-button danger-action" type="button" onClick={() => onRemove(attachment)}>
-          <Trash2 size={17} />
-          Eliminar
-        </button>
+        {readOnly ? (
+          <span className="notice warning readonly-inline">Solo lectura</span>
+        ) : (
+          <button className="ghost-button danger-action" type="button" onClick={() => onRemove(attachment)}>
+            <Trash2 size={17} />
+            Eliminar
+          </button>
+        )}
       </div>
     </article>
   );

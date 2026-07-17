@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Grid2X2, List, Search } from 'lucide-react';
 import type { Attachment, AttachmentViewMode } from '../../types/attachment';
+import { useAuth } from '../../hooks/useAuth';
 import { getAttachmentUsageCount } from './attachmentRepository';
 import { AttachmentCard } from './AttachmentCard';
 import { AttachmentPreview } from './AttachmentPreview';
@@ -10,6 +11,7 @@ import { useAttachmentMutations, useAttachments } from './useAttachments';
 export function AttachmentLibrary() {
   const { data = [], isLoading } = useAttachments();
   const mutations = useAttachmentMutations();
+  const { isReadOnly } = useAuth();
   const [query, setQuery] = useState('');
   const [viewMode, setViewMode] = useState<AttachmentViewMode>('grid');
   const [preview, setPreview] = useState<Attachment | null>(null);
@@ -55,7 +57,7 @@ export function AttachmentLibrary() {
         </div>
       </div>
 
-      <FileDropzone />
+      {isReadOnly ? <div className="notice warning">Modo sin conexión: solo podés consultar archivos ya disponibles en este dispositivo.</div> : <FileDropzone />}
 
       <section className="panel filter-panel attachment-filter">
         <Search size={20} />
@@ -73,6 +75,7 @@ export function AttachmentLibrary() {
             onPreview={setPreview}
             onRename={rename}
             onRemove={remove}
+            readOnly={isReadOnly}
           />
         ))}
       </div>

@@ -10,10 +10,11 @@ import { useAuth } from '../../hooks/useAuth';
 type Props = {
   medicationId: string;
   attached: Attachment[];
+  readOnly?: boolean;
   onChanged?: () => void;
 };
 
-export function MedicationAttachmentsPanel({ medicationId, attached, onChanged }: Props) {
+export function MedicationAttachmentsPanel({ medicationId, attached, readOnly = false, onChanged }: Props) {
   const { user } = useAuth();
   const { data: library = [] } = useAttachments();
   const [preview, setPreview] = useState<Attachment | null>(null);
@@ -32,13 +33,19 @@ export function MedicationAttachmentsPanel({ medicationId, attached, onChanged }
     <section className="panel medication-attachments-panel">
       <div className="panel-title medication-panel-title">
         <h2>Archivos e imágenes</h2>
-        <button className="ghost-button" type="button" onClick={() => setShowLibrary((value) => !value)}>
-          <ImagePlus size={18} />
-          Elegir de biblioteca
-        </button>
+        {!readOnly && (
+          <button className="ghost-button" type="button" onClick={() => setShowLibrary((value) => !value)}>
+            <ImagePlus size={18} />
+            Elegir de biblioteca
+          </button>
+        )}
       </div>
 
-      <FileDropzone owner={{ ownerType: 'medication', ownerId: medicationId }} compact onUploaded={onChanged} />
+      {readOnly ? (
+        <div className="notice warning">Modo sin conexión: los adjuntos están disponibles solo para consulta.</div>
+      ) : (
+        <FileDropzone owner={{ ownerType: 'medication', ownerId: medicationId }} compact onUploaded={onChanged} />
+      )}
 
       {showLibrary && (
         <div className="medication-library-list">
