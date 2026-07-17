@@ -1,4 +1,5 @@
 import { supabase } from '../../services/supabase';
+import { checkSupabaseConnectivity } from '../../services/connectivity';
 import { localDbPromise } from '../../storage/localDb';
 import type { Json } from '../../types/database';
 import type {
@@ -54,6 +55,16 @@ export type AttachmentReconciliationReport = {
   invalidStoragePath: number;
   remoteLinksMissingLocally: number;
   storageObjectsWithoutRecord: number;
+};
+
+export type AttachmentSyncSummary = {
+  uploaded: number;
+  downloaded: number;
+  associationsUpdated: number;
+  deletedLocal: number;
+  conflicts: number;
+  errors: string[];
+  completedAt: string | null;
 };
 
 function nowIso() {
@@ -135,7 +146,7 @@ export async function getAttachments(userId: string) {
   return (await db.getAllFromIndex('attachments', 'user_id', userId)).sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
-export async function syncAttachmentsFromSupabase(userId: string) {
+export async function syncAttachmentsFromSupabase(userId: string): Promise<Omit<AttachmentSyncSummary, 'uploaded' | 'errors' | 'completedAt'>> {
   const [attachmentsResult, topicAttachmentsResult, medicationAttachmentsResult, linksResult] = await Promise.all([
     supabase.from('attachments').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('topic_attachments').select('*').eq('user_id', userId),
@@ -155,12 +166,44 @@ export async function syncAttachmentsFromSupabase(userId: string) {
   const remoteTopicLinkIds = new Set(remoteTopicLinks.map((link) => link.id));
   const remoteMedicationLinkIds = new Set(remoteMedicationLinks.map((link) => link.id));
   const remoteGenericLinkIds = new Set(remoteGenericLinks.map((link) => link.id));
+  const localBefore = await db.getAllFromIndex('attachments', 'user_id', userId);
+  const localBeforeById = new Map(localBefore.map((attachment) => [attachment.id, attachment]));
+  let downloaded = 0;
+  let conflicts = 0;
+  let associationsUpdated = 0;
+  let deletedLocal = 0;
 
   const writeTx = db.transaction(['attachments', 'topic_attachments', 'medication_attachments', 'attachment_links'], 'readwrite');
-  await Promise.all(remoteAttachments.map((item) => writeTx.objectStore('attachments').put({ ...item, sync_status: 'synced', error_message: null })));
-  await Promise.all(remoteTopicLinks.map((item) => writeTx.objectStore('topic_attachments').put(item)));
-  await Promise.all(remoteMedicationLinks.map((item) => writeTx.objectStore('medication_attachments').put(item)));
-  await Promise.all(remoteGenericLinks.map((item) => writeTx.objectStore('attachment_links').put(item)));
+  await Promise.all(
+    remoteAttachments.map((item) => {
+      const local = localBeforeById.get(item.id);
+      if (!local) {
+        downloaded += 1;
+      } else if (local.updated_at > item.updated_at && local.sync_status !== 'synced') {
+        conflicts += 1;
+        return Promise.resolve();
+      }
+      return writeTx.objectStore('attachments').put({ ...item, sync_status: 'synced', error_message: null });
+    })
+  );
+  await Promise.all(
+    remoteTopicLinks.map((item) => {
+      associationsUpdated += 1;
+      return writeTx.objectStore('topic_attachments').put(item);
+    })
+  );
+  await Promise.all(
+    remoteMedicationLinks.map((item) => {
+      associationsUpdated += 1;
+      return writeTx.objectStore('medication_attachments').put(item);
+    })
+  );
+  await Promise.all(
+    remoteGenericLinks.map((item) => {
+      associationsUpdated += 1;
+      return writeTx.objectStore('attachment_links').put(item);
+    })
+  );
   await writeTx.done;
 
   const [localAttachments, localTopicLinks, localMedicationLinks, localGenericLinks] = await Promise.all([
@@ -174,7 +217,10 @@ export async function syncAttachmentsFromSupabase(userId: string) {
   await Promise.all(
     localAttachments
       .filter((item) => item.sync_status === 'synced' && !remoteAttachmentIds.has(item.id))
-      .map((item) => deleteTx.objectStore('attachments').delete(item.id))
+      .map((item) => {
+        deletedLocal += 1;
+        return deleteTx.objectStore('attachments').delete(item.id);
+      })
   );
   await Promise.all(
     localTopicLinks.filter((item) => !remoteTopicLinkIds.has(item.id)).map((item) => deleteTx.objectStore('topic_attachments').delete(item.id))
@@ -186,6 +232,8 @@ export async function syncAttachmentsFromSupabase(userId: string) {
     localGenericLinks.filter((item) => !remoteGenericLinkIds.has(item.id)).map((item) => deleteTx.objectStore('attachment_links').delete(item.id))
   );
   await deleteTx.done;
+
+  return { downloaded, associationsUpdated, deletedLocal, conflicts };
 }
 
 export async function getAttachmentFile(attachmentId: string) {
@@ -273,6 +321,116 @@ async function pushAttachmentToSupabase(payload: AttachmentPayload) {
 
   await db.put('attachments', { ...payload.attachment, sync_status: 'synced', error_message: null });
   await db.delete('pending_attachment_files', payload.attachment.id);
+}
+
+async function buildAttachmentPayloadFromLocal(userId: string, attachment: Attachment): Promise<AttachmentPayload> {
+  const db = await localDbPromise;
+  const [topicLinks, medicationLinks, genericLinks] = await Promise.all([
+    db.getAllFromIndex('topic_attachments', 'attachment_id', attachment.id),
+    db.getAllFromIndex('medication_attachments', 'attachment_id', attachment.id),
+    db.getAllFromIndex('attachment_links', 'attachment_id', attachment.id)
+  ]);
+  const topicAttachment = topicLinks.find((item) => item.user_id === userId);
+  const medicationAttachment = medicationLinks.find((item) => item.user_id === userId);
+  const link = genericLinks.find((item) => item.user_id === userId);
+
+  return {
+    attachment,
+    topicAttachment,
+    medicationAttachment,
+    link: link
+      ? {
+          user_id: link.user_id,
+          attachment_id: link.attachment_id,
+          owner_type: link.owner_type,
+          owner_id: link.owner_id
+        }
+      : undefined
+  };
+}
+
+async function uploadPendingLocalAttachments(userId: string) {
+  const db = await localDbPromise;
+  const errors: string[] = [];
+  let uploaded = 0;
+  const queueItems = (await db.getAllFromIndex('sync_queue', 'user_id', userId)).filter((item) => item.entity === 'attachment');
+
+  for (const item of queueItems) {
+    try {
+      await flushAttachmentQueueItem(item);
+      await db.delete('sync_queue', item.id);
+      uploaded += item.action === 'upsert' ? 1 : 0;
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : 'Error al sincronizar un archivo pendiente.');
+    }
+  }
+
+  const localAttachments = await db.getAllFromIndex('attachments', 'user_id', userId);
+  const pendingAttachments = localAttachments.filter((attachment) => attachment.sync_status && attachment.sync_status !== 'synced');
+  for (const attachment of pendingAttachments) {
+    try {
+      await pushAttachmentToSupabase(await buildAttachmentPayloadFromLocal(userId, attachment));
+      uploaded += 1;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error al subir un archivo local.';
+      await db.put('attachments', { ...attachment, sync_status: 'error', error_message: message });
+      errors.push(message);
+    }
+  }
+
+  return { uploaded, errors };
+}
+
+export async function runManualAttachmentSync(userId: string): Promise<AttachmentSyncSummary> {
+  const connection = await checkSupabaseConnectivity(2500);
+  if (connection !== 'online') {
+    return {
+      uploaded: 0,
+      downloaded: 0,
+      associationsUpdated: 0,
+      deletedLocal: 0,
+      conflicts: 0,
+      errors: ['Sin conexión. No se pudo sincronizar.'],
+      completedAt: null
+    };
+  }
+
+  const uploadResult = await uploadPendingLocalAttachments(userId);
+  let remoteResult: Omit<AttachmentSyncSummary, 'uploaded' | 'errors' | 'completedAt'> = {
+    downloaded: 0,
+    associationsUpdated: 0,
+    deletedLocal: 0,
+    conflicts: 0
+  };
+  const errors = [...uploadResult.errors];
+
+  try {
+    remoteResult = await syncAttachmentsFromSupabase(userId);
+  } catch (error) {
+    errors.push(error instanceof Error ? error.message : 'Error al descargar archivos remotos.');
+  }
+
+  const completedAt = errors.length === 0 ? nowIso() : null;
+  if (completedAt) {
+    const db = await localDbPromise;
+    await db.put('app_cache', { key: `attachments:last-sync:${userId}`, value: completedAt, updated_at: completedAt });
+  }
+
+  return {
+    uploaded: uploadResult.uploaded,
+    downloaded: remoteResult.downloaded,
+    associationsUpdated: remoteResult.associationsUpdated,
+    deletedLocal: remoteResult.deletedLocal,
+    conflicts: remoteResult.conflicts,
+    errors,
+    completedAt
+  };
+}
+
+export async function getLastAttachmentSyncAt(userId: string) {
+  const db = await localDbPromise;
+  const record = await db.get('app_cache', `attachments:last-sync:${userId}`);
+  return typeof record?.value === 'string' ? record.value : null;
 }
 
 export async function createAttachment(

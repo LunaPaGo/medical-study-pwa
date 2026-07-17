@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import type { Attachment, AttachmentOwnerType } from '../../types/attachment';
 import { medicationDataKey } from '../medications/useMedicationData';
 import { topicDataKey } from '../topics/useTopicData';
-import { createAttachment, deleteAttachment, getAttachments, renameAttachment } from './attachmentRepository';
+import { createAttachment, deleteAttachment, getAttachments, renameAttachment, runManualAttachmentSync } from './attachmentRepository';
 
 export const attachmentsKey = ['attachments'];
 
@@ -49,6 +49,10 @@ export function useAttachmentMutations() {
         ensureWritable();
         return deleteAttachment(user!.id, attachment);
       },
+      onSuccess: invalidate
+    }),
+    sync: useMutation({
+      mutationFn: () => runManualAttachmentSync(user!.id),
       onSuccess: invalidate
     })
   };
