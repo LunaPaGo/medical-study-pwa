@@ -62,6 +62,7 @@ export type AttachmentSyncSummary = {
   downloaded: number;
   associationsUpdated: number;
   deletedLocal: number;
+  cleanedOrphans: number;
   conflicts: number;
   errors: string[];
   completedAt: string | null;
@@ -146,7 +147,9 @@ export async function getAttachments(userId: string) {
   return (await db.getAllFromIndex('attachments', 'user_id', userId)).sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
-export async function syncAttachmentsFromSupabase(userId: string): Promise<Omit<AttachmentSyncSummary, 'uploaded' | 'errors' | 'completedAt'>> {
+export async function syncAttachmentsFromSupabase(
+  userId: string
+): Promise<Omit<AttachmentSyncSummary, 'uploaded' | 'errors' | 'completedAt' | 'cleanedOrphans'>> {
   const [attachmentsResult, topicAttachmentsResult, medicationAttachmentsResult, linksResult] = await Promise.all([
     supabase.from('attachments').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('topic_attachments').select('*').eq('user_id', userId),
@@ -353,6 +356,7 @@ async function uploadPendingLocalAttachments(userId: string) {
   const db = await localDbPromise;
   const errors: string[] = [];
   let uploaded = 0;
+  const cleanedOrphans = await cleanupOrphanedAttachmentSyncItems(userId);
   const queueItems = (await db.getAllFromIndex('sync_queue', 'user_id', userId)).filter((item) => item.entity === 'attachment');
 
   for (const item of queueItems) {
@@ -378,7 +382,7 @@ async function uploadPendingLocalAttachments(userId: string) {
     }
   }
 
-  return { uploaded, errors };
+  return { uploaded, cleanedOrphans, errors };
 }
 
 export async function runManualAttachmentSync(userId: string): Promise<AttachmentSyncSummary> {
@@ -389,6 +393,7 @@ export async function runManualAttachmentSync(userId: string): Promise<Attachmen
       downloaded: 0,
       associationsUpdated: 0,
       deletedLocal: 0,
+      cleanedOrphans: 0,
       conflicts: 0,
       errors: ['Sin conexión. No se pudo sincronizar.'],
       completedAt: null
@@ -396,7 +401,7 @@ export async function runManualAttachmentSync(userId: string): Promise<Attachmen
   }
 
   const uploadResult = await uploadPendingLocalAttachments(userId);
-  let remoteResult: Omit<AttachmentSyncSummary, 'uploaded' | 'errors' | 'completedAt'> = {
+  let remoteResult: Omit<AttachmentSyncSummary, 'uploaded' | 'errors' | 'completedAt' | 'cleanedOrphans'> = {
     downloaded: 0,
     associationsUpdated: 0,
     deletedLocal: 0,
@@ -421,10 +426,46 @@ export async function runManualAttachmentSync(userId: string): Promise<Attachmen
     downloaded: remoteResult.downloaded,
     associationsUpdated: remoteResult.associationsUpdated,
     deletedLocal: remoteResult.deletedLocal,
+    cleanedOrphans: uploadResult.cleanedOrphans,
     conflicts: remoteResult.conflicts,
     errors,
     completedAt
   };
+}
+
+function attachmentIdFromQueuePayload(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const value = payload as { id?: unknown; attachment?: { id?: unknown } };
+  if (typeof value.id === 'string') return value.id;
+  if (typeof value.attachment?.id === 'string') return value.attachment.id;
+  return null;
+}
+
+export async function cleanupOrphanedAttachmentSyncItems(userId: string) {
+  const db = await localDbPromise;
+  const attachmentQueueItems = (await db.getAllFromIndex('sync_queue', 'user_id', userId)).filter((item) => item.entity === 'attachment');
+  let cleaned = 0;
+
+  for (const item of attachmentQueueItems) {
+    const attachmentId = attachmentIdFromQueuePayload(item.payload);
+    if (!attachmentId) {
+      await db.delete('sync_queue', item.id);
+      cleaned += 1;
+      continue;
+    }
+
+    const [localAttachment, pendingFile] = await Promise.all([db.get('attachments', attachmentId), db.get('pending_attachment_files', attachmentId)]);
+    if (!localAttachment && !pendingFile) {
+      await db.delete('sync_queue', item.id);
+      cleaned += 1;
+    }
+  }
+
+  if (cleaned > 0) {
+    emitSyncQueueChanged();
+  }
+
+  return cleaned;
 }
 
 export async function getLastAttachmentSyncAt(userId: string) {

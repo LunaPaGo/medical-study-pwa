@@ -121,7 +121,7 @@ export function AttachmentLibrary() {
       {statusMessage && <div className="notice">{statusMessage}</div>}
       {syncSummary && (
         <div className={`notice ${syncSummary.errors.length > 0 ? 'warning' : ''}`}>
-          Subidos: {syncSummary.uploaded} · Descargados: {syncSummary.downloaded} · Asociaciones actualizadas: {syncSummary.associationsUpdated} · Eliminados localmente: {syncSummary.deletedLocal} · Conflictos: {syncSummary.conflicts}
+          Subidos: {syncSummary.uploaded} · Descargados: {syncSummary.downloaded} · Asociaciones actualizadas: {syncSummary.associationsUpdated} · Eliminados localmente: {syncSummary.deletedLocal} · Pendientes limpiados: {syncSummary.cleanedOrphans} · Conflictos: {syncSummary.conflicts}
           {syncSummary.errors.length > 0 ? ` · Errores: ${syncSummary.errors.join(' | ')}` : ''}
         </div>
       )}

@@ -14,7 +14,7 @@ import type {
   TopicWithRelations
 } from '../../types/topic';
 import { getDocumentForTopic, getTopicDocument } from './tiptapDocument';
-import { flushAttachmentQueueItem } from '../attachments/attachmentRepository';
+import { cleanupOrphanedAttachmentSyncItems, flushAttachmentQueueItem } from '../attachments/attachmentRepository';
 import { flushMedicationQueueItem } from '../medications/medicationRepository';
 
 type OrganizationRecord = Folder | Category | Tag;
@@ -383,6 +383,7 @@ export async function deleteOrganizationItem(userId: string, kind: OrganizationK
 
 export async function getPendingSyncCount(userId: string) {
   const db = await localDbPromise;
+  await cleanupOrphanedAttachmentSyncItems(userId);
   return (await db.getAllFromIndex('sync_queue', 'user_id', userId)).length;
 }
 
