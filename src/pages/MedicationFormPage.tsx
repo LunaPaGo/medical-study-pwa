@@ -156,14 +156,14 @@ export function MedicationFormPage() {
             <summary>{section.title}</summary>
             <div className="medication-editor-stack">
               {section.fields.map((field) => (
-                <label className="medication-rich-label" key={field.key}>
-                  {field.label}
+                <div className="medication-rich-label" key={field.key}>
+                  <span>{field.label}</span>
                   <RichTextEditor
                     value={values[field.key] ?? emptyTipTapDocument}
                     owner={{ ownerType: 'medication', ownerId: medicationOwnerId }}
                     onChange={({ json }) => update(field.key, json)}
                   />
-                </label>
+                </div>
               ))}
             </div>
           </details>
