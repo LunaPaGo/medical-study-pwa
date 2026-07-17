@@ -40,6 +40,7 @@ export async function parseValidatedBackupZip(file: File): Promise<ParsedBackup>
       categories: organization.categories,
       tags: organization.tags,
       topics: await readJson<BackupData['topics']>(zip, 'data/topics.json'),
+      topic_relations: zip.file('data/topic_relations.json') ? await readJson<BackupData['topic_relations']>(zip, 'data/topic_relations.json') : [],
       topic_tags: organization.topic_tags,
       medications: await readJson<BackupData['medications']>(zip, 'data/medications.json'),
       medication_tags: organization.medication_tags,

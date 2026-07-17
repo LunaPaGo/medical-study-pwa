@@ -10,6 +10,8 @@ import type {
   Tag,
   Topic,
   TopicFormValues,
+  TopicRelation,
+  TopicRelationType,
   TopicTag,
   TopicWithRelations
 } from '../../types/topic';
@@ -90,7 +92,7 @@ async function enqueue(userId: string, entity: SyncEntity, action: SyncAction, p
 }
 
 async function getByUser<T extends { user_id: string }>(
-  storeName: 'topics' | 'folders' | 'categories' | 'tags' | 'topic_tags',
+  storeName: 'topics' | 'folders' | 'categories' | 'tags' | 'topic_tags' | 'topic_relations',
   userId: string
 ): Promise<T[]> {
   const db = await localDbPromise;
@@ -116,12 +118,13 @@ async function replaceTopicTags(topicId: string, userId: string, tagIds: string[
 }
 
 async function cacheRemoteData(userId: string) {
-  const [topicsResult, foldersResult, categoriesResult, tagsResult, topicTagsResult] = await Promise.all([
+  const [topicsResult, foldersResult, categoriesResult, tagsResult, topicTagsResult, topicRelationsResult] = await Promise.all([
     supabase.from('topics').select('*').eq('user_id', userId),
     supabase.from('folders').select('*').eq('user_id', userId),
     supabase.from('categories').select('*').eq('user_id', userId),
     supabase.from('tags').select('*').eq('user_id', userId),
-    supabase.from('topic_tags').select('*').eq('user_id', userId)
+    supabase.from('topic_tags').select('*').eq('user_id', userId),
+    supabase.from('topic_relations').select('*').eq('user_id', userId)
   ]);
 
   const firstError =
@@ -129,14 +132,15 @@ async function cacheRemoteData(userId: string) {
     foldersResult.error ??
     categoriesResult.error ??
     tagsResult.error ??
-    topicTagsResult.error;
+    topicTagsResult.error ??
+    topicRelationsResult.error;
 
   if (firstError) {
     throw firstError;
   }
 
   const db = await localDbPromise;
-  const tx = db.transaction(['topics', 'folders', 'categories', 'tags', 'topic_tags'], 'readwrite');
+  const tx = db.transaction(['topics', 'folders', 'categories', 'tags', 'topic_tags', 'topic_relations'], 'readwrite');
 
   const normalizedTopics = (topicsResult.data ?? []).map((item) => normalizeTopic(item as Topic));
   await Promise.all(normalizedTopics.map((item) => tx.objectStore('topics').put(item.topic)));
@@ -144,6 +148,7 @@ async function cacheRemoteData(userId: string) {
   await Promise.all((categoriesResult.data ?? []).map((item) => tx.objectStore('categories').put(item as Category)));
   await Promise.all((tagsResult.data ?? []).map((item) => tx.objectStore('tags').put(item as Tag)));
   await Promise.all((topicTagsResult.data ?? []).map((item) => tx.objectStore('topic_tags').put(item as TopicTag)));
+  await Promise.all((topicRelationsResult.data ?? []).map((item) => tx.objectStore('topic_relations').put(item as TopicRelation)));
 
   await tx.done;
 
@@ -165,12 +170,13 @@ export async function loadTopicData(userId: string, shouldSyncRemote = navigator
     }
   }
 
-  const [topics, folders, categories, tags, topicTags] = await Promise.all([
+  const [topics, folders, categories, tags, topicTags, topicRelations] = await Promise.all([
     getByUser<Topic>('topics', userId),
     getByUser<Folder>('folders', userId),
     getByUser<Category>('categories', userId),
     getByUser<Tag>('tags', userId),
-    getByUser<TopicTag>('topic_tags', userId)
+    getByUser<TopicTag>('topic_tags', userId),
+    getByUser<TopicRelation>('topic_relations', userId)
   ]);
 
   const foldersById = new Map(folders.map((folder) => [folder.id, folder]));
@@ -181,6 +187,21 @@ export async function loadTopicData(userId: string, shouldSyncRemote = navigator
     if (tag) {
       map.set(item.topic_id, [...(map.get(item.topic_id) ?? []), tag]);
     }
+    return map;
+  }, new Map());
+  const topicsById = new Map(topics.map((topic) => [topic.id, topic]));
+  const relationsByTopic = topicRelations.reduce<Map<string, TopicWithRelations['relatedTopics']>>((map, relation) => {
+    const source = topicsById.get(relation.source_topic_id);
+    const target = topicsById.get(relation.target_topic_id);
+    if (!source || !target) return map;
+    map.set(relation.source_topic_id, [
+      ...(map.get(relation.source_topic_id) ?? []),
+      { ...relation, relatedTopic: target, direction: 'direct' }
+    ]);
+    map.set(relation.target_topic_id, [
+      ...(map.get(relation.target_topic_id) ?? []),
+      { ...relation, relatedTopic: source, direction: 'inverse' }
+    ]);
     return map;
   }, new Map());
 
@@ -209,7 +230,8 @@ export async function loadTopicData(userId: string, shouldSyncRemote = navigator
         ...normalized.topic,
         folder: topic.folder_id ? foldersById.get(topic.folder_id) ?? null : null,
         category: topic.category_id ? categoriesById.get(topic.category_id) ?? null : null,
-        tags: topicTagsByTopic.get(topic.id) ?? []
+        tags: topicTagsByTopic.get(topic.id) ?? [],
+        relatedTopics: relationsByTopic.get(topic.id) ?? []
       };
     })
   );
@@ -296,9 +318,12 @@ export async function duplicateTopic(userId: string, topic: TopicWithRelations) 
 export async function deleteTopic(userId: string, topicId: string) {
   const db = await localDbPromise;
   const topicTags = await db.getAllFromIndex('topic_tags', 'topic_id', topicId);
-  const tx = db.transaction(['topics', 'topic_tags'], 'readwrite');
+  const sourceRelations = await db.getAllFromIndex('topic_relations', 'source_topic_id', topicId);
+  const targetRelations = await db.getAllFromIndex('topic_relations', 'target_topic_id', topicId);
+  const tx = db.transaction(['topics', 'topic_tags', 'topic_relations'], 'readwrite');
   await tx.objectStore('topics').delete(topicId);
   await Promise.all(topicTags.map((item) => tx.objectStore('topic_tags').delete([item.topic_id, item.tag_id] as [string, string])));
+  await Promise.all([...sourceRelations, ...targetRelations].filter((item) => item.user_id === userId).map((item) => tx.objectStore('topic_relations').delete(item.id)));
   await tx.done;
 
   const payload = { id: topicId, user_id: userId };
@@ -312,6 +337,51 @@ export async function deleteTopic(userId: string, topicId: string) {
   } else {
     await enqueue(userId, 'topic', 'delete', payload);
   }
+}
+
+export async function createTopicRelation(userId: string, sourceTopicId: string, targetTopicId: string, relationType: TopicRelationType) {
+  if (sourceTopicId === targetTopicId) throw new Error('No se puede relacionar un tema consigo mismo.');
+  if (!navigator.onLine) throw new Error('Necesitás conexión para crear relaciones entre temas.');
+
+  const existing = await getByUser<TopicRelation>('topic_relations', userId);
+  const duplicate = existing.some((relation) => {
+    const exact =
+      relation.source_topic_id === sourceTopicId &&
+      relation.target_topic_id === targetTopicId &&
+      relation.relation_type === relationType;
+    const symmetricRelated =
+      relationType === 'related' &&
+      relation.relation_type === 'related' &&
+      relation.source_topic_id === targetTopicId &&
+      relation.target_topic_id === sourceTopicId;
+    return exact || symmetricRelated;
+  });
+  if (duplicate) throw new Error('Esa relación ya existe.');
+
+  const timestamp = nowIso();
+  const relation: TopicRelation = {
+    id: generateId(),
+    user_id: userId,
+    source_topic_id: sourceTopicId,
+    target_topic_id: targetTopicId,
+    relation_type: relationType,
+    created_at: timestamp,
+    updated_at: timestamp
+  };
+
+  const { error } = await supabase.from('topic_relations').insert(relation);
+  if (error) throw error;
+  const db = await localDbPromise;
+  await db.put('topic_relations', relation);
+  return relation;
+}
+
+export async function deleteTopicRelation(userId: string, relationId: string) {
+  if (!navigator.onLine) throw new Error('Necesitás conexión para eliminar relaciones entre temas.');
+  const { error } = await supabase.from('topic_relations').delete().eq('id', relationId).eq('user_id', userId);
+  if (error) throw error;
+  const db = await localDbPromise;
+  await db.delete('topic_relations', relationId);
 }
 
 export async function toggleFavorite(userId: string, topic: TopicWithRelations) {

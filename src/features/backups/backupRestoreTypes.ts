@@ -4,6 +4,7 @@ export type RestoreEntityName =
   | 'categories'
   | 'tags'
   | 'topics'
+  | 'topic_relations'
   | 'medications'
   | 'attachments'
   | 'topic_tags'

@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
-import type { OrganizationKind, TopicFormValues, TopicWithRelations } from '../../types/topic';
+import type { OrganizationKind, TopicFormValues, TopicRelationType, TopicWithRelations } from '../../types/topic';
 import {
+  createTopicRelation,
   deleteOrganizationItem,
   deleteTopic,
+  deleteTopicRelation,
   duplicateTopic,
   loadTopicData,
   saveOrganizationItem,
@@ -79,6 +81,20 @@ export function useTopicMutations() {
       mutationFn: ({ kind, id }: { kind: OrganizationKind; id: string }) => {
         ensureWritable();
         return deleteOrganizationItem(user!.id, kind, id);
+      },
+      onSuccess: invalidate
+    }),
+    createTopicRelation: useMutation({
+      mutationFn: ({ sourceTopicId, targetTopicId, relationType }: { sourceTopicId: string; targetTopicId: string; relationType: TopicRelationType }) => {
+        ensureWritable();
+        return createTopicRelation(user!.id, sourceTopicId, targetTopicId, relationType);
+      },
+      onSuccess: invalidate
+    }),
+    deleteTopicRelation: useMutation({
+      mutationFn: (relationId: string) => {
+        ensureWritable();
+        return deleteTopicRelation(user!.id, relationId);
       },
       onSuccess: invalidate
     })

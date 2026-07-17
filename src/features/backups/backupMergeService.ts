@@ -4,7 +4,7 @@ import { localDbPromise } from '../../storage/localDb';
 import type { Attachment, AttachmentLink, MedicationAttachment, TopicAttachment } from '../../types/attachment';
 import type { Json } from '../../types/database';
 import type { Medication, MedicationTag } from '../../types/medication';
-import type { Category, Folder, Tag, Topic, TopicTag } from '../../types/topic';
+import type { Category, Folder, Tag, Topic, TopicRelation, TopicTag } from '../../types/topic';
 import { syncAttachmentsFromSupabase } from '../attachments/attachmentRepository';
 import { loadMedicationData } from '../medications/medicationRepository';
 import { loadTopicData } from '../topics/topicRepository';
@@ -32,6 +32,7 @@ const entityNames: RestoreEntityName[] = [
   'categories',
   'tags',
   'topics',
+  'topic_relations',
   'medications',
   'attachments',
   'topic_tags',
@@ -137,6 +138,7 @@ async function fetchCurrentData(userId: string): Promise<CurrentData> {
     categoriesResult,
     tagsResult,
     topicsResult,
+    topicRelationsResult,
     topicTagsResult,
     medicationsResult,
     medicationTagsResult,
@@ -150,6 +152,7 @@ async function fetchCurrentData(userId: string): Promise<CurrentData> {
     supabase.from('categories').select('*').eq('user_id', userId),
     supabase.from('tags').select('*').eq('user_id', userId),
     supabase.from('topics').select('*').eq('user_id', userId),
+    supabase.from('topic_relations').select('*').eq('user_id', userId),
     supabase.from('topic_tags').select('*').eq('user_id', userId),
     supabase.from('medications').select('*').eq('user_id', userId),
     supabase.from('medication_tags').select('*').eq('user_id', userId),
@@ -165,6 +168,7 @@ async function fetchCurrentData(userId: string): Promise<CurrentData> {
     categoriesResult.error ??
     tagsResult.error ??
     topicsResult.error ??
+    topicRelationsResult.error ??
     topicTagsResult.error ??
     medicationsResult.error ??
     medicationTagsResult.error ??
@@ -180,6 +184,7 @@ async function fetchCurrentData(userId: string): Promise<CurrentData> {
     categories: (categoriesResult.data ?? []) as Category[],
     tags: (tagsResult.data ?? []) as Tag[],
     topics: (topicsResult.data ?? []) as Topic[],
+    topic_relations: (topicRelationsResult.data ?? []) as TopicRelation[],
     topic_tags: (topicTagsResult.data ?? []) as TopicTag[],
     medications: (medicationsResult.data ?? []) as Medication[],
     medication_tags: (medicationTagsResult.data ?? []) as MedicationTag[],
@@ -242,6 +247,13 @@ function compareRelations<T extends RelationRecord>(
   });
 }
 
+function topicRelationKey(row: TopicRelation) {
+  if (row.relation_type === 'related') {
+    return ['related', ...[row.source_topic_id, row.target_topic_id].sort()].join(':');
+  }
+  return `${row.source_topic_id}:${row.target_topic_id}:${row.relation_type}`;
+}
+
 async function fileExistsWithChecksum(path: string, expectedChecksum: string | null): Promise<'missing' | 'same' | 'different'> {
   const { data, error } = await supabase.storage.from(bucketName).download(path);
   if (error || !data) return 'missing';
@@ -295,6 +307,14 @@ function buildPreview(parsed: ParsedBackup, userId: string, current: CurrentData
   compareTimestamped('categories', backup.categories, current.categories, entities);
   compareTimestamped('tags', backup.tags, current.tags, entities);
   compareTimestamped('topics', backup.topics, current.topics, entities);
+  compareRelations(
+    'topic_relations',
+    backup.topic_relations,
+    current.topic_relations,
+    entities,
+    topicRelationKey,
+    (row) => row.source_topic_id !== row.target_topic_id && currentTopicIds.has(row.source_topic_id) && currentTopicIds.has(row.target_topic_id)
+  );
   compareTimestamped('medications', backup.medications, current.medications, entities);
   compareTimestamped('attachments', backup.attachments, current.attachments, entities, comparableAttachment);
   compareRelations('topic_tags', backup.topic_tags, current.topic_tags, entities, (row) => `${row.topic_id}:${row.tag_id}`, (row) => currentTopicIds.has(row.topic_id) && currentTagIds.has(row.tag_id));
@@ -550,7 +570,7 @@ async function restoreAttachments(parsed: ParsedBackup, current: CurrentData, us
 
 async function restoreRelations<T extends RelationRecord>(
   name: RestoreEntityName,
-  table: 'topic_tags' | 'medication_tags' | 'attachment_links' | 'topic_attachments' | 'medication_attachments',
+  table: 'topic_relations' | 'topic_tags' | 'medication_tags' | 'attachment_links' | 'topic_attachments' | 'medication_attachments',
   rows: T[],
   currentRows: T[],
   userId: string,
@@ -637,6 +657,24 @@ export async function restoreBackupMerge(
   const attachmentIds = new Set(refreshed.attachments.map((item) => item.id));
 
   onProgress?.({ step: 'restoring-relations', message: 'Restaurando relaciones...' });
+  await restoreRelations(
+    'topic_relations',
+    'topic_relations',
+    parsed.data.topic_relations,
+    refreshed.topic_relations,
+    userId,
+    result.entities.topic_relations,
+    topicRelationKey,
+    (row) => row.source_topic_id !== row.target_topic_id && topicIds.has(row.source_topic_id) && topicIds.has(row.target_topic_id),
+    (row) => ({
+      id: row.id,
+      user_id: row.user_id,
+      source_topic_id: row.source_topic_id,
+      target_topic_id: row.target_topic_id,
+      relation_type: row.relation_type,
+      created_at: row.created_at
+    })
+  );
   await restoreRelations('topic_tags', 'topic_tags', parsed.data.topic_tags, refreshed.topic_tags, userId, result.entities.topic_tags, (row) => `${row.topic_id}:${row.tag_id}`, (row) => topicIds.has(row.topic_id) && tagIds.has(row.tag_id));
   await restoreRelations(
     'medication_tags',

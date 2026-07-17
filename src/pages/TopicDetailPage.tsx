@@ -1,6 +1,7 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Copy, Edit3, Heart, Trash2 } from 'lucide-react';
 import { TopicContentViewer } from '../features/topics/TopicContentViewer';
+import { TopicRelationsPanel } from '../features/topics/TopicRelationsPanel';
 import { formatDate } from '../features/topics/topicUtils';
 import { useTopicData, useTopicMutations } from '../features/topics/useTopicData';
 import { useAuth } from '../hooks/useAuth';
@@ -78,6 +79,15 @@ export function TopicDetailPage() {
       </div>
 
       <TopicContentViewer content={topic.content_json} />
+
+      <TopicRelationsPanel
+        topic={topic}
+        topics={data?.topics ?? []}
+        readOnly={isReadOnly}
+        isSaving={mutations.createTopicRelation.isPending || mutations.deleteTopicRelation.isPending}
+        onCreate={({ targetTopicId, relationType }) => mutations.createTopicRelation.mutate({ sourceTopicId: topic.id, targetTopicId, relationType })}
+        onDelete={(relationId) => mutations.deleteTopicRelation.mutate(relationId)}
+      />
     </article>
   );
 }

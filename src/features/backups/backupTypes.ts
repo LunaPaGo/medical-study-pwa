@@ -1,9 +1,9 @@
 import type { Attachment, AttachmentLink, MedicationAttachment, TopicAttachment } from '../../types/attachment';
 import type { Medication, MedicationTag } from '../../types/medication';
-import type { Category, Folder, Tag, Topic, TopicTag } from '../../types/topic';
+import type { Category, Folder, Tag, Topic, TopicRelation, TopicTag } from '../../types/topic';
 
 export const backupFormat = 'medical-study-pwa';
-export const backupVersion = 1;
+export const backupVersion = 2;
 
 export type BackupProgressStep =
   | 'idle'
@@ -36,6 +36,7 @@ export type BackupData = {
   categories: Category[];
   tags: Tag[];
   topics: Topic[];
+  topic_relations: TopicRelation[];
   topic_tags: TopicTag[];
   medications: Medication[];
   medication_tags: MedicationTag[];
@@ -47,7 +48,7 @@ export type BackupData = {
 
 export type BackupManifest = {
   backup_format: typeof backupFormat;
-  backup_version: typeof backupVersion;
+  backup_version: number;
   app_version: string;
   created_at: string;
   exported_by_user_id: string;

@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 import type { Attachment, AttachmentLink, MedicationAttachment, PendingAttachmentFile, TopicAttachment } from '../types/attachment';
 import type { Medication, MedicationTag } from '../types/medication';
-import type { Category, Folder, SyncQueueItem, Tag, Topic, TopicTag } from '../types/topic';
+import type { Category, Folder, SyncQueueItem, Tag, Topic, TopicRelation, TopicTag } from '../types/topic';
 
 type MedicalStudyDb = {
   sync_queue: {
@@ -37,6 +37,11 @@ type MedicalStudyDb = {
     key: [string, string];
     value: TopicTag;
     indexes: { topic_id: string; tag_id: string; user_id: string };
+  };
+  topic_relations: {
+    key: string;
+    value: TopicRelation;
+    indexes: { user_id: string; source_topic_id: string; target_topic_id: string; relation_type: string };
   };
   attachments: {
     key: string;
@@ -75,7 +80,7 @@ type MedicalStudyDb = {
   };
 };
 
-export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 6, {
+export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 7, {
   upgrade(db) {
     if (!db.objectStoreNames.contains('sync_queue')) {
       const queue = db.createObjectStore('sync_queue', { keyPath: 'id' });
@@ -117,6 +122,14 @@ export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 6
       topicTags.createIndex('topic_id', 'topic_id');
       topicTags.createIndex('tag_id', 'tag_id');
       topicTags.createIndex('user_id', 'user_id');
+    }
+
+    if (!db.objectStoreNames.contains('topic_relations')) {
+      const topicRelations = db.createObjectStore('topic_relations', { keyPath: 'id' });
+      topicRelations.createIndex('user_id', 'user_id');
+      topicRelations.createIndex('source_topic_id', 'source_topic_id');
+      topicRelations.createIndex('target_topic_id', 'target_topic_id');
+      topicRelations.createIndex('relation_type', 'relation_type');
     }
 
     if (!db.objectStoreNames.contains('attachments')) {

@@ -190,6 +190,33 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      topic_relations: {
+        Row: {
+          id: string;
+          user_id: string;
+          source_topic_id: string;
+          target_topic_id: string;
+          relation_type: 'related' | 'differential_diagnosis' | 'complication' | 'cause' | 'treatment' | 'pharmacology' | 'procedure' | 'other';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          source_topic_id: string;
+          target_topic_id: string;
+          relation_type?: 'related' | 'differential_diagnosis' | 'complication' | 'cause' | 'treatment' | 'pharmacology' | 'procedure' | 'other';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          source_topic_id?: string;
+          target_topic_id?: string;
+          relation_type?: 'related' | 'differential_diagnosis' | 'complication' | 'cause' | 'treatment' | 'pharmacology' | 'procedure' | 'other';
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       attachments: {
         Row: {
           id: string;

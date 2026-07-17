@@ -2,6 +2,15 @@ export type TopicStatus = 'draft' | 'complete';
 export type TopicSort = 'updated_desc' | 'title_asc';
 export type SyncEntity = 'topic' | 'folder' | 'category' | 'tag' | 'attachment' | 'medication';
 export type SyncAction = 'upsert' | 'delete';
+export type TopicRelationType =
+  | 'related'
+  | 'differential_diagnosis'
+  | 'complication'
+  | 'cause'
+  | 'treatment'
+  | 'pharmacology'
+  | 'procedure'
+  | 'other';
 
 export type TipTapDocument = {
   type?: string;
@@ -47,10 +56,26 @@ export type TopicTag = {
   created_at: string;
 };
 
+export type TopicRelation = {
+  id: string;
+  user_id: string;
+  source_topic_id: string;
+  target_topic_id: string;
+  relation_type: TopicRelationType;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TopicRelationWithTopic = TopicRelation & {
+  relatedTopic: Topic;
+  direction: 'direct' | 'inverse';
+};
+
 export type TopicWithRelations = Topic & {
   folder?: Folder | null;
   category?: Category | null;
   tags: Tag[];
+  relatedTopics: TopicRelationWithTopic[];
 };
 
 export type TopicFormValues = {

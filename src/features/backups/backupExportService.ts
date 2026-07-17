@@ -50,13 +50,14 @@ async function getRows<T>(table: string, userId: string): Promise<T[]> {
 }
 
 async function collectBackupData(userId: string): Promise<BackupData> {
-  const [profileResult, folders, categories, tags, topics, topicTags, medications, medicationTags, attachments, attachmentLinks, topicAttachments, medicationAttachments] =
+  const [profileResult, folders, categories, tags, topics, topicRelations, topicTags, medications, medicationTags, attachments, attachmentLinks, topicAttachments, medicationAttachments] =
     await Promise.all([
       supabase.from('profiles').select('user_id, display_name, created_at, updated_at').eq('user_id', userId).maybeSingle(),
       getRows<BackupData['folders'][number]>('folders', userId),
       getRows<BackupData['categories'][number]>('categories', userId),
       getRows<BackupData['tags'][number]>('tags', userId),
       getRows<BackupData['topics'][number]>('topics', userId),
+      getRows<BackupData['topic_relations'][number]>('topic_relations', userId),
       getRows<BackupData['topic_tags'][number]>('topic_tags', userId),
       getRows<BackupData['medications'][number]>('medications', userId),
       getRows<BackupData['medication_tags'][number]>('medication_tags', userId),
@@ -74,6 +75,7 @@ async function collectBackupData(userId: string): Promise<BackupData> {
     categories,
     tags,
     topics,
+    topic_relations: topicRelations,
     topic_tags: topicTags,
     medications,
     medication_tags: medicationTags,
@@ -173,6 +175,7 @@ export async function createCompleteBackup(options: ExportOptions): Promise<Back
   approximateTotalSize += await addDataFile(zip, 'data/profile.json', data.profile, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/organization.json', { folders: data.folders, categories: data.categories, tags: data.tags, topic_tags: data.topic_tags, medication_tags: data.medication_tags }, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/topics.json', data.topics, dataChecksums);
+  approximateTotalSize += await addDataFile(zip, 'data/topic_relations.json', data.topic_relations, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/medications.json', data.medications, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/attachments.json', data.attachments, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/attachment_links.json', data.attachment_links, dataChecksums);
@@ -237,6 +240,7 @@ export async function createCompleteBackup(options: ExportOptions): Promise<Back
       categories: data.categories.length,
       tags: data.tags.length,
       topics: data.topics.length,
+      topic_relations: data.topic_relations.length,
       topic_tags: data.topic_tags.length,
       medications: data.medications.length,
       medication_tags: data.medication_tags.length,
