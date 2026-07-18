@@ -117,10 +117,25 @@ export function MeanArterialPressureCalculator() {
       )}
 
       <CalculatorInterpretation>
-        <p>
-          No debe presentarse un valor aislado como diagnóstico. La PAM es un dato orientativo y su interpretación depende
-          del contexto clínico, la situación hemodinámica y los objetivos terapéuticos de cada paciente.
-        </p>
+        <ul className="calculator-interpretation-list">
+          <li>
+            <strong>&lt; 65 mmHg:</strong>
+            <span>Perfusión orgánica potencialmente insuficiente. Requiere valoración clínica inmediata.</span>
+          </li>
+          <li>
+            <strong>65–69 mmHg:</strong>
+            <span>Límite inferior aceptable en muchos pacientes críticos.</span>
+          </li>
+          <li>
+            <strong>70–110 mmHg:</strong>
+            <span>Rango habitualmente adecuado en adultos.</span>
+          </li>
+          <li>
+            <strong>&gt; 110 mmHg:</strong>
+            <span>Presión arterial media elevada. Interpretar según el contexto clínico.</span>
+          </li>
+        </ul>
+        <p>Los valores deben interpretarse siempre en el contexto clínico del paciente y no reemplazan el juicio médico.</p>
       </CalculatorInterpretation>
     </form>
   );
