@@ -23,9 +23,13 @@
               : preference;
           document.documentElement.dataset.theme = effectiveTheme;
           document.documentElement.style.colorScheme = effectiveTheme;
+          var density = localStorage.getItem('askleion-interface-density');
+          if (density !== 'compact' && density !== 'normal') density = 'normal';
+          document.documentElement.dataset.density = density;
         } catch (_error) {
           document.documentElement.dataset.theme = 'light';
           document.documentElement.style.colorScheme = 'light';
+          document.documentElement.dataset.density = 'normal';
         }
       })();
     </script>

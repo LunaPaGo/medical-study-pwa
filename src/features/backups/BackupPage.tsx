@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Archive, CheckCircle2, DownloadCloud, FileSearch, RotateCcw, XCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useInterfaceDensity } from '../theme/useInterfaceDensity';
 import { useThemePreference } from '../theme/useThemePreference';
 import { createCompleteBackup, getLastBackupExport } from './backupExportService';
 import { createMergePreview, restoreBackupMerge } from './backupMergeService';
@@ -56,6 +57,7 @@ function formatSize(bytes: number) {
 
 export function BackupPage() {
   const { user, isReadOnly } = useAuth();
+  const { density, setInterfaceDensity } = useInterfaceDensity();
   const { preference: themePreference, setThemePreference } = useThemePreference();
   const [progress, setProgress] = useState<BackupProgress>(initialProgress);
   const [isExporting, setIsExporting] = useState(false);
@@ -207,6 +209,27 @@ export function BackupPage() {
               type="radio"
             />
             Sistema
+          </label>
+        </div>
+        <h3>Densidad de interfaz</h3>
+        <div className="appearance-options" role="radiogroup" aria-label="Densidad de interfaz">
+          <label>
+            <input
+              checked={density === 'compact'}
+              name="interface-density"
+              onChange={() => setInterfaceDensity('compact')}
+              type="radio"
+            />
+            Compacta
+          </label>
+          <label>
+            <input
+              checked={density === 'normal'}
+              name="interface-density"
+              onChange={() => setInterfaceDensity('normal')}
+              type="radio"
+            />
+            Normal
           </label>
         </div>
       </section>
