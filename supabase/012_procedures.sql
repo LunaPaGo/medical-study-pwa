@@ -15,6 +15,34 @@ create table if not exists public.procedures (
   updated_at timestamptz not null default now()
 );
 
+alter table public.procedures add column if not exists user_id uuid references auth.users(id) on delete cascade;
+alter table public.procedures add column if not exists name text not null default '';
+alter table public.procedures add column if not exists summary text;
+alter table public.procedures add column if not exists category text;
+alter table public.procedures add column if not exists status text not null default 'draft';
+alter table public.procedures add column if not exists is_favorite boolean not null default false;
+alter table public.procedures add column if not exists technique_json jsonb not null default '{"type":"doc","content":[{"type":"paragraph"}]}'::jsonb;
+alter table public.procedures add column if not exists technique_html text not null default '<p></p>';
+alter table public.procedures add column if not exists considerations_json jsonb not null default '{"type":"doc","content":[{"type":"paragraph"}]}'::jsonb;
+alter table public.procedures add column if not exists considerations_html text not null default '<p></p>';
+alter table public.procedures add column if not exists search_text text not null default '';
+alter table public.procedures add column if not exists created_at timestamptz not null default now();
+alter table public.procedures add column if not exists updated_at timestamptz not null default now();
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'procedures_status_check'
+      and conrelid = 'public.procedures'::regclass
+  ) then
+    alter table public.procedures
+      add constraint procedures_status_check check (status in ('draft', 'complete'));
+  end if;
+end;
+$$;
+
 create table if not exists public.procedure_tags (
   procedure_id uuid not null references public.procedures(id) on delete cascade,
   tag_id uuid not null references public.tags(id) on delete cascade,
@@ -43,6 +71,11 @@ create index if not exists procedure_tags_tag_id_idx on public.procedure_tags(ta
 create index if not exists procedure_attachments_user_id_idx on public.procedure_attachments(user_id);
 create index if not exists procedure_attachments_procedure_id_idx on public.procedure_attachments(procedure_id);
 create index if not exists procedure_attachments_attachment_id_idx on public.procedure_attachments(attachment_id);
+
+drop trigger if exists set_procedures_updated_at on public.procedures;
+create trigger set_procedures_updated_at
+before update on public.procedures
+for each row execute function public.set_updated_at();
 
 alter table public.procedures enable row level security;
 alter table public.procedure_tags enable row level security;
