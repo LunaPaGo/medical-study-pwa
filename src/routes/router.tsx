@@ -15,6 +15,7 @@ import { PlaceholderPage } from '../pages/PlaceholderPage';
 import { ProcedureDetailPage } from '../pages/ProcedureDetailPage';
 import { ProcedureFormPage } from '../pages/ProcedureFormPage';
 import { ProceduresPage } from '../pages/ProceduresPage';
+import { SearchPage } from '../pages/SearchPage';
 import { TopicDetailPage } from '../pages/TopicDetailPage';
 import { TopicFormPage } from '../pages/TopicFormPage';
 import { TopicsPage } from '../pages/TopicsPage';
@@ -44,7 +45,7 @@ export const router = createBrowserRouter([
       { path: 'procedimientos/nuevo', element: <ProcedureFormPage /> },
       { path: 'procedimientos/:procedureId', element: <ProcedureDetailPage /> },
       { path: 'procedimientos/:procedureId/editar', element: <ProcedureFormPage /> },
-      { path: 'buscar', element: <PlaceholderPage title="Buscador global" stage="Etapa 6" /> },
+      { path: 'buscar', element: <SearchPage /> },
       { path: 'favoritos', element: <FavoritesPage /> },
       { path: 'archivos', element: <AttachmentsPage /> },
       { path: 'historial', element: <PlaceholderPage title="Historial" stage="Etapa 7" /> },

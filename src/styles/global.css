@@ -495,6 +495,131 @@ button:disabled,
   min-height: auto;
 }
 
+.global-search-panel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: auto;
+}
+
+.global-search-panel svg {
+  color: var(--muted);
+}
+
+.search-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: auto;
+  color: var(--muted);
+}
+
+.spin-icon {
+  animation: spin 0.9s linear infinite;
+}
+
+.search-results-stack,
+.search-result-list {
+  display: grid;
+  gap: 14px;
+}
+
+.search-result-group {
+  display: grid;
+  gap: 12px;
+}
+
+.search-result-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.search-result-group-heading h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.search-result-group-heading span {
+  display: inline-grid;
+  min-width: 34px;
+  min-height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.search-result-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: inherit;
+  padding: 16px;
+  text-decoration: none;
+}
+
+.search-result-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--line));
+}
+
+.search-result-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--primary-strong);
+}
+
+.search-result-body {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.search-result-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-result-title-row h3,
+.search-result-subtitle,
+.search-result-snippet {
+  margin: 0;
+}
+
+.search-result-title-row h3 {
+  font-size: 1.05rem;
+  letter-spacing: 0;
+}
+
+.search-result-subtitle,
+.search-result-snippet {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.search-result-snippet {
+  overflow-wrap: anywhere;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .organization-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
