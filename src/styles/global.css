@@ -1236,27 +1236,52 @@ button:disabled,
 }
 
 .calculator-card {
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
+}
+
+.calculator-card summary {
+  cursor: pointer;
+  color: var(--text);
+  font-size: var(--card-title-size);
+  font-weight: 800;
   padding: var(--space-5);
 }
 
-.calculator-card h2 {
-  margin: 0;
-  font-size: var(--card-title-size);
+.calculator-card-body {
+  border-top: 1px solid var(--line);
+  padding: var(--space-5);
 }
 
 .calculator-form {
   display: grid;
   gap: var(--space-4);
-  margin-top: var(--space-3);
 }
 
 .calculator-form p {
   margin: 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.calculator-formula {
+  display: grid;
+  gap: var(--space-1);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  padding: var(--space-4);
+}
+
+.calculator-formula span,
+.calculator-formula small {
+  color: var(--muted);
+}
+
+.calculator-formula strong {
+  font-size: var(--card-title-size);
 }
 
 .calculator-form label {

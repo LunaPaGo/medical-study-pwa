@@ -14,10 +14,12 @@ export function CalculatorCategoryPanel({ category }: CalculatorCategoryPanelPro
         ) : (
           <div className="calculator-card-grid">
             {category.calculators.map((calculator) => (
-              <article className="calculator-card" key={calculator.id}>
-                <h2>{calculator.title}</h2>
-                <calculator.component />
-              </article>
+              <details className="calculator-card" key={calculator.id}>
+                <summary>{calculator.title}</summary>
+                <div className="calculator-card-body">
+                  <calculator.component />
+                </div>
+              </details>
             ))}
           </div>
         )}

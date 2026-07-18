@@ -57,7 +57,11 @@ export function MeanArterialPressureCalculator() {
 
   return (
     <form className="calculator-form" onSubmit={handleSubmit}>
-      <p>Calcula la presión arterial media a partir de la presión sistólica y diastólica.</p>
+      <div className="calculator-formula">
+        <span>Fórmula</span>
+        <strong>PAM = PAD + (PAS − PAD) / 3</strong>
+        <small>PAM = (PAS + 2 × PAD) / 3</small>
+      </div>
 
       <label>
         Presión arterial sistólica (PAS)
