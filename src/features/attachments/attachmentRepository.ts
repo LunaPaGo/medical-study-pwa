@@ -752,6 +752,42 @@ export async function linkAttachmentToProcedure(userId: string, procedureId: str
   }
 }
 
+export async function unlinkAttachmentFromProcedure(userId: string, procedureId: string, attachmentId: string) {
+  const db = await localDbPromise;
+  const localLinks = (await db.getAllFromIndex('procedure_attachments', 'attachment_id', attachmentId)).filter(
+    (item) => item.user_id === userId && item.procedure_id === procedureId
+  );
+  const genericLinks = (await db.getAllFromIndex('attachment_links', 'attachment_id', attachmentId)).filter(
+    (item) => item.user_id === userId && item.owner_type === 'procedure' && item.owner_id === procedureId
+  );
+
+  if (navigator.onLine) {
+    const { error: procedureError } = await supabase
+      .from('procedure_attachments')
+      .delete()
+      .eq('user_id', userId)
+      .eq('procedure_id', procedureId)
+      .eq('attachment_id', attachmentId);
+    if (procedureError) throw procedureError;
+
+    const { error: genericError } = await supabase
+      .from('attachment_links')
+      .delete()
+      .eq('user_id', userId)
+      .eq('owner_type', 'procedure')
+      .eq('owner_id', procedureId)
+      .eq('attachment_id', attachmentId);
+    if (genericError) throw genericError;
+  } else {
+    throw new Error('Necesitás conexión para modificar adjuntos.');
+  }
+
+  const tx = db.transaction(['procedure_attachments', 'attachment_links'], 'readwrite');
+  await Promise.all(localLinks.map((item) => tx.objectStore('procedure_attachments').delete(item.id)));
+  await Promise.all(genericLinks.map((item) => tx.objectStore('attachment_links').delete(item.id)));
+  await tx.done;
+}
+
 export async function getAttachmentUsageSummary(userId: string, attachmentId: string): Promise<AttachmentUsageSummary> {
   const db = await localDbPromise;
   const topicCount = (await db.getAllFromIndex('topic_attachments', 'attachment_id', attachmentId)).filter((item) => item.user_id === userId).length;

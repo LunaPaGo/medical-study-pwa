@@ -1,5 +1,6 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Edit3, Heart, Trash2 } from 'lucide-react';
+import { ProcedureAttachmentsPanel } from '../features/procedures/ProcedureAttachmentsPanel';
 import { procedureStudySections } from '../features/procedures/procedureSectionCatalog';
 import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
 import { formatDate } from '../features/topics/topicUtils';
@@ -91,6 +92,8 @@ export function ProcedureDetailPage() {
       ) : (
         <div className="panel empty-state">El procedimiento todavía no tiene secciones cargadas.</div>
       )}
+
+      <ProcedureAttachmentsPanel procedureId={procedure.id} attached={procedure.attachments} readOnly={isReadOnly} />
     </article>
   );
 }

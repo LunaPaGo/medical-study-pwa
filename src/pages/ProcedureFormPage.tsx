@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Save, Star } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ProcedureAttachmentsPanel } from '../features/procedures/ProcedureAttachmentsPanel';
 import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
 import { createEmptyProcedureValues } from '../features/procedures/procedureRepository';
 import { procedureStudySections } from '../features/procedures/procedureSectionCatalog';
-import { useProcedureData, useProcedureMutations } from '../features/procedures/useProcedureData';
+import { procedureDataKey, useProcedureData, useProcedureMutations } from '../features/procedures/useProcedureData';
 import { useAuth } from '../hooks/useAuth';
 import type { ProcedureFormValues } from '../types/procedure';
 import { procedureSchema } from '../validation/procedure';
@@ -16,6 +18,7 @@ export function ProcedureFormPage() {
   const { procedureId } = useParams();
   const draftProcedureId = useRef(crypto.randomUUID());
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useProcedureData();
   const mutations = useProcedureMutations();
   const { isReadOnly } = useAuth();
@@ -160,6 +163,12 @@ export function ProcedureFormPage() {
             />
           ))}
         </div>
+
+        <ProcedureAttachmentsPanel
+          procedureId={procedureOwnerId}
+          attached={existing?.attachments ?? []}
+          onChanged={() => queryClient.invalidateQueries({ queryKey: procedureDataKey })}
+        />
 
         {error && <div className="notice error">{error}</div>}
 
