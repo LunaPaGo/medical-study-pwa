@@ -1,6 +1,7 @@
 import { openDB } from 'idb';
-import type { Attachment, AttachmentLink, MedicationAttachment, PendingAttachmentFile, TopicAttachment } from '../types/attachment';
+import type { Attachment, AttachmentLink, MedicationAttachment, PendingAttachmentFile, ProcedureAttachment, TopicAttachment } from '../types/attachment';
 import type { Medication, MedicationTag } from '../types/medication';
+import type { Procedure, ProcedureTag } from '../types/procedure';
 import type { Category, Folder, SyncQueueItem, Tag, Topic, TopicRelation, TopicTag } from '../types/topic';
 
 type MedicalStudyDb = {
@@ -78,9 +79,24 @@ type MedicalStudyDb = {
     value: MedicationAttachment;
     indexes: { user_id: string; medication_id: string; attachment_id: string };
   };
+  procedures: {
+    key: string;
+    value: Procedure;
+    indexes: { user_id: string; updated_at: string; name: string; category: string; status: string; is_favorite: string };
+  };
+  procedure_tags: {
+    key: [string, string];
+    value: ProcedureTag;
+    indexes: { procedure_id: string; tag_id: string; user_id: string };
+  };
+  procedure_attachments: {
+    key: string;
+    value: ProcedureAttachment;
+    indexes: { user_id: string; procedure_id: string; attachment_id: string };
+  };
 };
 
-export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 8, {
+export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 9, {
   upgrade(db) {
     if (!db.objectStoreNames.contains('sync_queue')) {
       const queue = db.createObjectStore('sync_queue', { keyPath: 'id' });
@@ -182,6 +198,30 @@ export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 8
       medicationAttachments.createIndex('user_id', 'user_id');
       medicationAttachments.createIndex('medication_id', 'medication_id');
       medicationAttachments.createIndex('attachment_id', 'attachment_id');
+    }
+
+    if (!db.objectStoreNames.contains('procedures')) {
+      const procedures = db.createObjectStore('procedures', { keyPath: 'id' });
+      procedures.createIndex('user_id', 'user_id');
+      procedures.createIndex('updated_at', 'updated_at');
+      procedures.createIndex('name', 'name');
+      procedures.createIndex('category', 'category');
+      procedures.createIndex('status', 'status');
+      procedures.createIndex('is_favorite', 'is_favorite');
+    }
+
+    if (!db.objectStoreNames.contains('procedure_tags')) {
+      const procedureTags = db.createObjectStore('procedure_tags', { keyPath: ['procedure_id', 'tag_id'] });
+      procedureTags.createIndex('procedure_id', 'procedure_id');
+      procedureTags.createIndex('tag_id', 'tag_id');
+      procedureTags.createIndex('user_id', 'user_id');
+    }
+
+    if (!db.objectStoreNames.contains('procedure_attachments')) {
+      const procedureAttachments = db.createObjectStore('procedure_attachments', { keyPath: 'id' });
+      procedureAttachments.createIndex('user_id', 'user_id');
+      procedureAttachments.createIndex('procedure_id', 'procedure_id');
+      procedureAttachments.createIndex('attachment_id', 'attachment_id');
     }
   }
 });

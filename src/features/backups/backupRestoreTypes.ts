@@ -6,12 +6,15 @@ export type RestoreEntityName =
   | 'topics'
   | 'topic_relations'
   | 'medications'
+  | 'procedures'
   | 'attachments'
   | 'topic_tags'
   | 'medication_tags'
+  | 'procedure_tags'
   | 'attachment_links'
   | 'topic_attachments'
-  | 'medication_attachments';
+  | 'medication_attachments'
+  | 'procedure_attachments';
 
 export type RestoreEntitySummary = {
   created: number;

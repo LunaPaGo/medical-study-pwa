@@ -1,12 +1,14 @@
 import { checkSupabaseConnectivity } from '../../services/connectivity';
 import { supabase } from '../../services/supabase';
 import { localDbPromise } from '../../storage/localDb';
-import type { Attachment, AttachmentLink, MedicationAttachment, TopicAttachment } from '../../types/attachment';
+import type { Attachment, AttachmentLink, MedicationAttachment, ProcedureAttachment, TopicAttachment } from '../../types/attachment';
 import type { Json } from '../../types/database';
 import type { Medication, MedicationTag } from '../../types/medication';
+import type { Procedure, ProcedureTag } from '../../types/procedure';
 import type { Category, Folder, Tag, Topic, TopicRelation, TopicTag } from '../../types/topic';
 import { syncAttachmentsFromSupabase } from '../attachments/attachmentRepository';
 import { loadMedicationData } from '../medications/medicationRepository';
+import { loadProcedureData } from '../procedures/procedureRepository';
 import { loadTopicData } from '../topics/topicRepository';
 import { getBackupFileBlob, parseValidatedBackupZip, type ParsedBackup } from './backupImportService';
 import type { BackupData, BackupProfile } from './backupTypes';
@@ -34,12 +36,15 @@ const entityNames: RestoreEntityName[] = [
   'topics',
   'topic_relations',
   'medications',
+  'procedures',
   'attachments',
   'topic_tags',
   'medication_tags',
+  'procedure_tags',
   'attachment_links',
   'topic_attachments',
-  'medication_attachments'
+  'medication_attachments',
+  'procedure_attachments'
 ];
 
 function emptyEntitySummary(): RestoreEntitySummary {
@@ -142,10 +147,13 @@ async function fetchCurrentData(userId: string): Promise<CurrentData> {
     topicTagsResult,
     medicationsResult,
     medicationTagsResult,
+    proceduresResult,
+    procedureTagsResult,
     attachmentsResult,
     attachmentLinksResult,
     topicAttachmentsResult,
-    medicationAttachmentsResult
+    medicationAttachmentsResult,
+    procedureAttachmentsResult
   ] = await Promise.all([
     supabase.from('profiles').select('user_id, display_name, created_at, updated_at').eq('user_id', userId).maybeSingle(),
     supabase.from('folders').select('*').eq('user_id', userId),
@@ -156,10 +164,13 @@ async function fetchCurrentData(userId: string): Promise<CurrentData> {
     supabase.from('topic_tags').select('*').eq('user_id', userId),
     supabase.from('medications').select('*').eq('user_id', userId),
     supabase.from('medication_tags').select('*').eq('user_id', userId),
+    supabase.from('procedures').select('*').eq('user_id', userId),
+    supabase.from('procedure_tags').select('*').eq('user_id', userId),
     supabase.from('attachments').select('*').eq('user_id', userId),
     supabase.from('attachment_links').select('*').eq('user_id', userId),
     supabase.from('topic_attachments').select('*').eq('user_id', userId),
-    supabase.from('medication_attachments').select('*').eq('user_id', userId)
+    supabase.from('medication_attachments').select('*').eq('user_id', userId),
+    supabase.from('procedure_attachments').select('*').eq('user_id', userId)
   ]);
 
   const firstError =
@@ -172,10 +183,13 @@ async function fetchCurrentData(userId: string): Promise<CurrentData> {
     topicTagsResult.error ??
     medicationsResult.error ??
     medicationTagsResult.error ??
+    proceduresResult.error ??
+    procedureTagsResult.error ??
     attachmentsResult.error ??
     attachmentLinksResult.error ??
     topicAttachmentsResult.error ??
-    medicationAttachmentsResult.error;
+    medicationAttachmentsResult.error ??
+    procedureAttachmentsResult.error;
   if (firstError) throw firstError;
 
   return {
@@ -188,10 +202,13 @@ async function fetchCurrentData(userId: string): Promise<CurrentData> {
     topic_tags: (topicTagsResult.data ?? []) as TopicTag[],
     medications: (medicationsResult.data ?? []) as Medication[],
     medication_tags: (medicationTagsResult.data ?? []) as MedicationTag[],
+    procedures: (proceduresResult.data ?? []) as Procedure[],
+    procedure_tags: (procedureTagsResult.data ?? []) as ProcedureTag[],
     attachments: (attachmentsResult.data ?? []) as Attachment[],
     attachment_links: (attachmentLinksResult.data ?? []) as AttachmentLink[],
     topic_attachments: (topicAttachmentsResult.data ?? []) as TopicAttachment[],
-    medication_attachments: (medicationAttachmentsResult.data ?? []) as MedicationAttachment[]
+    medication_attachments: (medicationAttachmentsResult.data ?? []) as MedicationAttachment[],
+    procedure_attachments: (procedureAttachmentsResult.data ?? []) as ProcedureAttachment[]
   };
 }
 
@@ -289,6 +306,7 @@ function buildPreview(parsed: ParsedBackup, userId: string, current: CurrentData
   const currentTagIds = new Set([...current.tags.map((item) => item.id), ...backup.tags.map((item) => item.id)]);
   const currentTopicIds = new Set([...current.topics.map((item) => item.id), ...backup.topics.map((item) => item.id)]);
   const currentMedicationIds = new Set([...current.medications.map((item) => item.id), ...backup.medications.map((item) => item.id)]);
+  const currentProcedureIds = new Set([...current.procedures.map((item) => item.id), ...backup.procedures.map((item) => item.id)]);
   const currentAttachmentIds = new Set([...current.attachments.map((item) => item.id), ...backup.attachments.map((item) => item.id)]);
 
   if (backup.profile && current.profile) {
@@ -316,6 +334,7 @@ function buildPreview(parsed: ParsedBackup, userId: string, current: CurrentData
     (row) => row.source_topic_id !== row.target_topic_id && currentTopicIds.has(row.source_topic_id) && currentTopicIds.has(row.target_topic_id)
   );
   compareTimestamped('medications', backup.medications, current.medications, entities);
+  compareTimestamped('procedures', backup.procedures, current.procedures, entities);
   compareTimestamped('attachments', backup.attachments, current.attachments, entities, comparableAttachment);
   compareRelations('topic_tags', backup.topic_tags, current.topic_tags, entities, (row) => `${row.topic_id}:${row.tag_id}`, (row) => currentTopicIds.has(row.topic_id) && currentTagIds.has(row.tag_id));
   compareRelations(
@@ -325,6 +344,14 @@ function buildPreview(parsed: ParsedBackup, userId: string, current: CurrentData
     entities,
     (row) => `${row.medication_id}:${row.tag_id}`,
     (row) => currentMedicationIds.has(row.medication_id) && currentTagIds.has(row.tag_id)
+  );
+  compareRelations(
+    'procedure_tags',
+    backup.procedure_tags,
+    current.procedure_tags,
+    entities,
+    (row) => `${row.procedure_id}:${row.tag_id}`,
+    (row) => currentProcedureIds.has(row.procedure_id) && currentTagIds.has(row.tag_id)
   );
   compareRelations(
     'attachment_links',
@@ -349,6 +376,14 @@ function buildPreview(parsed: ParsedBackup, userId: string, current: CurrentData
     entities,
     (row) => `${row.medication_id}:${row.attachment_id}`,
     (row) => currentMedicationIds.has(row.medication_id) && currentAttachmentIds.has(row.attachment_id)
+  );
+  compareRelations(
+    'procedure_attachments',
+    backup.procedure_attachments,
+    current.procedure_attachments,
+    entities,
+    (row) => `${row.procedure_id}:${row.attachment_id}`,
+    (row) => currentProcedureIds.has(row.procedure_id) && currentAttachmentIds.has(row.attachment_id)
   );
 
   const errors = [
@@ -436,7 +471,7 @@ function shouldUpsert<T extends TimestampedRecord>(
 
 async function upsertTimestamped<T extends TimestampedRecord>(
   name: RestoreEntityName,
-  table: 'folders' | 'categories' | 'tags' | 'topics' | 'medications' | 'attachments',
+  table: 'folders' | 'categories' | 'tags' | 'topics' | 'medications' | 'procedures' | 'attachments',
   backupRows: T[],
   currentRows: T[],
   userId: string,
@@ -570,7 +605,15 @@ async function restoreAttachments(parsed: ParsedBackup, current: CurrentData, us
 
 async function restoreRelations<T extends RelationRecord>(
   name: RestoreEntityName,
-  table: 'topic_relations' | 'topic_tags' | 'medication_tags' | 'attachment_links' | 'topic_attachments' | 'medication_attachments',
+  table:
+    | 'topic_relations'
+    | 'topic_tags'
+    | 'medication_tags'
+    | 'procedure_tags'
+    | 'attachment_links'
+    | 'topic_attachments'
+    | 'medication_attachments'
+    | 'procedure_attachments',
   rows: T[],
   currentRows: T[],
   userId: string,
@@ -605,6 +648,7 @@ async function refreshLocalData(userId: string, result: BackupMergeResult) {
   await Promise.all([
     loadTopicData(userId, true),
     loadMedicationData(userId, true),
+    loadProcedureData(userId, true),
     syncAttachmentsFromSupabase(userId)
   ]);
 
@@ -648,11 +692,13 @@ export async function restoreBackupMerge(
     content_json: topic.content_json as Json
   }));
   await upsertTimestamped('medications', 'medications', parsed.data.medications, current.medications, userId, result.entities.medications, comparableRecord, (medication) => medication as unknown as Record<string, Json | string | boolean | null>);
+  await upsertTimestamped('procedures', 'procedures', parsed.data.procedures, current.procedures, userId, result.entities.procedures, comparableRecord, (procedure) => procedure as unknown as Record<string, Json | string | boolean | null>);
   await restoreAttachments(parsed, current, userId, filePlans, result.entities.attachments, result.files);
 
   const refreshed = await fetchCurrentData(userId);
   const topicIds = new Set(refreshed.topics.map((item) => item.id));
   const medicationIds = new Set(refreshed.medications.map((item) => item.id));
+  const procedureIds = new Set(refreshed.procedures.map((item) => item.id));
   const tagIds = new Set(refreshed.tags.map((item) => item.id));
   const attachmentIds = new Set(refreshed.attachments.map((item) => item.id));
 
@@ -687,6 +733,16 @@ export async function restoreBackupMerge(
     (row) => medicationIds.has(row.medication_id) && tagIds.has(row.tag_id)
   );
   await restoreRelations(
+    'procedure_tags',
+    'procedure_tags',
+    parsed.data.procedure_tags,
+    refreshed.procedure_tags,
+    userId,
+    result.entities.procedure_tags,
+    (row) => `${row.procedure_id}:${row.tag_id}`,
+    (row) => procedureIds.has(row.procedure_id) && tagIds.has(row.tag_id)
+  );
+  await restoreRelations(
     'attachment_links',
     'attachment_links',
     parsed.data.attachment_links,
@@ -715,6 +771,16 @@ export async function restoreBackupMerge(
     result.entities.medication_attachments,
     (row) => `${row.medication_id}:${row.attachment_id}`,
     (row) => medicationIds.has(row.medication_id) && attachmentIds.has(row.attachment_id)
+  );
+  await restoreRelations(
+    'procedure_attachments',
+    'procedure_attachments',
+    parsed.data.procedure_attachments,
+    refreshed.procedure_attachments,
+    userId,
+    result.entities.procedure_attachments,
+    (row) => `${row.procedure_id}:${row.attachment_id}`,
+    (row) => procedureIds.has(row.procedure_id) && attachmentIds.has(row.attachment_id)
   );
 
   result.completedAt = nowIso();

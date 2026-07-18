@@ -18,6 +18,7 @@ import type {
 import { getDocumentForTopic, getTopicDocument } from './tiptapDocument';
 import { cleanupOrphanedAttachmentSyncItems, flushAttachmentQueueItem } from '../attachments/attachmentRepository';
 import { flushMedicationQueueItem } from '../medications/medicationRepository';
+import { flushProcedureQueueItem } from '../procedures/procedureRepository';
 import { topicSections } from './topicSectionCatalog';
 
 type OrganizationRecord = Folder | Category | Tag;
@@ -539,6 +540,8 @@ export async function flushSyncQueue(userId: string) {
         await flushAttachmentQueueItem(item);
       } else if (item.entity === 'medication') {
         await flushMedicationQueueItem(item);
+      } else if (item.entity === 'procedure') {
+        await flushProcedureQueueItem(item);
       } else {
         const table = entityTables[item.entity];
         if (item.action === 'delete') {

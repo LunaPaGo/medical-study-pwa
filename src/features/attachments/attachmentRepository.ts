@@ -8,9 +8,11 @@ import type {
   AttachmentOwnerType,
   MedicationAttachment,
   PendingAttachmentFile,
+  ProcedureAttachment,
   TopicAttachment
 } from '../../types/attachment';
 import type { Medication, MedicationRichField } from '../../types/medication';
+import type { Procedure } from '../../types/procedure';
 import type { SyncAction, Topic } from '../../types/topic';
 import { processImage } from './imageProcessing';
 
@@ -41,11 +43,13 @@ type AttachmentPayload = {
   link?: Omit<AttachmentLink, 'id' | 'created_at'>;
   topicAttachment?: TopicAttachment;
   medicationAttachment?: MedicationAttachment;
+  procedureAttachment?: ProcedureAttachment;
 };
 
 export type AttachmentUsageSummary = {
   topics: number;
   medications: number;
+  procedures: number;
   total: number;
 };
 
@@ -132,6 +136,16 @@ function createMedicationAttachment(userId: string, medicationId: string, attach
   };
 }
 
+function createProcedureAttachment(userId: string, procedureId: string, attachmentId: string): ProcedureAttachment {
+  return {
+    id: generateId(),
+    user_id: userId,
+    procedure_id: procedureId,
+    attachment_id: attachmentId,
+    created_at: nowIso()
+  };
+}
+
 export async function getAttachments(userId: string) {
   const db = await localDbPromise;
 
@@ -150,24 +164,28 @@ export async function getAttachments(userId: string) {
 export async function syncAttachmentsFromSupabase(
   userId: string
 ): Promise<Omit<AttachmentSyncSummary, 'uploaded' | 'errors' | 'completedAt' | 'cleanedOrphans'>> {
-  const [attachmentsResult, topicAttachmentsResult, medicationAttachmentsResult, linksResult] = await Promise.all([
+  const [attachmentsResult, topicAttachmentsResult, medicationAttachmentsResult, procedureAttachmentsResult, linksResult] = await Promise.all([
     supabase.from('attachments').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('topic_attachments').select('*').eq('user_id', userId),
     supabase.from('medication_attachments').select('*').eq('user_id', userId),
+    supabase.from('procedure_attachments').select('*').eq('user_id', userId),
     supabase.from('attachment_links').select('*').eq('user_id', userId)
   ]);
 
-  const firstError = attachmentsResult.error ?? topicAttachmentsResult.error ?? medicationAttachmentsResult.error ?? linksResult.error;
+  const firstError =
+    attachmentsResult.error ?? topicAttachmentsResult.error ?? medicationAttachmentsResult.error ?? procedureAttachmentsResult.error ?? linksResult.error;
   if (firstError) throw firstError;
 
   const db = await localDbPromise;
   const remoteAttachments = (attachmentsResult.data ?? []) as Attachment[];
   const remoteTopicLinks = (topicAttachmentsResult.data ?? []) as TopicAttachment[];
   const remoteMedicationLinks = (medicationAttachmentsResult.data ?? []) as MedicationAttachment[];
+  const remoteProcedureLinks = (procedureAttachmentsResult.data ?? []) as ProcedureAttachment[];
   const remoteGenericLinks = (linksResult.data ?? []) as AttachmentLink[];
   const remoteAttachmentIds = new Set(remoteAttachments.map((attachment) => attachment.id));
   const remoteTopicLinkIds = new Set(remoteTopicLinks.map((link) => link.id));
   const remoteMedicationLinkIds = new Set(remoteMedicationLinks.map((link) => link.id));
+  const remoteProcedureLinkIds = new Set(remoteProcedureLinks.map((link) => link.id));
   const remoteGenericLinkIds = new Set(remoteGenericLinks.map((link) => link.id));
   const localBefore = await db.getAllFromIndex('attachments', 'user_id', userId);
   const localBeforeById = new Map(localBefore.map((attachment) => [attachment.id, attachment]));
@@ -176,7 +194,7 @@ export async function syncAttachmentsFromSupabase(
   let associationsUpdated = 0;
   let deletedLocal = 0;
 
-  const writeTx = db.transaction(['attachments', 'topic_attachments', 'medication_attachments', 'attachment_links'], 'readwrite');
+  const writeTx = db.transaction(['attachments', 'topic_attachments', 'medication_attachments', 'procedure_attachments', 'attachment_links'], 'readwrite');
   await Promise.all(
     remoteAttachments.map((item) => {
       const local = localBeforeById.get(item.id);
@@ -202,6 +220,12 @@ export async function syncAttachmentsFromSupabase(
     })
   );
   await Promise.all(
+    remoteProcedureLinks.map((item) => {
+      associationsUpdated += 1;
+      return writeTx.objectStore('procedure_attachments').put(item);
+    })
+  );
+  await Promise.all(
     remoteGenericLinks.map((item) => {
       associationsUpdated += 1;
       return writeTx.objectStore('attachment_links').put(item);
@@ -209,14 +233,15 @@ export async function syncAttachmentsFromSupabase(
   );
   await writeTx.done;
 
-  const [localAttachments, localTopicLinks, localMedicationLinks, localGenericLinks] = await Promise.all([
+  const [localAttachments, localTopicLinks, localMedicationLinks, localProcedureLinks, localGenericLinks] = await Promise.all([
     db.getAllFromIndex('attachments', 'user_id', userId),
     db.getAllFromIndex('topic_attachments', 'user_id', userId),
     db.getAllFromIndex('medication_attachments', 'user_id', userId),
+    db.getAllFromIndex('procedure_attachments', 'user_id', userId),
     db.getAllFromIndex('attachment_links', 'user_id', userId)
   ]);
 
-  const deleteTx = db.transaction(['attachments', 'topic_attachments', 'medication_attachments', 'attachment_links'], 'readwrite');
+  const deleteTx = db.transaction(['attachments', 'topic_attachments', 'medication_attachments', 'procedure_attachments', 'attachment_links'], 'readwrite');
   await Promise.all(
     localAttachments
       .filter((item) => item.sync_status === 'synced' && !remoteAttachmentIds.has(item.id))
@@ -230,6 +255,9 @@ export async function syncAttachmentsFromSupabase(
   );
   await Promise.all(
     localMedicationLinks.filter((item) => !remoteMedicationLinkIds.has(item.id)).map((item) => deleteTx.objectStore('medication_attachments').delete(item.id))
+  );
+  await Promise.all(
+    localProcedureLinks.filter((item) => !remoteProcedureLinkIds.has(item.id)).map((item) => deleteTx.objectStore('procedure_attachments').delete(item.id))
   );
   await Promise.all(
     localGenericLinks.filter((item) => !remoteGenericLinkIds.has(item.id)).map((item) => deleteTx.objectStore('attachment_links').delete(item.id))
@@ -322,25 +350,34 @@ async function pushAttachmentToSupabase(payload: AttachmentPayload) {
     await db.put('medication_attachments', payload.medicationAttachment);
   }
 
+  if (payload.procedureAttachment) {
+    const { error: procedureLinkError } = await supabase.from('procedure_attachments').upsert(payload.procedureAttachment);
+    if (procedureLinkError) throw procedureLinkError;
+    await db.put('procedure_attachments', payload.procedureAttachment);
+  }
+
   await db.put('attachments', { ...payload.attachment, sync_status: 'synced', error_message: null });
   await db.delete('pending_attachment_files', payload.attachment.id);
 }
 
 async function buildAttachmentPayloadFromLocal(userId: string, attachment: Attachment): Promise<AttachmentPayload> {
   const db = await localDbPromise;
-  const [topicLinks, medicationLinks, genericLinks] = await Promise.all([
+  const [topicLinks, medicationLinks, procedureLinks, genericLinks] = await Promise.all([
     db.getAllFromIndex('topic_attachments', 'attachment_id', attachment.id),
     db.getAllFromIndex('medication_attachments', 'attachment_id', attachment.id),
+    db.getAllFromIndex('procedure_attachments', 'attachment_id', attachment.id),
     db.getAllFromIndex('attachment_links', 'attachment_id', attachment.id)
   ]);
   const topicAttachment = topicLinks.find((item) => item.user_id === userId);
   const medicationAttachment = medicationLinks.find((item) => item.user_id === userId);
+  const procedureAttachment = procedureLinks.find((item) => item.user_id === userId);
   const link = genericLinks.find((item) => item.user_id === userId);
 
   return {
     attachment,
     topicAttachment,
     medicationAttachment,
+    procedureAttachment,
     link: link
       ? {
           user_id: link.user_id,
@@ -528,6 +565,10 @@ export async function createAttachment(
     payload.medicationAttachment = createMedicationAttachment(userId, owner.ownerId, id);
   }
 
+  if (owner?.ownerType === 'procedure') {
+    payload.procedureAttachment = createProcedureAttachment(userId, owner.ownerId, id);
+  }
+
   const db = await localDbPromise;
   await db.put('attachments', attachment);
   await db.put('pending_attachment_files', pending);
@@ -536,6 +577,9 @@ export async function createAttachment(
   }
   if (payload.medicationAttachment) {
     await db.put('medication_attachments', payload.medicationAttachment);
+  }
+  if (payload.procedureAttachment) {
+    await db.put('procedure_attachments', payload.procedureAttachment);
   }
 
   if (navigator.onLine) {
@@ -576,6 +620,7 @@ export async function deleteAttachment(userId: string, attachment: Attachment) {
     try {
       await removeAttachmentFromLinkedTopics(userId, attachment.id);
       await removeAttachmentFromLinkedMedications(userId, attachment.id);
+      await removeAttachmentFromLinkedProcedures(userId, attachment.id);
       await deleteLocalAttachmentRelations(userId, attachment.id);
 
       const { error: genericLinkError } = await supabase.from('attachment_links').delete().eq('attachment_id', attachment.id).eq('user_id', userId);
@@ -586,6 +631,9 @@ export async function deleteAttachment(userId: string, attachment: Attachment) {
 
       const { error: medicationLinkError } = await supabase.from('medication_attachments').delete().eq('attachment_id', attachment.id).eq('user_id', userId);
       if (medicationLinkError) throw medicationLinkError;
+
+      const { error: procedureLinkError } = await supabase.from('procedure_attachments').delete().eq('attachment_id', attachment.id).eq('user_id', userId);
+      if (procedureLinkError) throw procedureLinkError;
 
       const pathsToRemove = [attachment.storage_path, attachment.thumbnail_path].filter(Boolean) as string[];
       if (pathsToRemove.length > 0) {
@@ -674,18 +722,51 @@ export async function linkAttachmentToMedication(userId: string, medicationId: s
   }
 }
 
+export async function linkAttachmentToProcedure(userId: string, procedureId: string, attachmentId: string) {
+  const link = createProcedureAttachment(userId, procedureId, attachmentId);
+  const db = await localDbPromise;
+  await db.put('procedure_attachments', link);
+
+  const attachment = await db.get('attachments', attachmentId);
+  if (!attachment) return;
+
+  const payload: AttachmentPayload = {
+    attachment,
+    procedureAttachment: link,
+    link: {
+      user_id: userId,
+      attachment_id: attachmentId,
+      owner_type: 'procedure',
+      owner_id: procedureId
+    }
+  };
+
+  if (navigator.onLine) {
+    try {
+      await pushAttachmentToSupabase(payload);
+    } catch {
+      await enqueueAttachment(userId, 'upsert', payload);
+    }
+  } else {
+    await enqueueAttachment(userId, 'upsert', payload);
+  }
+}
+
 export async function getAttachmentUsageSummary(userId: string, attachmentId: string): Promise<AttachmentUsageSummary> {
   const db = await localDbPromise;
   const topicCount = (await db.getAllFromIndex('topic_attachments', 'attachment_id', attachmentId)).filter((item) => item.user_id === userId).length;
   const medicationCount = (await db.getAllFromIndex('medication_attachments', 'attachment_id', attachmentId)).filter(
     (item) => item.user_id === userId
   ).length;
-  const local = { topics: topicCount, medications: medicationCount };
+  const procedureCount = (await db.getAllFromIndex('procedure_attachments', 'attachment_id', attachmentId)).filter(
+    (item) => item.user_id === userId
+  ).length;
+  const local = { topics: topicCount, medications: medicationCount, procedures: procedureCount };
 
-  if (!navigator.onLine) return { ...local, total: local.topics + local.medications };
+  if (!navigator.onLine) return { ...local, total: local.topics + local.medications + local.procedures };
 
   try {
-    const [topicResult, medicationResult] = await Promise.all([
+    const [topicResult, medicationResult, procedureResult] = await Promise.all([
       supabase
         .from('topic_attachments')
         .select('id', { count: 'exact', head: true })
@@ -695,15 +776,22 @@ export async function getAttachmentUsageSummary(userId: string, attachmentId: st
         .from('medication_attachments')
         .select('id', { count: 'exact', head: true })
         .eq('attachment_id', attachmentId)
+        .eq('user_id', userId),
+      supabase
+        .from('procedure_attachments')
+        .select('id', { count: 'exact', head: true })
+        .eq('attachment_id', attachmentId)
         .eq('user_id', userId)
     ]);
     if (topicResult.error) throw topicResult.error;
     if (medicationResult.error) throw medicationResult.error;
+    if (procedureResult.error) throw procedureResult.error;
     const topics = Math.max(local.topics, topicResult.count ?? 0);
     const medications = Math.max(local.medications, medicationResult.count ?? 0);
-    return { topics, medications, total: topics + medications };
+    const procedures = Math.max(local.procedures, procedureResult.count ?? 0);
+    return { topics, medications, procedures, total: topics + medications + procedures };
   } catch {
-    return { ...local, total: local.topics + local.medications };
+    return { ...local, total: local.topics + local.medications + local.procedures };
   }
 }
 
@@ -716,6 +804,7 @@ export async function diagnoseAttachmentReconciliation(userId: string): Promise<
   const localAttachments = await db.getAllFromIndex('attachments', 'user_id', userId);
   const localTopicLinks = await db.getAllFromIndex('topic_attachments', 'user_id', userId);
   const localMedicationLinks = await db.getAllFromIndex('medication_attachments', 'user_id', userId);
+  const localProcedureLinks = await db.getAllFromIndex('procedure_attachments', 'user_id', userId);
 
   if (!navigator.onLine) {
     return {
@@ -727,14 +816,15 @@ export async function diagnoseAttachmentReconciliation(userId: string): Promise<
     };
   }
 
-  const [attachmentsResult, topicLinksResult, medicationLinksResult, storageResult] = await Promise.all([
+  const [attachmentsResult, topicLinksResult, medicationLinksResult, procedureLinksResult, storageResult] = await Promise.all([
     supabase.from('attachments').select('*').eq('user_id', userId),
     supabase.from('topic_attachments').select('*').eq('user_id', userId),
     supabase.from('medication_attachments').select('*').eq('user_id', userId),
+    supabase.from('procedure_attachments').select('*').eq('user_id', userId),
     supabase.storage.from(bucketName).list(userId, { limit: 1000 })
   ]);
 
-  const firstError = attachmentsResult.error ?? topicLinksResult.error ?? medicationLinksResult.error ?? storageResult.error;
+  const firstError = attachmentsResult.error ?? topicLinksResult.error ?? medicationLinksResult.error ?? procedureLinksResult.error ?? storageResult.error;
   if (firstError) throw firstError;
 
   const remoteAttachments = (attachmentsResult.data ?? []) as Attachment[];
@@ -742,8 +832,10 @@ export async function diagnoseAttachmentReconciliation(userId: string): Promise<
   const localIds = new Set(localAttachments.map((item) => item.id));
   const localTopicLinkIds = new Set(localTopicLinks.map((item) => item.id));
   const localMedicationLinkIds = new Set(localMedicationLinks.map((item) => item.id));
+  const localProcedureLinkIds = new Set(localProcedureLinks.map((item) => item.id));
   const remoteTopicLinks = (topicLinksResult.data ?? []) as TopicAttachment[];
   const remoteMedicationLinks = (medicationLinksResult.data ?? []) as MedicationAttachment[];
+  const remoteProcedureLinks = (procedureLinksResult.data ?? []) as ProcedureAttachment[];
 
   return {
     localOnly: localAttachments.filter((item) => !remoteIds.has(item.id)).length,
@@ -751,21 +843,24 @@ export async function diagnoseAttachmentReconciliation(userId: string): Promise<
     invalidStoragePath: remoteAttachments.filter((item) => !item.storage_path.startsWith(`${userId}/`)).length,
     remoteLinksMissingLocally:
       remoteTopicLinks.filter((item) => !localTopicLinkIds.has(item.id)).length +
-      remoteMedicationLinks.filter((item) => !localMedicationLinkIds.has(item.id)).length,
+      remoteMedicationLinks.filter((item) => !localMedicationLinkIds.has(item.id)).length +
+      remoteProcedureLinks.filter((item) => !localProcedureLinkIds.has(item.id)).length,
     storageObjectsWithoutRecord: (storageResult.data ?? []).filter((item) => !remoteIds.has(item.name)).length
   };
 }
 
 async function deleteLocalAttachmentRelations(userId: string, attachmentId: string) {
   const db = await localDbPromise;
-  const [topicLinks, medicationLinks, genericLinks] = await Promise.all([
+  const [topicLinks, medicationLinks, procedureLinks, genericLinks] = await Promise.all([
     db.getAllFromIndex('topic_attachments', 'attachment_id', attachmentId),
     db.getAllFromIndex('medication_attachments', 'attachment_id', attachmentId),
+    db.getAllFromIndex('procedure_attachments', 'attachment_id', attachmentId),
     db.getAllFromIndex('attachment_links', 'attachment_id', attachmentId)
   ]);
-  const tx = db.transaction(['topic_attachments', 'medication_attachments', 'attachment_links'], 'readwrite');
+  const tx = db.transaction(['topic_attachments', 'medication_attachments', 'procedure_attachments', 'attachment_links'], 'readwrite');
   await Promise.all(topicLinks.filter((item) => item.user_id === userId).map((item) => tx.objectStore('topic_attachments').delete(item.id)));
   await Promise.all(medicationLinks.filter((item) => item.user_id === userId).map((item) => tx.objectStore('medication_attachments').delete(item.id)));
+  await Promise.all(procedureLinks.filter((item) => item.user_id === userId).map((item) => tx.objectStore('procedure_attachments').delete(item.id)));
   await Promise.all(genericLinks.filter((item) => item.user_id === userId).map((item) => tx.objectStore('attachment_links').delete(item.id)));
   await tx.done;
 }
@@ -870,6 +965,53 @@ async function removeAttachmentFromLinkedMedications(userId: string, attachmentI
   }
 }
 
+async function removeAttachmentFromLinkedProcedures(userId: string, attachmentId: string) {
+  const db = await localDbPromise;
+  if (navigator.onLine) {
+    const { data, error } = await supabase.from('procedure_attachments').select('*').eq('attachment_id', attachmentId).eq('user_id', userId);
+    if (error) throw error;
+    await Promise.all(((data ?? []) as ProcedureAttachment[]).map((item) => db.put('procedure_attachments', item)));
+  }
+
+  const links = (await db.getAllFromIndex('procedure_attachments', 'attachment_id', attachmentId)).filter((item) => item.user_id === userId);
+  const procedureIds = [...new Set(links.map((item) => item.procedure_id))];
+
+  for (const procedureId of procedureIds) {
+    let procedure: Procedure | undefined = await db.get('procedures', procedureId);
+    if (!procedure && navigator.onLine) {
+      const { data, error } = await supabase.from('procedures').select('*').eq('id', procedureId).eq('user_id', userId).single();
+      if (error && error.code !== 'PGRST116') throw error;
+      if (data) {
+        procedure = data as Procedure;
+        await db.put('procedures', procedure);
+      }
+    }
+    if (!procedure) continue;
+
+    let changed = false;
+    const updated = { ...procedure, updated_at: nowIso() };
+    for (const field of ['technique_json', 'considerations_json'] as const) {
+      const result = removeAttachmentNodes(updated[field], attachmentId);
+      if (result.changed) {
+        updated[field] = result.document as (typeof updated)[typeof field];
+        changed = true;
+      }
+    }
+    if (!changed) continue;
+    await db.put('procedures', updated);
+    const { error } = await supabase
+      .from('procedures')
+      .update({
+        technique_json: updated.technique_json as Json,
+        considerations_json: updated.considerations_json as Json,
+        updated_at: updated.updated_at
+      })
+      .eq('id', procedureId)
+      .eq('user_id', userId);
+    if (error) throw error;
+  }
+}
+
 export async function getSignedAttachmentUrl(attachment: Attachment, thumbnail = false) {
   const path = thumbnail && attachment.thumbnail_path ? attachment.thumbnail_path : attachment.storage_path;
   const { data, error } = await supabase.storage.from(bucketName).createSignedUrl(path, 60 * 10);
@@ -893,6 +1035,7 @@ export async function flushAttachmentQueueItem(item: { action: SyncAction; paylo
     await supabase.from('attachment_links').delete().eq('attachment_id', payload.id).eq('user_id', item.user_id);
     await supabase.from('topic_attachments').delete().eq('attachment_id', payload.id).eq('user_id', item.user_id);
     await supabase.from('medication_attachments').delete().eq('attachment_id', payload.id).eq('user_id', item.user_id);
+    await supabase.from('procedure_attachments').delete().eq('attachment_id', payload.id).eq('user_id', item.user_id);
     if (data) {
       await supabase.storage.from(bucketName).remove([data.storage_path, data.thumbnail_path].filter(Boolean) as string[]);
     }

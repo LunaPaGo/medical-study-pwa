@@ -50,7 +50,24 @@ async function getRows<T>(table: string, userId: string): Promise<T[]> {
 }
 
 async function collectBackupData(userId: string): Promise<BackupData> {
-  const [profileResult, folders, categories, tags, topics, topicRelations, topicTags, medications, medicationTags, attachments, attachmentLinks, topicAttachments, medicationAttachments] =
+  const [
+    profileResult,
+    folders,
+    categories,
+    tags,
+    topics,
+    topicRelations,
+    topicTags,
+    medications,
+    medicationTags,
+    procedures,
+    procedureTags,
+    attachments,
+    attachmentLinks,
+    topicAttachments,
+    medicationAttachments,
+    procedureAttachments
+  ] =
     await Promise.all([
       supabase.from('profiles').select('user_id, display_name, created_at, updated_at').eq('user_id', userId).maybeSingle(),
       getRows<BackupData['folders'][number]>('folders', userId),
@@ -61,10 +78,13 @@ async function collectBackupData(userId: string): Promise<BackupData> {
       getRows<BackupData['topic_tags'][number]>('topic_tags', userId),
       getRows<BackupData['medications'][number]>('medications', userId),
       getRows<BackupData['medication_tags'][number]>('medication_tags', userId),
+      getRows<BackupData['procedures'][number]>('procedures', userId),
+      getRows<BackupData['procedure_tags'][number]>('procedure_tags', userId),
       getRows<BackupData['attachments'][number]>('attachments', userId),
       getRows<BackupData['attachment_links'][number]>('attachment_links', userId),
       getRows<BackupData['topic_attachments'][number]>('topic_attachments', userId),
-      getRows<BackupData['medication_attachments'][number]>('medication_attachments', userId)
+      getRows<BackupData['medication_attachments'][number]>('medication_attachments', userId),
+      getRows<BackupData['procedure_attachments'][number]>('procedure_attachments', userId)
     ]);
 
   if (profileResult.error) throw profileResult.error;
@@ -79,10 +99,13 @@ async function collectBackupData(userId: string): Promise<BackupData> {
     topic_tags: topicTags,
     medications,
     medication_tags: medicationTags,
+    procedures,
+    procedure_tags: procedureTags,
     attachments,
     attachment_links: attachmentLinks,
     topic_attachments: topicAttachments,
-    medication_attachments: medicationAttachments
+    medication_attachments: medicationAttachments,
+    procedure_attachments: procedureAttachments
   };
 }
 
@@ -108,6 +131,7 @@ function detectMedicalImageWarnings(data: BackupData) {
   const attachmentIds = new Set(data.attachments.map((attachment) => attachment.id));
   const topicAttachmentIds = new Set(data.topic_attachments.map((link) => link.attachment_id));
   const medicationAttachmentIds = new Set(data.medication_attachments.map((link) => link.attachment_id));
+  const procedureAttachmentIds = new Set(data.procedure_attachments.map((link) => link.attachment_id));
 
   data.topics.forEach((topic) => {
     collectMedicalImageIds(topic.content_json).forEach((attachmentId) => {
@@ -122,6 +146,15 @@ function detectMedicalImageWarnings(data: BackupData) {
       collectMedicalImageIds(value as Json).forEach((attachmentId) => {
         if (!attachmentIds.has(attachmentId)) warnings.push(`${name} referencia una imagen inexistente (${attachmentId}).`);
         if (!medicationAttachmentIds.has(attachmentId)) warnings.push(`${name} tiene una imagen medicalImage sin relación medication_attachments (${attachmentId}).`);
+      });
+    });
+  });
+
+  data.procedures.forEach((procedure) => {
+    [procedure.technique_json, procedure.considerations_json].forEach((value) => {
+      collectMedicalImageIds(value as Json).forEach((attachmentId) => {
+        if (!attachmentIds.has(attachmentId)) warnings.push(`El procedimiento "${procedure.name}" referencia una imagen inexistente (${attachmentId}).`);
+        if (!procedureAttachmentIds.has(attachmentId)) warnings.push(`El procedimiento "${procedure.name}" tiene una imagen medicalImage sin relación procedure_attachments (${attachmentId}).`);
       });
     });
   });
@@ -173,14 +206,16 @@ export async function createCompleteBackup(options: ExportOptions): Promise<Back
   const fileEntries: BackupManifest['files'] = [];
 
   approximateTotalSize += await addDataFile(zip, 'data/profile.json', data.profile, dataChecksums);
-  approximateTotalSize += await addDataFile(zip, 'data/organization.json', { folders: data.folders, categories: data.categories, tags: data.tags, topic_tags: data.topic_tags, medication_tags: data.medication_tags }, dataChecksums);
+  approximateTotalSize += await addDataFile(zip, 'data/organization.json', { folders: data.folders, categories: data.categories, tags: data.tags, topic_tags: data.topic_tags, medication_tags: data.medication_tags, procedure_tags: data.procedure_tags }, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/topics.json', data.topics, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/topic_relations.json', data.topic_relations, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/medications.json', data.medications, dataChecksums);
+  approximateTotalSize += await addDataFile(zip, 'data/procedures.json', data.procedures, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/attachments.json', data.attachments, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/attachment_links.json', data.attachment_links, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/topic_attachments.json', data.topic_attachments, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/medication_attachments.json', data.medication_attachments, dataChecksums);
+  approximateTotalSize += await addDataFile(zip, 'data/procedure_attachments.json', data.procedure_attachments, dataChecksums);
   approximateTotalSize += await addDataFile(zip, 'data/user_settings.json', { exported_display_name: data.profile?.display_name ?? null }, dataChecksums);
 
   emitProgress(onProgress, { step: 'downloading-files', message: 'Descargando archivos...', current: 0, total: data.attachments.length });
@@ -244,10 +279,13 @@ export async function createCompleteBackup(options: ExportOptions): Promise<Back
       topic_tags: data.topic_tags.length,
       medications: data.medications.length,
       medication_tags: data.medication_tags.length,
+      procedures: data.procedures.length,
+      procedure_tags: data.procedure_tags.length,
       attachments: data.attachments.length,
       attachment_links: data.attachment_links.length,
       topic_attachments: data.topic_attachments.length,
       medication_attachments: data.medication_attachments.length,
+      procedure_attachments: data.procedure_attachments.length,
       files: fileEntries.length
     },
     approximate_total_size: approximateTotalSize,

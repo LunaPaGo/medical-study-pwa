@@ -28,7 +28,13 @@ import {
 import type { Attachment, AttachmentOwnerType } from '../../types/attachment';
 import type { TipTapDocument } from '../../types/topic';
 import { MedicalImageNode } from '../attachments/MedicalImageNode';
-import { getAttachmentDisplayUrl, isImageAttachment, linkAttachmentToMedication, linkAttachmentToTopic } from '../attachments/attachmentRepository';
+import {
+  getAttachmentDisplayUrl,
+  isImageAttachment,
+  linkAttachmentToMedication,
+  linkAttachmentToProcedure,
+  linkAttachmentToTopic
+} from '../attachments/attachmentRepository';
 import { useAuth } from '../../hooks/useAuth';
 import { useAttachmentMutations, useAttachments } from '../attachments/useAttachments';
 
@@ -92,6 +98,9 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
     }
     if (owner?.ownerType === 'medication' && user?.id) {
       await linkAttachmentToMedication(user.id, owner.ownerId, attachment.id);
+    }
+    if (owner?.ownerType === 'procedure' && user?.id) {
+      await linkAttachmentToProcedure(user.id, owner.ownerId, attachment.id);
     }
     const displayUrl = await getAttachmentDisplayUrl(attachment).catch(() => '');
     editor

@@ -478,6 +478,88 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      procedures: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          summary: string | null;
+          category: string | null;
+          status: 'draft' | 'complete';
+          is_favorite: boolean;
+          technique_json: Json;
+          technique_html: string;
+          considerations_json: Json;
+          considerations_html: string;
+          search_text: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name?: string;
+          summary?: string | null;
+          category?: string | null;
+          status?: 'draft' | 'complete';
+          is_favorite?: boolean;
+          technique_json?: Json;
+          technique_html?: string;
+          considerations_json?: Json;
+          considerations_html?: string;
+          search_text?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          summary?: string | null;
+          category?: string | null;
+          status?: 'draft' | 'complete';
+          is_favorite?: boolean;
+          technique_json?: Json;
+          technique_html?: string;
+          considerations_json?: Json;
+          considerations_html?: string;
+          search_text?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      procedure_tags: {
+        Row: {
+          procedure_id: string;
+          tag_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          procedure_id: string;
+          tag_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      procedure_attachments: {
+        Row: {
+          id: string;
+          user_id: string;
+          procedure_id: string;
+          attachment_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          procedure_id: string;
+          attachment_id: string;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

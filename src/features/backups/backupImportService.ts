@@ -8,6 +8,7 @@ type OrganizationBackup = {
   tags: BackupData['tags'];
   topic_tags: BackupData['topic_tags'];
   medication_tags: BackupData['medication_tags'];
+  procedure_tags?: BackupData['procedure_tags'];
 };
 
 export type ParsedBackup = {
@@ -44,10 +45,13 @@ export async function parseValidatedBackupZip(file: File): Promise<ParsedBackup>
       topic_tags: organization.topic_tags,
       medications: await readJson<BackupData['medications']>(zip, 'data/medications.json'),
       medication_tags: organization.medication_tags,
+      procedures: zip.file('data/procedures.json') ? await readJson<BackupData['procedures']>(zip, 'data/procedures.json') : [],
+      procedure_tags: organization.procedure_tags ?? [],
       attachments: await readJson<BackupData['attachments']>(zip, 'data/attachments.json'),
       attachment_links: await readJson<BackupData['attachment_links']>(zip, 'data/attachment_links.json'),
       topic_attachments: await readJson<BackupData['topic_attachments']>(zip, 'data/topic_attachments.json'),
-      medication_attachments: await readJson<BackupData['medication_attachments']>(zip, 'data/medication_attachments.json')
+      medication_attachments: await readJson<BackupData['medication_attachments']>(zip, 'data/medication_attachments.json'),
+      procedure_attachments: zip.file('data/procedure_attachments.json') ? await readJson<BackupData['procedure_attachments']>(zip, 'data/procedure_attachments.json') : []
     }
   };
 }

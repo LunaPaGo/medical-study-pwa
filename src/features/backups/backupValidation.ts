@@ -153,6 +153,35 @@ const medicationAttachmentSchema = z.object({
   created_at: isoDateSchema
 });
 
+const procedureSchema = z.object({
+  ...baseUserRecord,
+  name: z.string(),
+  summary: nullableString,
+  category: nullableString,
+  status: z.enum(['draft', 'complete']),
+  is_favorite: z.boolean(),
+  technique_json: tiptapSchema.optional().default(defaultTipTapDocument),
+  technique_html: z.string().optional().default('<p></p>'),
+  considerations_json: tiptapSchema.optional().default(defaultTipTapDocument),
+  considerations_html: z.string().optional().default('<p></p>'),
+  search_text: z.string()
+});
+
+const procedureTagSchema = z.object({
+  procedure_id: uuidSchema,
+  tag_id: uuidSchema,
+  user_id: uuidSchema,
+  created_at: isoDateSchema
+});
+
+const procedureAttachmentSchema = z.object({
+  id: uuidSchema,
+  user_id: uuidSchema,
+  procedure_id: uuidSchema,
+  attachment_id: uuidSchema,
+  created_at: isoDateSchema
+});
+
 const manifestSchema = z.object({
   backup_format: z.literal(backupFormat),
   backup_version: z.number(),
@@ -194,6 +223,7 @@ const requiredDataFiles = [
 ];
 
 const v2DataFiles = ['data/topic_relations.json'];
+const v4DataFiles = ['data/procedures.json', 'data/procedure_attachments.json'];
 
 function check(label: string, status: BackupValidationCheck['status'], message: string): BackupValidationCheck {
   return { label, status, message };
@@ -265,14 +295,18 @@ export async function validateBackupZip(file: File): Promise<BackupValidationRes
     manifest = parsedManifest.data as BackupManifest;
     checks.push(check('Manifest', 'ok', 'manifest.json es válido.'));
 
-    if (![1, 2, backupVersion].includes(manifest.backup_version)) {
+    if (![1, 2, 3, backupVersion].includes(manifest.backup_version)) {
       errors.push(`Versión de respaldo no compatible: ${manifest.backup_version}.`);
-      checks.push(check('Versión', 'error', `Se esperaba versión 1, 2 o ${backupVersion}.`));
+      checks.push(check('Versión', 'error', `Se esperaba versión 1, 2, 3 o ${backupVersion}.`));
     } else {
       checks.push(check('Versión', 'ok', `Formato ${manifest.backup_format} v${manifest.backup_version}.`));
     }
 
-    const requiredForVersion = manifest.backup_version >= 2 ? [...requiredDataFiles, ...v2DataFiles] : requiredDataFiles;
+    const requiredForVersion = [
+      ...requiredDataFiles,
+      ...(manifest.backup_version >= 2 ? v2DataFiles : []),
+      ...(manifest.backup_version >= 4 ? v4DataFiles : [])
+    ];
     const missingJson = requiredForVersion.filter((path) => !zip.file(path));
     if (missingJson.length > 0) {
       errors.push(`Faltan JSON requeridos: ${missingJson.join(', ')}.`);
@@ -296,7 +330,8 @@ export async function validateBackupZip(file: File): Promise<BackupValidationRes
         categories: z.array(organizationItemSchema),
         tags: z.array(organizationItemSchema),
         topic_tags: z.array(topicTagSchema),
-        medication_tags: z.array(medicationTagSchema)
+        medication_tags: z.array(medicationTagSchema),
+        procedure_tags: z.array(procedureTagSchema).optional().default([])
       })
       .safeParse(await readJson(zip, 'data/organization.json'));
     const topics = z.array(topicSchema).safeParse(await readJson(zip, 'data/topics.json'));
@@ -304,12 +339,30 @@ export async function validateBackupZip(file: File): Promise<BackupValidationRes
       ? z.array(topicRelationSchema).safeParse(await readJson(zip, 'data/topic_relations.json'))
       : z.array(topicRelationSchema).safeParse([]);
     const medications = z.array(medicationSchema).safeParse(await readJson(zip, 'data/medications.json'));
+    const procedures = zip.file('data/procedures.json')
+      ? z.array(procedureSchema).safeParse(await readJson(zip, 'data/procedures.json'))
+      : z.array(procedureSchema).safeParse([]);
     const attachments = z.array(attachmentSchema).safeParse(await readJson(zip, 'data/attachments.json'));
     const attachmentLinks = z.array(attachmentLinkSchema).safeParse(await readJson(zip, 'data/attachment_links.json'));
     const topicAttachments = z.array(topicAttachmentSchema).safeParse(await readJson(zip, 'data/topic_attachments.json'));
     const medicationAttachments = z.array(medicationAttachmentSchema).safeParse(await readJson(zip, 'data/medication_attachments.json'));
+    const procedureAttachments = zip.file('data/procedure_attachments.json')
+      ? z.array(procedureAttachmentSchema).safeParse(await readJson(zip, 'data/procedure_attachments.json'))
+      : z.array(procedureAttachmentSchema).safeParse([]);
 
-    const schemaResults = { profile, organization, topics, topicRelations, medications, attachments, attachmentLinks, topicAttachments, medicationAttachments };
+    const schemaResults = {
+      profile,
+      organization,
+      topics,
+      topicRelations,
+      medications,
+      procedures,
+      attachments,
+      attachmentLinks,
+      topicAttachments,
+      medicationAttachments,
+      procedureAttachments
+    };
     const schemaErrors = Object.entries(schemaResults).filter(([, result]) => !result.success);
     if (schemaErrors.length > 0) {
       schemaErrors.forEach(([name]) => errors.push(`${name} tiene estructura inválida.`));
@@ -318,7 +371,18 @@ export async function validateBackupZip(file: File): Promise<BackupValidationRes
       checks.push(check('Validación Zod', 'ok', 'Todos los JSON cumplen la estructura esperada.'));
     }
 
-    if (!organization.success || !topics.success || !topicRelations.success || !medications.success || !attachments.success || !attachmentLinks.success || !topicAttachments.success || !medicationAttachments.success) {
+    if (
+      !organization.success ||
+      !topics.success ||
+      !topicRelations.success ||
+      !medications.success ||
+      !procedures.success ||
+      !attachments.success ||
+      !attachmentLinks.success ||
+      !topicAttachments.success ||
+      !medicationAttachments.success ||
+      !procedureAttachments.success
+    ) {
       return { status: 'invalid', manifest, checks, errors, warnings, counts, size: file.size };
     }
 
@@ -328,19 +392,23 @@ export async function validateBackupZip(file: File): Promise<BackupValidationRes
     counts.tags = organization.data.tags.length;
     counts.topic_tags = organization.data.topic_tags.length;
     counts.medication_tags = organization.data.medication_tags.length;
+    counts.procedure_tags = organization.data.procedure_tags.length;
     counts.topics = topics.data.length;
     counts.topic_relations = topicRelations.data.length;
     counts.medications = medications.data.length;
+    counts.procedures = procedures.data.length;
     counts.attachments = attachments.data.length;
     counts.attachment_links = attachmentLinks.data.length;
     counts.topic_attachments = topicAttachments.data.length;
     counts.medication_attachments = medicationAttachments.data.length;
+    counts.procedure_attachments = procedureAttachments.data.length;
     counts.files = manifest.files.length;
 
     const parsedBackupVersion = manifest.backup_version;
     const manifestCounts = manifest.counts as Record<string, number>;
     const countMismatches = Object.entries(counts).filter(([key, value]) => {
       if (parsedBackupVersion === 1 && key === 'topic_relations' && manifestCounts[key] === undefined) return false;
+      if (parsedBackupVersion < 4 && ['procedures', 'procedure_tags', 'procedure_attachments'].includes(key) && manifestCounts[key] === undefined) return false;
       return manifestCounts[key] !== value;
     });
     if (countMismatches.length > 0) {
@@ -379,6 +447,7 @@ export async function validateBackupZip(file: File): Promise<BackupValidationRes
     const attachmentIds = new Set(attachments.data.map((item) => item.id));
     const topicIds = new Set(topics.data.map((item) => item.id));
     const medicationIds = new Set(medications.data.map((item) => item.id));
+    const procedureIds = new Set(procedures.data.map((item) => item.id));
     const tagIds = new Set(organization.data.tags.map((item) => item.id));
     const folderIds = new Set(organization.data.folders.map((item) => item.id));
     const categoryIds = new Set(organization.data.categories.map((item) => item.id));
@@ -387,6 +456,7 @@ export async function validateBackupZip(file: File): Promise<BackupValidationRes
       ...findDuplicates(topics.data.map((item) => item.id)),
       ...findDuplicates(topicRelations.data.map((item) => item.id)),
       ...findDuplicates(medications.data.map((item) => item.id)),
+      ...findDuplicates(procedures.data.map((item) => item.id)),
       ...findDuplicates(organization.data.folders.map((item) => item.id)),
       ...findDuplicates(organization.data.categories.map((item) => item.id)),
       ...findDuplicates(organization.data.tags.map((item) => item.id))
@@ -425,6 +495,10 @@ export async function validateBackupZip(file: File): Promise<BackupValidationRes
       if (!medicationIds.has(item.medication_id)) brokenReferences.push(`medication_tags apunta a medicamento inexistente ${item.medication_id}.`);
       if (!tagIds.has(item.tag_id)) brokenReferences.push(`medication_tags apunta a etiqueta inexistente ${item.tag_id}.`);
     });
+    organization.data.procedure_tags.forEach((item) => {
+      if (!procedureIds.has(item.procedure_id)) brokenReferences.push(`procedure_tags apunta a procedimiento inexistente ${item.procedure_id}.`);
+      if (!tagIds.has(item.tag_id)) brokenReferences.push(`procedure_tags apunta a etiqueta inexistente ${item.tag_id}.`);
+    });
     topicAttachments.data.forEach((item) => {
       if (!topicIds.has(item.topic_id)) brokenReferences.push(`topic_attachments apunta a tema inexistente ${item.topic_id}.`);
       if (!attachmentIds.has(item.attachment_id)) brokenReferences.push(`topic_attachments apunta a attachment inexistente ${item.attachment_id}.`);
@@ -433,6 +507,10 @@ export async function validateBackupZip(file: File): Promise<BackupValidationRes
       if (!medicationIds.has(item.medication_id)) brokenReferences.push(`medication_attachments apunta a medicamento inexistente ${item.medication_id}.`);
       if (!attachmentIds.has(item.attachment_id)) brokenReferences.push(`medication_attachments apunta a attachment inexistente ${item.attachment_id}.`);
     });
+    procedureAttachments.data.forEach((item) => {
+      if (!procedureIds.has(item.procedure_id)) brokenReferences.push(`procedure_attachments apunta a procedimiento inexistente ${item.procedure_id}.`);
+      if (!attachmentIds.has(item.attachment_id)) brokenReferences.push(`procedure_attachments apunta a attachment inexistente ${item.attachment_id}.`);
+    });
     attachmentLinks.data.forEach((item) => {
       if (!attachmentIds.has(item.attachment_id)) brokenReferences.push(`attachment_links apunta a attachment inexistente ${item.attachment_id}.`);
     });
@@ -440,6 +518,13 @@ export async function validateBackupZip(file: File): Promise<BackupValidationRes
       Object.values(medication).forEach((value) => {
         collectMedicalImageIds(value).forEach((id) => {
           if (!attachmentIds.has(id)) brokenReferences.push(`Medicamento ${medication.id} contiene medicalImage sin attachment ${id}.`);
+        });
+      });
+    });
+    procedures.data.forEach((procedure) => {
+      [procedure.technique_json, procedure.considerations_json].forEach((value) => {
+        collectMedicalImageIds(value).forEach((id) => {
+          if (!attachmentIds.has(id)) brokenReferences.push(`Procedimiento ${procedure.id} contiene medicalImage sin attachment ${id}.`);
         });
       });
     });
