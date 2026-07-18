@@ -1,9 +1,11 @@
-import { HeadingLevel } from 'docx';
+import { BorderStyle, HeadingLevel, ShadingType } from 'docx';
 
 export const wordParagraphStyles = {
   title: 'MedicalDocumentTitle',
   subtitle: 'MedicalDocumentSubtitle',
-  normal: 'MedicalDocumentNormal'
+  normal: 'MedicalDocumentNormal',
+  quote: 'MedicalDocumentQuote',
+  code: 'MedicalDocumentCode'
 } as const;
 
 export function headingLevelFor(sectionLevel: number) {
@@ -65,6 +67,37 @@ export const wordDocumentStyles = {
       paragraph: {
         spacing: { after: 160 },
         line: 320
+      }
+    },
+    {
+      id: wordParagraphStyles.quote,
+      name: 'Medical Document Quote',
+      basedOn: wordParagraphStyles.normal,
+      run: {
+        italics: true,
+        size: 22,
+        font: 'Arial',
+        color: '374151'
+      },
+      paragraph: {
+        indent: { left: 360 },
+        spacing: { before: 80, after: 160 },
+        border: {
+          left: { style: BorderStyle.SINGLE, color: '94A3B8', size: 10, space: 8 }
+        }
+      }
+    },
+    {
+      id: wordParagraphStyles.code,
+      name: 'Medical Document Code',
+      basedOn: 'Normal',
+      run: {
+        size: 20,
+        font: 'Consolas'
+      },
+      paragraph: {
+        spacing: { before: 20, after: 20 },
+        shading: { type: ShadingType.CLEAR, fill: 'F3F4F6' }
       }
     }
   ]

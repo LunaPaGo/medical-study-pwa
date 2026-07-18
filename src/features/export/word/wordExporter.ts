@@ -1,14 +1,20 @@
 import { Document, Packer, Paragraph } from 'docx';
-import type { ExportBlock, ExportDocument, ExportHeadingBlock, ExportParagraphBlock } from '../exportTypes';
+import type { ExportDocument } from '../exportTypes';
+import { renderWordBlocks } from './wordBlockRenderer';
+import { wordNumberingConfig } from './wordNumbering';
 import { headingLevelFor, wordDocumentStyles, wordParagraphStyles } from './wordStyles';
-import { renderWordTextRuns } from './wordTextRenderer';
 
 export async function createWordDocument(exportDocument: ExportDocument): Promise<Blob> {
+  let listInstance = 1;
+  const renderContext = {
+    nextListInstance: () => listInstance++
+  };
+
   const children = [
     titleParagraph(exportDocument.title),
     subtitleParagraph(exportDocument.subtitle),
     ...exportDocument.sections.flatMap((section) => {
-      const sectionBlocks = section.blocks.flatMap(renderSupportedBlock);
+      const sectionBlocks = renderWordBlocks(section.blocks, renderContext);
       if (sectionBlocks.length === 0) return [];
 
       return [
@@ -23,6 +29,7 @@ export async function createWordDocument(exportDocument: ExportDocument): Promis
 
   const document = new Document({
     styles: wordDocumentStyles,
+    numbering: wordNumberingConfig,
     sections: [
       {
         properties: {},
@@ -52,40 +59,4 @@ function subtitleParagraph(subtitle: string | undefined) {
     text: cleanSubtitle,
     style: wordParagraphStyles.subtitle
   });
-}
-
-function renderSupportedBlock(block: ExportBlock): Paragraph[] {
-  if (block.type === 'paragraph') {
-    return renderParagraphBlock(block);
-  }
-
-  if (block.type === 'heading') {
-    return renderHeadingBlock(block);
-  }
-
-  return [];
-}
-
-function renderParagraphBlock(block: ExportParagraphBlock) {
-  const children = renderWordTextRuns(block.children);
-  if (children.length === 0) return [];
-
-  return [
-    new Paragraph({
-      children,
-      style: wordParagraphStyles.normal
-    })
-  ];
-}
-
-function renderHeadingBlock(block: ExportHeadingBlock) {
-  const children = renderWordTextRuns(block.children);
-  if (children.length === 0) return [];
-
-  return [
-    new Paragraph({
-      children,
-      heading: headingLevelFor(block.level + 1)
-    })
-  ];
 }
