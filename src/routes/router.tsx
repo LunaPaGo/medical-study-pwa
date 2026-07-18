@@ -6,6 +6,7 @@ import { AuthPage } from '../pages/AuthPage';
 import { AttachmentsPage } from '../pages/AttachmentsPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { BackupPage } from '../features/backups/BackupPage';
+import { CalculatorsPage } from '../features/calculators/CalculatorsPage';
 import { FavoritesPage } from '../pages/FavoritesPage';
 import { MedicationComparePage } from '../pages/MedicationComparePage';
 import { MedicationDetailPage } from '../pages/MedicationDetailPage';
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
       { path: 'procedimientos/nuevo', element: <ProcedureFormPage /> },
       { path: 'procedimientos/:procedureId', element: <ProcedureDetailPage /> },
       { path: 'procedimientos/:procedureId/editar', element: <ProcedureFormPage /> },
+      { path: 'calculadoras', element: <CalculatorsPage /> },
       { path: 'buscar', element: <SearchPage /> },
       { path: 'favoritos', element: <FavoritesPage /> },
       { path: 'archivos', element: <AttachmentsPage /> },

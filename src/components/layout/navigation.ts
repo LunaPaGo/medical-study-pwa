@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardList, Clock, Files, Heart, Home, Pill, Search, ShieldCheck, UploadCloud } from 'lucide-react';
+import { BookOpen, Calculator, ClipboardList, Clock, Files, Heart, Home, Pill, Search, ShieldCheck, UploadCloud } from 'lucide-react';
 import type { AppRoute } from '../../types/navigation';
 
 export const primaryRoutes: AppRoute[] = [
@@ -6,6 +6,7 @@ export const primaryRoutes: AppRoute[] = [
   { label: 'Temas', path: '/temas', icon: BookOpen },
   { label: 'Farmacología', path: '/farmacologia', icon: Pill },
   { label: 'Procedimientos', path: '/procedimientos', icon: ClipboardList },
+  { label: 'Calculadoras', path: '/calculadoras', icon: Calculator },
   { label: 'Buscar', path: '/buscar', icon: Search },
   { label: 'Archivos', path: '/archivos', icon: Files },
   { label: 'Favoritos', path: '/favoritos', icon: Heart }

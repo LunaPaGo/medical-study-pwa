@@ -1206,6 +1206,47 @@ button:disabled,
   font-size: var(--small-text-size);
 }
 
+.calculator-category-stack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.calculator-category-panel {
+  min-height: auto;
+  padding: 0;
+  overflow: hidden;
+}
+
+.calculator-category-panel summary {
+  cursor: pointer;
+  color: var(--text);
+  font-weight: 800;
+  padding: var(--space-6) var(--space-7);
+}
+
+.calculator-category-body {
+  border-top: 1px solid var(--line);
+  padding: var(--space-6) var(--space-7) var(--space-7);
+}
+
+.calculator-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.calculator-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: var(--space-5);
+}
+
+.calculator-card h2 {
+  margin: 0;
+  font-size: var(--card-title-size);
+}
+
 .dropzone {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
