@@ -1,7 +1,16 @@
 import { Copy, Download, Edit3, Eye, File, Image as ImageIcon, RefreshCcw, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Attachment } from '../../types/attachment';
-import { attachmentToInternalLink, getAttachmentFile, getAttachmentUsageSummary, getSignedAttachmentUrl, isImageAttachment } from './attachmentRepository';
+import {
+  attachmentToInternalLink,
+  getAttachmentFile,
+  getAttachmentOwnerSummaries,
+  getAttachmentUsageSummary,
+  getSignedAttachmentUrl,
+  isImageAttachment,
+  type AttachmentOwnerSummary
+} from './attachmentRepository';
 
 type Props = {
   attachment: Attachment;
@@ -16,6 +25,7 @@ export function AttachmentCard({ attachment, viewMode, onPreview, onRename, onRe
   const [thumbUrl, setThumbUrl] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
   const [usageCount, setUsageCount] = useState(0);
+  const [owners, setOwners] = useState<AttachmentOwnerSummary[]>([]);
 
   useEffect(() => {
     let objectUrl = '';
@@ -63,6 +73,21 @@ export function AttachmentCard({ attachment, viewMode, onPreview, onRename, onRe
     };
   }, [attachment.id, attachment.user_id]);
 
+  useEffect(() => {
+    let active = true;
+    getAttachmentOwnerSummaries(attachment.user_id, attachment.id)
+      .then((items) => {
+        if (active) setOwners(items);
+      })
+      .catch(() => {
+        if (active) setOwners([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [attachment.id, attachment.user_id]);
+
   const copyInternalLink = async () => {
     await navigator.clipboard.writeText(await attachmentToInternalLink(attachment));
   };
@@ -77,6 +102,18 @@ export function AttachmentCard({ attachment, viewMode, onPreview, onRename, onRe
         <span>{attachment.mime_type || 'archivo'} · {(attachment.size / 1024 / 1024).toFixed(2)} MB</span>
         <span>Fecha: {new Date(attachment.created_at).toLocaleDateString('es')}</span>
         <span>{usageCount === 1 ? 'Asociado a 1 elemento' : `Asociado a ${usageCount} elementos`}</span>
+        {owners.length > 0 && (
+          <div className="chip-list">
+            {owners.map((owner) => (
+              <Link className="tag-chip" key={`${owner.ownerType}-${owner.ownerId}`} to={owner.href}>
+                {owner.ownerType === 'topic' && 'Tema: '}
+                {owner.ownerType === 'medication' && 'Fármaco: '}
+                {owner.ownerType === 'procedure' && 'Procedimiento: '}
+                {owner.label}
+              </Link>
+            ))}
+          </div>
+        )}
         {attachment.sync_status && attachment.sync_status !== 'synced' && (
           <span className={`status-pill ${attachment.sync_status === 'error' ? '' : 'complete'}`}>
             {attachment.sync_status === 'pending' && 'Pendiente de sincronización'}

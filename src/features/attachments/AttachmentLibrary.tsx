@@ -42,7 +42,7 @@ export function AttachmentLibrary() {
     const usage = await getAttachmentUsageSummary(attachment.user_id, attachment.id);
     const usageText =
       usage.total > 0
-        ? `\n\nEstá asociado a ${usage.topics} tema(s) y ${usage.medications} medicamento(s). Se quitarán esas asociaciones, pero no se eliminarán los temas ni medicamentos.`
+        ? `\n\nEstá asociado a ${usage.topics} tema(s), ${usage.medications} medicamento(s) y ${usage.procedures} procedimiento(s). Se quitarán esas asociaciones, pero no se eliminarán los temas, medicamentos ni procedimientos.`
         : '';
     if (!window.confirm(`¿Eliminar definitivamente "${attachment.filename}"?${usageText}`)) return;
     mutations.remove.mutate(attachment);

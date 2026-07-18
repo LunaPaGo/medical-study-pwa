@@ -53,6 +53,13 @@ export type AttachmentUsageSummary = {
   total: number;
 };
 
+export type AttachmentOwnerSummary = {
+  ownerType: 'topic' | 'medication' | 'procedure';
+  ownerId: string;
+  label: string;
+  href: string;
+};
+
 export type AttachmentReconciliationReport = {
   localOnly: number;
   remoteOnly: number;
@@ -833,6 +840,87 @@ export async function getAttachmentUsageSummary(userId: string, attachmentId: st
 
 export async function getAttachmentUsageCount(userId: string, attachmentId: string) {
   return (await getAttachmentUsageSummary(userId, attachmentId)).total;
+}
+
+async function getTopicOwnerLabel(userId: string, topicId: string) {
+  const db = await localDbPromise;
+  let topic = await db.get('topics', topicId);
+  if (!topic && navigator.onLine) {
+    const { data } = await supabase.from('topics').select('*').eq('id', topicId).eq('user_id', userId).single();
+    if (data) {
+      topic = data as Topic;
+      await db.put('topics', topic);
+    }
+  }
+  return topic?.title ?? 'Tema sin nombre';
+}
+
+async function getMedicationOwnerLabel(userId: string, medicationId: string) {
+  const db = await localDbPromise;
+  let medication = await db.get('medications', medicationId);
+  if (!medication && navigator.onLine) {
+    const { data } = await supabase.from('medications').select('*').eq('id', medicationId).eq('user_id', userId).single();
+    if (data) {
+      medication = data as Medication;
+      await db.put('medications', medication);
+    }
+  }
+  return medication?.generic_name ?? 'Medicamento sin nombre';
+}
+
+async function getProcedureOwnerLabel(userId: string, procedureId: string) {
+  const db = await localDbPromise;
+  let procedure = await db.get('procedures', procedureId);
+  if (!procedure && navigator.onLine) {
+    const { data } = await supabase.from('procedures').select('*').eq('id', procedureId).eq('user_id', userId).single();
+    if (data) {
+      procedure = data as Procedure;
+      await db.put('procedures', procedure);
+    }
+  }
+  return procedure?.name ?? 'Procedimiento sin nombre';
+}
+
+export async function getAttachmentOwnerSummaries(userId: string, attachmentId: string): Promise<AttachmentOwnerSummary[]> {
+  const db = await localDbPromise;
+  const [topicLinks, medicationLinks, procedureLinks] = await Promise.all([
+    db.getAllFromIndex('topic_attachments', 'attachment_id', attachmentId),
+    db.getAllFromIndex('medication_attachments', 'attachment_id', attachmentId),
+    db.getAllFromIndex('procedure_attachments', 'attachment_id', attachmentId)
+  ]);
+
+  const ownTopicLinks = topicLinks.filter((item) => item.user_id === userId);
+  const ownMedicationLinks = medicationLinks.filter((item) => item.user_id === userId);
+  const ownProcedureLinks = procedureLinks.filter((item) => item.user_id === userId);
+
+  const [topics, medications, procedures] = await Promise.all([
+    Promise.all(
+      ownTopicLinks.map(async (link) => ({
+        ownerType: 'topic' as const,
+        ownerId: link.topic_id,
+        label: await getTopicOwnerLabel(userId, link.topic_id),
+        href: `/temas/${link.topic_id}`
+      }))
+    ),
+    Promise.all(
+      ownMedicationLinks.map(async (link) => ({
+        ownerType: 'medication' as const,
+        ownerId: link.medication_id,
+        label: await getMedicationOwnerLabel(userId, link.medication_id),
+        href: `/farmacologia/${link.medication_id}`
+      }))
+    ),
+    Promise.all(
+      ownProcedureLinks.map(async (link) => ({
+        ownerType: 'procedure' as const,
+        ownerId: link.procedure_id,
+        label: await getProcedureOwnerLabel(userId, link.procedure_id),
+        href: `/procedimientos/${link.procedure_id}`
+      }))
+    )
+  ]);
+
+  return [...topics, ...medications, ...procedures];
 }
 
 export async function diagnoseAttachmentReconciliation(userId: string): Promise<AttachmentReconciliationReport> {
