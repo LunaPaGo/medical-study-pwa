@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { MeanArterialPressureCalculator } from './cardiovascular/MeanArterialPressureCalculator';
 
 export type CalculatorCategoryId =
   | 'cardiovascular'
@@ -21,7 +22,17 @@ export type CalculatorCategory = {
 };
 
 export const calculatorCategories: CalculatorCategory[] = [
-  { id: 'cardiovascular', title: '❤️ Cardiovascular', calculators: [] },
+  {
+    id: 'cardiovascular',
+    title: '❤️ Cardiovascular',
+    calculators: [
+      {
+        id: 'mean-arterial-pressure',
+        title: 'Presión Arterial Media',
+        component: MeanArterialPressureCalculator
+      }
+    ]
+  },
   { id: 'respiratory', title: '🫁 Respiratorio', calculators: [] },
   { id: 'anesthesiology', title: '💉 Anestesiología', calculators: [] },
   { id: 'laboratory', title: '🧪 Laboratorio', calculators: [] },
