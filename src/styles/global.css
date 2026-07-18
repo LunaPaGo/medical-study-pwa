@@ -1260,13 +1260,7 @@ button:disabled,
   gap: var(--space-4);
 }
 
-.calculator-form p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.55;
-}
-
-.calculator-formula {
+.calculator-info-block {
   display: grid;
   gap: var(--space-1);
   border: 1px solid var(--line);
@@ -1275,13 +1269,25 @@ button:disabled,
   padding: var(--space-4);
 }
 
-.calculator-formula span,
-.calculator-formula small {
+.calculator-info-block span {
   color: var(--muted);
+  font-size: var(--small-text-size);
+  font-weight: 800;
+}
+
+.calculator-info-block p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.55;
 }
 
 .calculator-formula strong {
   font-size: var(--card-title-size);
+}
+
+.calculator-interpretation div {
+  display: grid;
+  gap: var(--space-2);
 }
 
 .calculator-form label {

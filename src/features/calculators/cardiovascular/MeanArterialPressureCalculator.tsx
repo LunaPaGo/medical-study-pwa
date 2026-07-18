@@ -1,4 +1,7 @@
 import { FormEvent, useState } from 'react';
+import { CalculatorFormula } from '../components/CalculatorFormula';
+import { CalculatorInfo } from '../components/CalculatorInfo';
+import { CalculatorInterpretation } from '../components/CalculatorInterpretation';
 import { calculateMeanArterialPressure } from './meanArterialPressure';
 
 function parsePressure(value: string) {
@@ -57,11 +60,13 @@ export function MeanArterialPressureCalculator() {
 
   return (
     <form className="calculator-form" onSubmit={handleSubmit}>
-      <div className="calculator-formula">
-        <span>Fórmula</span>
-        <strong>PAM = PAD + (PAS − PAD) / 3</strong>
-        <small>PAM = (PAS + 2 × PAD) / 3</small>
-      </div>
+      <CalculatorInfo title="Nombre de la calculadora">Presión Arterial Media</CalculatorInfo>
+
+      <CalculatorInfo title="Qué representa">
+        Estimación de la presión promedio que impulsa el flujo sanguíneo sistémico durante un ciclo cardíaco.
+      </CalculatorInfo>
+
+      <CalculatorFormula formulas={['PAM = PAD + (PAS − PAD) / 3', 'PAM = (PAS + 2 × PAD) / 3']} />
 
       <label>
         Presión arterial sistólica (PAS)
@@ -110,6 +115,13 @@ export function MeanArterialPressureCalculator() {
           <strong>{formatResult(result)} mmHg</strong>
         </div>
       )}
+
+      <CalculatorInterpretation>
+        <p>
+          No debe presentarse un valor aislado como diagnóstico. La PAM es un dato orientativo y su interpretación depende
+          del contexto clínico, la situación hemodinámica y los objetivos terapéuticos de cada paciente.
+        </p>
+      </CalculatorInterpretation>
     </form>
   );
 }
