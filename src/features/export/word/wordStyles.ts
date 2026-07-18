@@ -5,7 +5,12 @@ export const wordParagraphStyles = {
   subtitle: 'MedicalDocumentSubtitle',
   normal: 'MedicalDocumentNormal',
   quote: 'MedicalDocumentQuote',
-  code: 'MedicalDocumentCode'
+  code: 'MedicalDocumentCode',
+  metadataHeading: 'MedicalDocumentMetadataHeading',
+  metadata: 'MedicalDocumentMetadata',
+  imageReference: 'MedicalDocumentImageReference',
+  attachmentHeading: 'MedicalDocumentAttachmentHeading',
+  attachmentItem: 'MedicalDocumentAttachmentItem'
 } as const;
 
 export function headingLevelFor(sectionLevel: number) {
@@ -98,6 +103,77 @@ export const wordDocumentStyles = {
       paragraph: {
         spacing: { before: 20, after: 20 },
         shading: { type: ShadingType.CLEAR, fill: 'F3F4F6' }
+      }
+    },
+    {
+      id: wordParagraphStyles.metadataHeading,
+      name: 'Medical Document Metadata Heading',
+      basedOn: 'Normal',
+      run: {
+        bold: true,
+        size: 20,
+        font: 'Arial',
+        color: '374151'
+      },
+      paragraph: {
+        spacing: { before: 80, after: 80 }
+      }
+    },
+    {
+      id: wordParagraphStyles.metadata,
+      name: 'Medical Document Metadata',
+      basedOn: 'Normal',
+      run: {
+        size: 19,
+        font: 'Arial',
+        color: '4B5563'
+      },
+      paragraph: {
+        spacing: { after: 60 }
+      }
+    },
+    {
+      id: wordParagraphStyles.imageReference,
+      name: 'Medical Document Image Reference',
+      basedOn: 'Normal',
+      run: {
+        italics: true,
+        size: 20,
+        font: 'Arial',
+        color: '4B5563'
+      },
+      paragraph: {
+        spacing: { before: 120, after: 120 },
+        shading: { type: ShadingType.CLEAR, fill: 'F8FAFC' },
+        border: {
+          top: { style: BorderStyle.SINGLE, color: 'E2E8F0', size: 4, space: 4 },
+          bottom: { style: BorderStyle.SINGLE, color: 'E2E8F0', size: 4, space: 4 }
+        }
+      }
+    },
+    {
+      id: wordParagraphStyles.attachmentHeading,
+      name: 'Medical Document Attachment Heading',
+      basedOn: 'Normal',
+      run: {
+        bold: true,
+        size: 26,
+        font: 'Arial'
+      },
+      paragraph: {
+        spacing: { before: 260, after: 140 }
+      }
+    },
+    {
+      id: wordParagraphStyles.attachmentItem,
+      name: 'Medical Document Attachment Item',
+      basedOn: wordParagraphStyles.normal,
+      run: {
+        size: 21,
+        font: 'Arial'
+      },
+      paragraph: {
+        spacing: { after: 90 }
       }
     }
   ]

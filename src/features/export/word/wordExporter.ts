@@ -3,16 +3,19 @@ import type { ExportDocument } from '../exportTypes';
 import { renderWordBlocks } from './wordBlockRenderer';
 import { wordNumberingConfig } from './wordNumbering';
 import { headingLevelFor, wordDocumentStyles, wordParagraphStyles } from './wordStyles';
+import { renderAttachmentParagraphs, renderMetadataParagraphs } from './wordSupplementalRenderer';
 
 export async function createWordDocument(exportDocument: ExportDocument): Promise<Blob> {
   let listInstance = 1;
   const renderContext = {
-    nextListInstance: () => listInstance++
+    nextListInstance: () => listInstance++,
+    renderedImageKeys: new Set<string>()
   };
 
   const children = [
     titleParagraph(exportDocument.title),
     subtitleParagraph(exportDocument.subtitle),
+    ...renderMetadataParagraphs(exportDocument),
     ...exportDocument.sections.flatMap((section) => {
       const sectionBlocks = renderWordBlocks(section.blocks, renderContext);
       if (sectionBlocks.length === 0) return [];
@@ -24,7 +27,8 @@ export async function createWordDocument(exportDocument: ExportDocument): Promis
         }),
         ...sectionBlocks
       ];
-    })
+    }),
+    ...renderAttachmentParagraphs(exportDocument.attachments)
   ].filter((paragraph): paragraph is Paragraph => Boolean(paragraph));
 
   const document = new Document({

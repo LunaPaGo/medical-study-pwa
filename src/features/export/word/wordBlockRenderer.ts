@@ -3,6 +3,7 @@ import type {
   ExportBlock,
   ExportCodeBlock,
   ExportHeadingBlock,
+  ExportImageReferenceBlock,
   ExportListBlock,
   ExportParagraphBlock,
   ExportQuoteBlock,
@@ -10,6 +11,7 @@ import type {
   ExportTableCell
 } from '../exportTypes';
 import { wordNumberingReferences } from './wordNumbering';
+import { imageReferenceLabel, stableReferenceKey } from './wordFormatters';
 import { headingLevelFor, wordParagraphStyles } from './wordStyles';
 import { renderWordTextRuns } from './wordTextRenderer';
 
@@ -17,6 +19,7 @@ export type WordRenderableBlock = Paragraph | Table;
 
 type RenderContext = {
   nextListInstance: () => number;
+  renderedImageKeys: Set<string>;
 };
 
 export function renderWordBlocks(blocks: ExportBlock[], context: RenderContext): WordRenderableBlock[] {
@@ -31,6 +34,7 @@ function renderWordBlock(block: ExportBlock, context: RenderContext, level: numb
   if (block.type === 'horizontalRule') return renderHorizontalRule();
   if (block.type === 'quote') return renderQuoteBlock(block, context);
   if (block.type === 'codeBlock') return renderCodeBlock(block);
+  if (block.type === 'imageReference') return renderImageReferenceBlock(block, context);
   return [];
 }
 
@@ -182,6 +186,19 @@ function renderCodeBlock(block: ExportCodeBlock) {
         style: wordParagraphStyles.code
       })
   );
+}
+
+function renderImageReferenceBlock(block: ExportImageReferenceBlock, context: RenderContext) {
+  const key = stableReferenceKey(block);
+  if (key && context.renderedImageKeys.has(key)) return [];
+  if (key) context.renderedImageKeys.add(key);
+
+  return [
+    new Paragraph({
+      text: imageReferenceLabel(block),
+      style: wordParagraphStyles.imageReference
+    })
+  ];
 }
 
 function inlineChildrenFromBlock(block: ExportBlock) {
