@@ -60,8 +60,6 @@ export function MeanArterialPressureCalculator() {
 
   return (
     <form className="calculator-form" onSubmit={handleSubmit}>
-      <CalculatorInfo title="Nombre de la calculadora">Presión Arterial Media</CalculatorInfo>
-
       <CalculatorInfo title="Qué representa">
         Estimación de la presión promedio que impulsa el flujo sanguíneo sistémico durante un ciclo cardíaco.
       </CalculatorInfo>
