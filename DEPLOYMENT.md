@@ -25,7 +25,7 @@ No uses ni pegues la clave `service_role` en Vercel ni en el frontend.
 ## 3. Subir el proyecto a GitHub
 
 1. Entrá a [https://github.com](https://github.com).
-2. Creá un repositorio nuevo, por ejemplo `medical-study-pwa`.
+2. Creá un repositorio nuevo, por ejemplo `askleion`.
 3. Abrí una terminal en la carpeta:
 
 ```bash
@@ -39,7 +39,7 @@ git init
 git add .
 git commit -m "Preparar aplicacion medica para produccion"
 git branch -M main
-git remote add origin https://github.com/TU-USUARIO/medical-study-pwa.git
+git remote add origin https://github.com/TU-USUARIO/askleion.git
 git push -u origin main
 ```
 
@@ -88,7 +88,7 @@ Después tocá **Deploy**.
 Cuando Vercel termine, mostrará una URL parecida a:
 
 ```text
-https://medical-study-pwa.vercel.app
+https://askleion.vercel.app
 ```
 
 Esa es la URL pública de la aplicación.
@@ -101,14 +101,14 @@ Esa es la URL pública de la aplicación.
 4. En **Site URL**, pegá la URL de Vercel:
 
 ```text
-https://medical-study-pwa.vercel.app
+https://askleion.vercel.app
 ```
 
 5. En **Redirect URLs**, agregá:
 
 ```text
-https://medical-study-pwa.vercel.app
-https://medical-study-pwa.vercel.app/auth
+https://askleion.vercel.app
+https://askleion.vercel.app/auth
 http://localhost:5173
 http://localhost:5173/auth
 ```

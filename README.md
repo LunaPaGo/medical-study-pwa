@@ -1,6 +1,6 @@
-# Estudio Médico PWA
+# Askleion
 
-Aplicación web progresiva para organizar y estudiar contenido médico, con autenticación, temas médicos, archivos e imágenes, funcionamiento offline y sincronización con Supabase.
+Askleion es una biblioteca médica personal con soporte offline para organizar y estudiar temas, farmacología, procedimientos y conocimiento clínico, con autenticación, archivos e imágenes y sincronización con Supabase.
 
 ## Qué incluye actualmente
 
@@ -175,7 +175,7 @@ En desarrollo local, el teléfono solo podrá verla si está en la misma red y l
 ```bash
 git init
 git add .
-git commit -m "Crear base tecnica de Estudio Medico PWA"
+git commit -m "Crear base tecnica de Askleion"
 git branch -M main
 git remote add origin https://github.com/tu-usuario/tu-repositorio.git
 git push -u origin main

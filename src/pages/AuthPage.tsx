@@ -40,7 +40,7 @@ export function AuthPage() {
           <div className="auth-brand">
             <div className="brand-mark">+</div>
             <div>
-              <span>Estudio Médico</span>
+              <span>Askleion</span>
               <strong>Tu biblioteca clínica, lista para crecer.</strong>
             </div>
           </div>
@@ -62,7 +62,7 @@ export function AuthPage() {
           <div className="auth-brand">
             <div className="brand-mark">+</div>
             <div>
-              <span>Estudio Médico</span>
+              <span>Askleion</span>
               <strong>Tu biblioteca clínica, lista para crecer.</strong>
             </div>
           </div>
@@ -148,7 +148,7 @@ export function AuthPage() {
         <div className="auth-brand">
           <div className="brand-mark">+</div>
           <div>
-            <span>Estudio Médico</span>
+            <span>Askleion</span>
             <strong>Tu biblioteca clínica, lista para crecer.</strong>
           </div>
         </div>

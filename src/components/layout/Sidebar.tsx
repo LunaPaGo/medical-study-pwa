@@ -11,8 +11,8 @@ export function Sidebar() {
       <div className="brand">
         <div className="brand-mark">+</div>
         <div>
-          <strong>Estudio Médico</strong>
-          <span>Biblioteca personal</span>
+          <strong>Askleion</strong>
+          <span>Biblioteca médica</span>
         </div>
       </div>
 

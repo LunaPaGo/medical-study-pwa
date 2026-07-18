@@ -15,9 +15,9 @@ export default defineConfig({
         'icons/maskable-icon-512.png'
       ],
       manifest: {
-        name: 'Estudio Médico',
-        short_name: 'Medicina',
-        description: 'Organizador personal de estudio médico con soporte offline.',
+        name: 'Askleion',
+        short_name: 'Askleion',
+        description: 'Biblioteca médica personal con soporte offline para estudio, farmacología, procedimientos y conocimiento clínico.',
         theme_color: '#0f766e',
         background_color: '#f8fafc',
         display: 'fullscreen',
