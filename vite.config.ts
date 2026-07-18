@@ -8,15 +8,16 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
-        'branding/askleion-favicon.svg',
+        'branding/favicon.ico',
+        'branding/askleion-favicon-32.png',
+        'branding/askleion-favicon-64.png',
         'branding/apple-touch-icon.png',
         'branding/askleion-icon-192.png',
         'branding/askleion-icon-512.png',
         'branding/askleion-icon-maskable-512.png',
-        'branding/askleion-symbol.svg',
-        'branding/askleion-symbol-light.svg',
-        'branding/askleion-logo-vertical.svg',
-        'branding/askleion-logo-vertical-dark.svg'
+        'branding/askleion-app-icon-source.png',
+        'branding/askleion-logo-vertical-light.png',
+        'branding/askleion-logo-vertical-dark.png'
       ],
       manifest: {
         name: 'Askleion',

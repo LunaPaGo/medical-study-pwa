@@ -115,8 +115,8 @@ a:focus-visible {
 
 .brand-symbol {
   display: block;
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 54px;
   flex: 0 0 auto;
   object-fit: contain;
 }

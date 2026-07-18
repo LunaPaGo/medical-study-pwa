@@ -8,7 +8,9 @@ export function Sidebar() {
   const { signOut, user } = useAuth();
   const { effectiveTheme } = useThemePreference();
   const symbolSrc =
-    effectiveTheme === 'dark' ? '/branding/askleion-symbol-light.svg' : '/branding/askleion-symbol.svg';
+    effectiveTheme === 'dark'
+      ? '/branding/askleion-logo-vertical-dark.png'
+      : '/branding/askleion-logo-vertical-light.png';
 
   return (
     <aside className="sidebar" aria-label="Navegación principal">
