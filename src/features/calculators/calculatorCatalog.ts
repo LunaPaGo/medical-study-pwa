@@ -1,5 +1,7 @@
 import type { ComponentType } from 'react';
+import { BazettQtcCalculator } from './cardiovascular/BazettQtcCalculator';
 import { MeanArterialPressureCalculator } from './cardiovascular/MeanArterialPressureCalculator';
+import { ShockIndexCalculator } from './cardiovascular/ShockIndexCalculator';
 
 export type CalculatorCategoryId =
   | 'cardiovascular'
@@ -30,6 +32,16 @@ export const calculatorCategories: CalculatorCategory[] = [
         id: 'mean-arterial-pressure',
         title: 'Presión Arterial Media',
         component: MeanArterialPressureCalculator
+      },
+      {
+        id: 'bazett-qtc',
+        title: 'QT corregido — Bazett',
+        component: BazettQtcCalculator
+      },
+      {
+        id: 'shock-index',
+        title: 'Índice de Shock',
+        component: ShockIndexCalculator
       }
     ]
   },
