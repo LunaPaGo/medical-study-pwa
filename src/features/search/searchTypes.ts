@@ -1,6 +1,6 @@
 export type SearchResultType = 'topic' | 'medication' | 'procedure' | 'attachment';
 
-export type SearchMatchedField = 'title' | 'summary' | 'category' | 'tag' | 'metadata' | 'owner';
+export type SearchMatchedField = 'title' | 'summary' | 'category' | 'tag' | 'content' | 'metadata' | 'owner';
 
 export type SearchContext = {
   userId: string;

@@ -3,12 +3,16 @@ import type { SearchMatchedField, SearchResult } from './searchTypes';
 type SearchField = {
   field: SearchMatchedField;
   value: string | string[] | null | undefined;
+  sectionId?: string;
+  sectionLabel?: string;
 };
 
 type SearchMatch = {
   matchedField: SearchMatchedField;
   snippet?: string;
   score: number;
+  sectionId?: string;
+  sectionLabel?: string;
 };
 
 const fieldWeights: Record<SearchMatchedField, number> = {
@@ -16,6 +20,7 @@ const fieldWeights: Record<SearchMatchedField, number> = {
   category: 55,
   tag: 55,
   summary: 40,
+  content: 35,
   owner: 45,
   metadata: 30
 };
@@ -40,7 +45,11 @@ export function createSnippet(value: string, query: string, length = 140) {
 
   const normalizedValue = normalizeSearchText(cleanValue);
   const normalizedQuery = normalizeSearchText(query);
-  const index = normalizedValue.indexOf(normalizedQuery);
+  const queryTerms = tokenizeSearchQuery(query);
+  const index =
+    normalizedValue.indexOf(normalizedQuery) >= 0
+      ? normalizedValue.indexOf(normalizedQuery)
+      : Math.min(...queryTerms.map((term) => normalizedValue.indexOf(term)).filter((termIndex) => termIndex >= 0));
   const start = index > 20 ? index - 20 : 0;
   const end = Math.min(cleanValue.length, start + length);
   return `${start > 0 ? '...' : ''}${cleanValue.slice(start, end)}${end < cleanValue.length ? '...' : ''}`;
@@ -79,7 +88,9 @@ export function findBestSearchMatch(query: string, fields: SearchField[]): Searc
       const match = {
         matchedField: field.field,
         snippet: createSnippet(value, query),
-        score
+        score,
+        sectionId: field.sectionId,
+        sectionLabel: field.sectionLabel
       };
 
       if (!bestMatch || match.score > bestMatch.score) {
