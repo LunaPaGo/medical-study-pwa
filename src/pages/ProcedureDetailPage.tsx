@@ -1,5 +1,6 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Edit3, Heart, Trash2 } from 'lucide-react';
+import { Edit3, FileDown, Heart, Trash2 } from 'lucide-react';
+import { useWordExport } from '../features/export/useWordExport';
 import { ProcedureAttachmentsPanel } from '../features/procedures/ProcedureAttachmentsPanel';
 import { procedureStudySections } from '../features/procedures/procedureSectionCatalog';
 import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
@@ -15,6 +16,7 @@ export function ProcedureDetailPage() {
   const mutations = useProcedureMutations();
   const { isReadOnly } = useAuth();
   const procedure = data?.procedures.find((item) => item.id === procedureId);
+  const wordExport = useWordExport('procedure', procedureId);
 
   if (!isLoading && !procedure) {
     return <Navigate to="/procedimientos" replace />;
@@ -45,6 +47,10 @@ export function ProcedureDetailPage() {
             <Heart size={18} fill="currentColor" />
             Favorito
           </button>
+          <button className="ghost-button" type="button" disabled={wordExport.isExporting} onClick={wordExport.exportToWord}>
+            <FileDown size={18} />
+            {wordExport.isExporting ? 'Exportando...' : 'Exportar a Word'}
+          </button>
           {isReadOnly ? (
             <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
           ) : (
@@ -61,6 +67,9 @@ export function ProcedureDetailPage() {
           )}
         </div>
       </div>
+
+      {wordExport.message && <div className="notice success">{wordExport.message}</div>}
+      {wordExport.error && <div className="notice error">{wordExport.error}</div>}
 
       <div className="topic-meta reader-meta">
         {procedure.category && <span>{procedure.category}</span>}

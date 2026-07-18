@@ -1,5 +1,6 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Copy, Edit3, Heart, Trash2 } from 'lucide-react';
+import { Copy, Edit3, FileDown, Heart, Trash2 } from 'lucide-react';
+import { useWordExport } from '../features/export/useWordExport';
 import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
 import { TopicRelationsPanel } from '../features/topics/TopicRelationsPanel';
 import { topicSections } from '../features/topics/topicSectionCatalog';
@@ -15,6 +16,7 @@ export function TopicDetailPage() {
   const mutations = useTopicMutations();
   const { isReadOnly } = useAuth();
   const topic = data?.topics.find((item) => item.id === topicId);
+  const wordExport = useWordExport('topic', topicId);
 
   if (!isLoading && !topic) {
     return <Navigate to="/temas" replace />;
@@ -44,6 +46,10 @@ export function TopicDetailPage() {
             <Heart size={18} fill="currentColor" />
             Favorito
           </button>
+          <button className="ghost-button" type="button" disabled={wordExport.isExporting} onClick={wordExport.exportToWord}>
+            <FileDown size={18} />
+            {wordExport.isExporting ? 'Exportando...' : 'Exportar a Word'}
+          </button>
           {isReadOnly ? (
             <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
           ) : (
@@ -64,6 +70,9 @@ export function TopicDetailPage() {
           )}
         </div>
       </div>
+
+      {wordExport.message && <div className="notice success">{wordExport.message}</div>}
+      {wordExport.error && <div className="notice error">{wordExport.error}</div>}
 
       <div className="topic-meta reader-meta">
         {topic.folder && <span>{topic.folder.name}</span>}

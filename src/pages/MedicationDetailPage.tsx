@@ -1,5 +1,6 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Copy, Edit3, GitCompare, Heart, Trash2 } from 'lucide-react';
+import { Copy, Edit3, FileDown, GitCompare, Heart, Trash2 } from 'lucide-react';
+import { useWordExport } from '../features/export/useWordExport';
 import { MedicationAttachmentsPanel } from '../features/medications/MedicationAttachmentsPanel';
 import { isRichFieldEmpty } from '../features/medications/medicationFields';
 import { medicationStudySections } from '../features/medications/medicationStudySectionCatalog';
@@ -15,6 +16,7 @@ export function MedicationDetailPage() {
   const mutations = useMedicationMutations();
   const { isReadOnly } = useAuth();
   const medication = data?.medications.find((item) => item.id === medicationId);
+  const wordExport = useWordExport('medication', medicationId);
 
   if (!isLoading && !medication) {
     return <Navigate to="/farmacologia" replace />;
@@ -50,6 +52,10 @@ export function MedicationDetailPage() {
             <GitCompare size={18} />
             Comparar
           </Link>
+          <button className="ghost-button" type="button" disabled={wordExport.isExporting} onClick={wordExport.exportToWord}>
+            <FileDown size={18} />
+            {wordExport.isExporting ? 'Exportando...' : 'Exportar a Word'}
+          </button>
           {isReadOnly ? (
             <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
           ) : (
@@ -70,6 +76,9 @@ export function MedicationDetailPage() {
           )}
         </div>
       </div>
+
+      {wordExport.message && <div className="notice success">{wordExport.message}</div>}
+      {wordExport.error && <div className="notice error">{wordExport.error}</div>}
 
       <div className="topic-meta reader-meta">
         {medication.pharmacologic_group && <span>{medication.pharmacologic_group}</span>}
