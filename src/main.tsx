@@ -5,9 +5,12 @@ import { RouterProvider } from 'react-router-dom';
 import { registerSW } from 'virtual:pwa-register';
 import { queryClient } from './services/queryClient';
 import { router } from './routes/router';
+import { initializeThemePreference } from './features/theme/theme';
 import './styles/global.css';
 
 console.info('APP_BOOT_START');
+
+initializeThemePreference();
 
 registerSW({
   immediate: true,

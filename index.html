@@ -8,6 +8,25 @@
     <link rel="icon" href="/branding/askleion-favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/branding/apple-touch-icon.png" />
     <title>Askleion — Biblioteca Médica</title>
+    <script>
+      (function () {
+        try {
+          var preference = localStorage.getItem('askleion-theme');
+          if (preference !== 'light' && preference !== 'dark' && preference !== 'system') preference = 'system';
+          var effectiveTheme =
+            preference === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : preference;
+          document.documentElement.dataset.theme = effectiveTheme;
+          document.documentElement.style.colorScheme = effectiveTheme;
+        } catch (_error) {
+          document.documentElement.dataset.theme = 'light';
+          document.documentElement.style.colorScheme = 'light';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

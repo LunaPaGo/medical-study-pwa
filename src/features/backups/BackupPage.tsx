@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Archive, CheckCircle2, DownloadCloud, FileSearch, RotateCcw, XCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useThemePreference } from '../theme/useThemePreference';
 import { createCompleteBackup, getLastBackupExport } from './backupExportService';
 import { createMergePreview, restoreBackupMerge } from './backupMergeService';
 import { validateBackupZip } from './backupValidation';
@@ -55,6 +56,7 @@ function formatSize(bytes: number) {
 
 export function BackupPage() {
   const { user, isReadOnly } = useAuth();
+  const { preference: themePreference, setThemePreference } = useThemePreference();
   const [progress, setProgress] = useState<BackupProgress>(initialProgress);
   const [isExporting, setIsExporting] = useState(false);
   const [lastExport, setLastExport] = useState<LastExport | null>(null);
@@ -173,6 +175,41 @@ export function BackupPage() {
         <h1>Copias de seguridad</h1>
         <p>Exportá tus temas, medicamentos y archivos físicos en un único ZIP independiente de Supabase.</p>
       </div>
+
+      <section className="panel backup-panel">
+        <div className="panel-title">
+          <h2>Apariencia</h2>
+        </div>
+        <div className="appearance-options" role="radiogroup" aria-label="Tema visual">
+          <label>
+            <input
+              checked={themePreference === 'light'}
+              name="theme"
+              onChange={() => setThemePreference('light')}
+              type="radio"
+            />
+            Claro
+          </label>
+          <label>
+            <input
+              checked={themePreference === 'dark'}
+              name="theme"
+              onChange={() => setThemePreference('dark')}
+              type="radio"
+            />
+            Oscuro
+          </label>
+          <label>
+            <input
+              checked={themePreference === 'system'}
+              name="theme"
+              onChange={() => setThemePreference('system')}
+              type="radio"
+            />
+            Sistema
+          </label>
+        </div>
+      </section>
 
       <section className="panel backup-panel">
         <div className="panel-title">

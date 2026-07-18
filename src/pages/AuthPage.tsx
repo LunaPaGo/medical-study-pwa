@@ -7,16 +7,20 @@ import { useAuth } from '../hooks/useAuth';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { supabase } from '../services/supabase';
 import { authSchema, resetPasswordSchema } from '../validation/auth';
+import { useThemePreference } from '../features/theme/useThemePreference';
 
 type AuthMode = 'login' | 'register' | 'reset';
 
 function AskleionAuthBrand() {
+  const { effectiveTheme } = useThemePreference();
+  const logoSrc =
+    effectiveTheme === 'dark'
+      ? '/branding/askleion-logo-vertical-dark.png'
+      : '/branding/askleion-logo-vertical-light.png';
+
   return (
     <div className="auth-brand auth-brand-logo">
-      <picture className="auth-logo">
-        <source media="(prefers-color-scheme: dark)" srcSet="/branding/askleion-logo-vertical-dark.svg" />
-        <img src="/branding/askleion-logo-vertical.svg" alt="Askleion — Biblioteca Médica" />
-      </picture>
+      <img className="auth-logo" src={logoSrc} alt="Askleion — Biblioteca Médica" />
       <strong>Tu biblioteca clínica, lista para crecer.</strong>
     </div>
   );

@@ -1,18 +1,19 @@
 import { NavLink } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useThemePreference } from '../../features/theme/useThemePreference';
 import { primaryRoutes, secondaryRoutes } from './navigation';
 
 export function Sidebar() {
   const { signOut, user } = useAuth();
+  const { effectiveTheme } = useThemePreference();
+  const symbolSrc =
+    effectiveTheme === 'dark' ? '/branding/askleion-symbol-light.svg' : '/branding/askleion-symbol.svg';
 
   return (
     <aside className="sidebar" aria-label="Navegación principal">
       <div className="brand">
-        <picture className="brand-symbol">
-          <source media="(prefers-color-scheme: dark)" srcSet="/branding/askleion-symbol-light.svg" />
-          <img src="/branding/askleion-symbol.svg" alt="Símbolo de Askleion" />
-        </picture>
+        <img className="brand-symbol" src={symbolSrc} alt="Símbolo de Askleion" />
         <div>
           <strong>Askleion</strong>
           <span>Biblioteca médica</span>
