@@ -8,49 +8,41 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
-        'icons/icon.svg',
-        'icons/maskable-icon.svg',
-        'icons/icon-192.png',
-        'icons/icon-512.png',
-        'icons/maskable-icon-512.png'
+        'branding/askleion-favicon.svg',
+        'branding/apple-touch-icon.png',
+        'branding/askleion-icon-192.png',
+        'branding/askleion-icon-512.png',
+        'branding/askleion-icon-maskable-512.png',
+        'branding/askleion-symbol.svg',
+        'branding/askleion-symbol-light.svg',
+        'branding/askleion-logo-vertical.svg',
+        'branding/askleion-logo-vertical-dark.svg'
       ],
       manifest: {
         name: 'Askleion',
         short_name: 'Askleion',
         description: 'Biblioteca médica personal con soporte offline para estudio, farmacología, procedimientos y conocimiento clínico.',
-        theme_color: '#0f766e',
-        background_color: '#f8fafc',
+        theme_color: '#0D1B2A',
+        background_color: '#F5F2EB',
         display: 'fullscreen',
         orientation: 'portrait-primary',
         scope: '/',
         start_url: '/',
         icons: [
           {
-            src: '/icons/icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any'
-          },
-          {
-            src: '/icons/icon-192.png',
+            src: '/branding/askleion-icon-192.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/icons/icon-512.png',
+            src: '/branding/askleion-icon-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/icons/maskable-icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'maskable'
-          },
-          {
-            src: '/icons/maskable-icon-512.png',
+            src: '/branding/askleion-icon-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'

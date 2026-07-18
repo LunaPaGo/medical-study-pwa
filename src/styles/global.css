@@ -99,6 +99,40 @@ a:focus-visible {
   gap: 12px;
 }
 
+.brand-symbol,
+.auth-logo {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.brand-symbol {
+  width: 44px;
+  height: 44px;
+}
+
+.auth-logo {
+  width: min(220px, 64vw);
+}
+
+.auth-brand-logo {
+  flex-direction: column;
+  text-align: center;
+}
+
+.brand-symbol img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.auth-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
 .brand-mark {
   display: grid;
   width: 44px;

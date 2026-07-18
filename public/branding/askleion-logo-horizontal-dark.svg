@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 420" role="img" aria-labelledby="title desc">
+<title id="title">Askleion — Biblioteca Médica</title>
+<desc id="desc">Logotipo horizontal de Askleion.</desc>
+<rect width="1600" height="420" fill="#F5F2EB"/>
+<g transform="translate(60,20) scale(.74)">
+ fill="none" stroke="#F5F2EB" stroke-linecap="round" stroke-linejoin="round">
+  <!-- top cap -->
+  <path stroke-width="24" d="M146 72H366"/>
+  <path stroke-width="20" d="M126 106H386"/>
+  <!-- ionic volutes -->
+  <path stroke-width="18" d="M171 108c-30-4-55 12-55 38 0 20 16 34 34 34 17 0 31-12 31-28 0-13-10-23-23-23-10 0-18 7-18 16"/>
+  <path stroke-width="18" d="M341 108c30-4 55 12 55 38 0 20-16 34-34 34-17 0-31-12-31-28 0-13 10-23 23-23 10 0 18 7 18 16"/>
+  <path stroke-width="14" d="M160 181H352"/>
+  <!-- side pillars -->
+  <path stroke-width="22" d="M168 184V390"/>
+  <path stroke-width="22" d="M344 184V390"/>
+  <path stroke-width="14" d="M205 190V384"/>
+  <path stroke-width="14" d="M307 190V384"/>
+  <!-- abstract inner ribbon -->
+  <path stroke-width="26" d="M270 196
+    C226 225 225 258 268 281
+    C307 302 302 337 257 360
+    C225 377 226 400 251 414"/>
+  <path stroke-width="16" d="M248 205
+    C280 230 283 256 254 278
+    C226 299 231 330 271 351
+    C294 363 294 385 278 404"/>
+  <!-- base -->
+  <path stroke-width="20" d="M148 397H364"/>
+  <path stroke-width="24" d="M130 430H382"/>
+  <path stroke-width="24" d="M150 462H362"/>
+
+</g>
+<text x="470" y="205" fill="#F5F2EB" font-family="Georgia, 'Times New Roman', serif"
+      font-size="122" letter-spacing="18">ASKLEION</text>
+<line x1="475" y1="275" x2="580" y2="275" stroke="#CDAA63" stroke-width="6"/>
+<text x="610" y="292" fill="#CDAA63" font-family="Arial, Helvetica, sans-serif"
+      font-size="34" letter-spacing="12">BIBLIOTECA MÉDICA</text>
+<line x1="1175" y1="275" x2="1280" y2="275" stroke="#CDAA63" stroke-width="6"/>
+</svg>

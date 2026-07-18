@@ -9,7 +9,10 @@ export function Sidebar() {
   return (
     <aside className="sidebar" aria-label="Navegación principal">
       <div className="brand">
-        <div className="brand-mark">+</div>
+        <picture className="brand-symbol">
+          <source media="(prefers-color-scheme: dark)" srcSet="/branding/askleion-symbol-light.svg" />
+          <img src="/branding/askleion-symbol.svg" alt="Símbolo de Askleion" />
+        </picture>
         <div>
           <strong>Askleion</strong>
           <span>Biblioteca médica</span>

@@ -10,6 +10,18 @@ import { authSchema, resetPasswordSchema } from '../validation/auth';
 
 type AuthMode = 'login' | 'register' | 'reset';
 
+function AskleionAuthBrand() {
+  return (
+    <div className="auth-brand auth-brand-logo">
+      <picture className="auth-logo">
+        <source media="(prefers-color-scheme: dark)" srcSet="/branding/askleion-logo-vertical-dark.svg" />
+        <img src="/branding/askleion-logo-vertical.svg" alt="Askleion — Biblioteca Médica" />
+      </picture>
+      <strong>Tu biblioteca clínica, lista para crecer.</strong>
+    </div>
+  );
+}
+
 export function AuthPage() {
   const { session, profileStatus, profileError, isLoading, bootStep, signOut } = useAuth();
   const isOnline = useOnlineStatus();
@@ -37,13 +49,7 @@ export function AuthPage() {
     return (
       <main className="auth-page">
         <section className="auth-panel" aria-labelledby="auth-title">
-          <div className="auth-brand">
-            <div className="brand-mark">+</div>
-            <div>
-              <span>Askleion</span>
-              <strong>Tu biblioteca clínica, lista para crecer.</strong>
-            </div>
-          </div>
+          <AskleionAuthBrand />
           <h1 id="auth-title">No se pudo comprobar la cuenta</h1>
           <div className="notice error">{profileError}</div>
           <button className="primary-button" type="button" onClick={signOut}>
@@ -59,13 +65,7 @@ export function AuthPage() {
     return (
       <main className="auth-page">
         <section className="auth-panel" aria-labelledby="auth-title">
-          <div className="auth-brand">
-            <div className="brand-mark">+</div>
-            <div>
-              <span>Askleion</span>
-              <strong>Tu biblioteca clínica, lista para crecer.</strong>
-            </div>
-          </div>
+          <AskleionAuthBrand />
           <h1 id="auth-title">Cuenta pendiente</h1>
           <div className="notice warning">
             Tu cuenta fue creada correctamente, pero está pendiente de aprobación por el administrador.
@@ -145,13 +145,7 @@ export function AuthPage() {
   return (
     <main className="auth-page">
       <section className="auth-panel" aria-labelledby="auth-title">
-        <div className="auth-brand">
-          <div className="brand-mark">+</div>
-          <div>
-            <span>Askleion</span>
-            <strong>Tu biblioteca clínica, lista para crecer.</strong>
-          </div>
-        </div>
+        <AskleionAuthBrand />
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <h1 id="auth-title">{title}</h1>
