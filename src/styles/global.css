@@ -424,7 +424,7 @@ a:focus-visible {
   border: 0;
   border-radius: 8px;
   background: var(--primary);
-  color: #fff;
+  color: #ffffff;
   font-size: calc(0.95rem * var(--density-font-scale));
   font-weight: 800;
   padding: 0 var(--space-7);
@@ -439,6 +439,7 @@ a:focus-visible {
 .primary-button:hover,
 .primary-button:focus-visible {
   background: var(--primary-strong);
+  color: #ffffff;
 }
 
 .primary-action-button {
@@ -448,11 +449,13 @@ a:focus-visible {
 .primary-action-button svg {
   width: 18px;
   height: 18px;
+  color: currentColor;
 }
 
 .primary-button:disabled {
   cursor: wait;
   opacity: 0.72;
+  color: #ffffff;
 }
 
 .auth-actions {
@@ -557,6 +560,20 @@ button:disabled,
 }
 
 @media (max-width: 560px) {
+  .primary-action-button.icon-only-mobile {
+    width: var(--control-height);
+    padding: 0;
+  }
+
+  .primary-action-button.icon-only-mobile span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
   .stats-grid,
   .dashboard-grid {
     grid-template-columns: 1fr;

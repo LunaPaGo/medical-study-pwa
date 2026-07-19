@@ -95,8 +95,8 @@ export function MedicationsPage() {
           {isReadOnly ? (
             <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
           ) : (
-            <PrimaryActionButton icon={<Pill />} to="/farmacologia/nuevo">
-              Nuevo medicamento
+            <PrimaryActionButton aria-label="Nuevo medicamento" icon={<Pill />} iconOnlyOnMobile to="/farmacologia/nuevo">
+              Nuevo
             </PrimaryActionButton>
           )}
         </div>

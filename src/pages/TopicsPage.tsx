@@ -84,8 +84,8 @@ export function TopicsPage({ favoritesOnly = false }: Props) {
           {isReadOnly ? (
             <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
           ) : (
-            <PrimaryActionButton icon={<BookPlus />} to="/temas/nuevo">
-              Nuevo tema
+            <PrimaryActionButton aria-label="Nuevo tema" icon={<BookPlus />} iconOnlyOnMobile to="/temas/nuevo">
+              Nuevo
             </PrimaryActionButton>
           )}
         </div>
