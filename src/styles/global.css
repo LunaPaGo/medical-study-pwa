@@ -591,7 +591,6 @@ button:disabled,
 
 .medication-heading-actions .primary-button {
   margin-left: auto;
-  min-width: 180px;
   white-space: nowrap;
 }
 
