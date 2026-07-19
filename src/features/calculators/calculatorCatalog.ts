@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import { BazettQtcCalculator } from './cardiovascular/BazettQtcCalculator';
+import { CorrectedSodiumCalculator } from './laboratory/CorrectedSodiumCalculator';
 import { IdealBodyWeightCalculator } from './anesthesiology/IdealBodyWeightCalculator';
 import { MeanArterialPressureCalculator } from './cardiovascular/MeanArterialPressureCalculator';
 import { PafiCalculator } from './respiratory/PafiCalculator';
@@ -69,7 +70,17 @@ export const calculatorCategories: CalculatorCategory[] = [
       }
     ]
   },
-  { id: 'laboratory', title: '🧪 Laboratorio', calculators: [] },
+  {
+    id: 'laboratory',
+    title: '🧪 Laboratorio',
+    calculators: [
+      {
+        id: 'corrected-sodium',
+        title: 'Sodio corregido por glucemia',
+        component: CorrectedSodiumCalculator
+      }
+    ]
+  },
   { id: 'pediatrics', title: '👶 Pediatría', calculators: [] },
   { id: 'tools', title: '🛠️ Herramientas', calculators: [] }
 ];
