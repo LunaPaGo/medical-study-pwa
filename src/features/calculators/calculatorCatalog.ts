@@ -1,9 +1,12 @@
 import type { ComponentType } from 'react';
 import { BazettQtcCalculator } from './cardiovascular/BazettQtcCalculator';
 import { CorrectedSodiumCalculator } from './laboratory/CorrectedSodiumCalculator';
+import { FenaCalculator } from './laboratory/FenaCalculator';
+import { GlasgowComaScaleCalculator } from './tools/GlasgowComaScaleCalculator';
 import { IdealBodyWeightCalculator } from './anesthesiology/IdealBodyWeightCalculator';
 import { MeanArterialPressureCalculator } from './cardiovascular/MeanArterialPressureCalculator';
 import { PafiCalculator } from './respiratory/PafiCalculator';
+import { PediatricEndotrachealTubeCalculator } from './pediatrics/PediatricEndotrachealTubeCalculator';
 import { ShockIndexCalculator } from './cardiovascular/ShockIndexCalculator';
 
 export type CalculatorCategoryId =
@@ -78,9 +81,34 @@ export const calculatorCategories: CalculatorCategory[] = [
         id: 'corrected-sodium',
         title: 'Sodio corregido por glucemia',
         component: CorrectedSodiumCalculator
+      },
+      {
+        id: 'fractional-excretion-sodium',
+        title: 'Fracción excretada de sodio — FENa',
+        component: FenaCalculator
       }
     ]
   },
-  { id: 'pediatrics', title: '👶 Pediatría', calculators: [] },
-  { id: 'tools', title: '🛠️ Herramientas', calculators: [] }
+  {
+    id: 'pediatrics',
+    title: '👶 Pediatría',
+    calculators: [
+      {
+        id: 'pediatric-endotracheal-tube',
+        title: 'Tubo endotraqueal pediátrico',
+        component: PediatricEndotrachealTubeCalculator
+      }
+    ]
+  },
+  {
+    id: 'tools',
+    title: '🛠️ Herramientas',
+    calculators: [
+      {
+        id: 'glasgow-coma-scale',
+        title: 'Escala de Coma de Glasgow',
+        component: GlasgowComaScaleCalculator
+      }
+    ]
+  }
 ];
