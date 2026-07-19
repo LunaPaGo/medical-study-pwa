@@ -1,6 +1,8 @@
 import type { ComponentType } from 'react';
 import { BazettQtcCalculator } from './cardiovascular/BazettQtcCalculator';
+import { IdealBodyWeightCalculator } from './anesthesiology/IdealBodyWeightCalculator';
 import { MeanArterialPressureCalculator } from './cardiovascular/MeanArterialPressureCalculator';
+import { PafiCalculator } from './respiratory/PafiCalculator';
 import { ShockIndexCalculator } from './cardiovascular/ShockIndexCalculator';
 
 export type CalculatorCategoryId =
@@ -45,8 +47,28 @@ export const calculatorCategories: CalculatorCategory[] = [
       }
     ]
   },
-  { id: 'respiratory', title: '🫁 Respiratorio', calculators: [] },
-  { id: 'anesthesiology', title: '💉 Anestesiología', calculators: [] },
+  {
+    id: 'respiratory',
+    title: '🫁 Respiratorio',
+    calculators: [
+      {
+        id: 'pafi-ratio',
+        title: 'PaO₂/FiO₂ — PAFI',
+        component: PafiCalculator
+      }
+    ]
+  },
+  {
+    id: 'anesthesiology',
+    title: '💉 Anestesiología',
+    calculators: [
+      {
+        id: 'devine-ideal-body-weight',
+        title: 'Peso Ideal — Fórmula de Devine',
+        component: IdealBodyWeightCalculator
+      }
+    ]
+  },
   { id: 'laboratory', title: '🧪 Laboratorio', calculators: [] },
   { id: 'pediatrics', title: '👶 Pediatría', calculators: [] },
   { id: 'tools', title: '🛠️ Herramientas', calculators: [] }
