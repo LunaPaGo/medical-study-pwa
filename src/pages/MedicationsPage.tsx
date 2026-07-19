@@ -45,8 +45,6 @@ export function MedicationsPage() {
     [administration, data?.medications, favoriteOnly, group, search, sort, status, tagId]
   );
 
-  const recent = useMemo(() => [...(data?.medications ?? [])].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 3), [data?.medications]);
-
   const toggleSelected = (medication: MedicationWithRelations, checked: boolean) => {
     setSelectedIds((current) => {
       if (!checked) return current.filter((id) => id !== medication.id);
@@ -78,7 +76,7 @@ export function MedicationsPage() {
           <h1>Farmacología</h1>
           <p>Fichas de medicamentos para estudiar, consultar rápido, adjuntar archivos y comparar fármacos.</p>
         </div>
-        <div className="heading-actions">
+        <div className="heading-actions medication-heading-actions">
           <div className="view-switch" aria-label="Modo de visualización">
             <button className={`ghost-button ${viewMode === 'list' ? 'active' : ''}`} type="button" onClick={() => setViewMode('list')}>
               <List size={18} />
@@ -103,21 +101,6 @@ export function MedicationsPage() {
           )}
         </div>
       </div>
-
-      {recent.length > 0 && (
-        <section className="panel medication-recent-panel">
-          <div className="panel-title">
-            <h2>Modificados recientemente</h2>
-          </div>
-          <div className="chip-list">
-            {recent.map((medication) => (
-              <Link className="tag-chip" key={medication.id} to={`/farmacologia/${medication.id}`}>
-                {medication.generic_name || 'Medicamento sin nombre'}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
 
       <section className="panel filter-panel medication-filter-panel">
         <Search size={20} />

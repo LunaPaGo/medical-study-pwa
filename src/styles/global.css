@@ -582,6 +582,15 @@ button:disabled,
   color: var(--accent);
 }
 
+.medication-heading-actions {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.medication-heading-actions .primary-button {
+  margin-left: auto;
+}
+
 .filter-panel,
 .form-grid,
 .organization-grid {
@@ -1286,6 +1295,18 @@ button:disabled,
 .dashboard-link-list span {
   color: var(--muted);
   font-size: var(--small-text-size);
+}
+
+.dashboard-recent-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.recent-type-pill {
+  font-size: var(--xsmall-text-size);
+  white-space: nowrap;
 }
 
 .calculator-category-stack {

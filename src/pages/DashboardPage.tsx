@@ -1,19 +1,26 @@
 import { BookOpen, Clock, Database, Heart, Pill, RefreshCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getRecentLibraryItems } from '../features/dashboard/recentLibraryItems';
+import { useMedicationData } from '../features/medications/useMedicationData';
+import { useProcedureData } from '../features/procedures/useProcedureData';
 import { formatDate } from '../features/topics/topicUtils';
 import { useTopicData } from '../features/topics/useTopicData';
 import { useSyncQueueCount } from '../features/topics/useSyncQueue';
 
 export function DashboardPage() {
   const { data } = useTopicData();
+  const { data: medicationData } = useMedicationData();
+  const { data: procedureData } = useProcedureData();
   const pendingCount = useSyncQueueCount();
   const topics = data?.topics ?? [];
-  const recentTopics = [...topics].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 4);
+  const medications = medicationData?.medications ?? [];
+  const procedures = procedureData?.procedures ?? [];
+  const recentItems = getRecentLibraryItems(topics, medications, procedures, 5);
   const favoriteTopics = topics.filter((topic) => topic.is_favorite).slice(0, 4);
   const cards = [
     { label: 'Temas editados', value: String(topics.length), icon: BookOpen },
     { label: 'Favoritos', value: String(favoriteTopics.length), icon: Heart },
-    { label: 'Medicamentos', value: '0', icon: Pill },
+    { label: 'Medicamentos', value: String(medications.length), icon: Pill },
     { label: 'Pendientes de sync', value: String(pendingCount), icon: RefreshCcw }
   ];
 
@@ -39,16 +46,20 @@ export function DashboardPage() {
         <section className="panel">
           <div className="panel-title">
             <Clock size={20} aria-hidden="true" />
-            <h2>Últimos temas editados</h2>
+            <h2>Últimos elementos editados</h2>
           </div>
           <div className="dashboard-link-list">
-            {recentTopics.map((topic) => (
-              <Link key={topic.id} to={`/temas/${topic.id}`}>
-                <strong>{topic.title}</strong>
-                <span>{formatDate(topic.updated_at)}</span>
+            {recentItems.map((item) => (
+              <Link key={`${item.type}-${item.id}`} to={item.route}>
+                <div className="dashboard-recent-title">
+                  <strong>{item.title}</strong>
+                  <span className={`status-pill recent-type-pill ${item.type}`}>{item.typeLabel}</span>
+                </div>
+                {item.subtitle && <span>{item.subtitle}</span>}
+                <span>Modificado {formatDate(item.updatedAt)}</span>
               </Link>
             ))}
-            {recentTopics.length === 0 && <p className="empty-state">Todavía no hay temas creados.</p>}
+            {recentItems.length === 0 && <p className="empty-state">Todavía no hay contenido creado.</p>}
           </div>
         </section>
 
