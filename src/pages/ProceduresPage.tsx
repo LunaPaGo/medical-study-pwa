@@ -74,42 +74,48 @@ export function ProceduresPage({ favoritesOnly = false }: Props) {
         </div>
       </div>
 
-      <section className="panel filter-panel">
-        <Search size={20} />
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre, resumen, categoría, etiqueta o contenido" />
-        <select value={category} onChange={(event) => setCategory(event.target.value)}>
-          <option value="">Todas las categorías</option>
-          {categories.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-        <select value={tagId} onChange={(event) => setTagId(event.target.value)}>
-          <option value="">Todas las etiquetas</option>
-          {data?.tags.map((tag) => (
-            <option key={tag.id} value={tag.id}>
-              {tag.name}
-            </option>
-          ))}
-        </select>
-        <select value={status} onChange={(event) => setStatus(event.target.value)}>
-          <option value="">Todos los estados</option>
-          <option value="draft">Borrador</option>
-          <option value="complete">Completo</option>
-        </select>
-        <select value={sort} onChange={(event) => setSort(event.target.value as ProcedureSort)}>
-          <option value="updated_desc">Modificación reciente</option>
-          <option value="name_asc">Nombre alfabético</option>
-          <option value="created_desc">Creación reciente</option>
-          <option value="favorite_desc">Favoritos primero</option>
-        </select>
-        {!favoritesOnly && (
-          <label className="checkbox-label">
-            <input checked={favoriteOnly} type="checkbox" onChange={(event) => setFavoriteOnly(event.target.checked)} />
-            Favoritos
+      <section className="panel procedure-filter-panel">
+        <div className="procedure-filter-primary-row">
+          <label className="procedure-search-field">
+            <Search size={18} />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre, resumen, categoría, etiqueta o contenido" />
           </label>
-        )}
+          <select value={category} onChange={(event) => setCategory(event.target.value)}>
+            <option value="">Todas las categorías</option>
+            {categories.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+          <select value={tagId} onChange={(event) => setTagId(event.target.value)}>
+            <option value="">Todas las etiquetas</option>
+            {data?.tags.map((tag) => (
+              <option key={tag.id} value={tag.id}>
+                {tag.name}
+              </option>
+            ))}
+          </select>
+          <select value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="">Todos los estados</option>
+            <option value="draft">Borrador</option>
+            <option value="complete">Completo</option>
+          </select>
+        </div>
+        <div className="procedure-filter-secondary-row">
+          <select value={sort} onChange={(event) => setSort(event.target.value as ProcedureSort)}>
+            <option value="updated_desc">Modificación reciente</option>
+            <option value="name_asc">Nombre alfabético</option>
+            <option value="created_desc">Creación reciente</option>
+            <option value="favorite_desc">Favoritos primero</option>
+          </select>
+          {!favoritesOnly && (
+            <label className="checkbox-label">
+              <input checked={favoriteOnly} type="checkbox" onChange={(event) => setFavoriteOnly(event.target.checked)} />
+              Solo favoritos
+            </label>
+          )}
+        </div>
       </section>
 
       {isLoading && <div className="panel empty-state">Cargando procedimientos...</div>}

@@ -665,6 +665,48 @@ button:disabled,
   min-height: auto;
 }
 
+.procedure-filter-panel {
+  display: grid;
+  gap: var(--space-3);
+  min-height: auto;
+}
+
+.procedure-filter-primary-row,
+.procedure-filter-secondary-row {
+  display: grid;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.procedure-filter-primary-row {
+  grid-template-columns: minmax(260px, 1fr) repeat(3, minmax(150px, 190px));
+}
+
+.procedure-filter-secondary-row {
+  grid-template-columns: minmax(150px, 190px) auto;
+  justify-content: start;
+}
+
+.procedure-search-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 0 var(--space-4);
+}
+
+.procedure-search-field input {
+  min-height: calc(var(--control-height) - 2px);
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
 .global-search-panel {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -2076,6 +2118,14 @@ button:disabled,
 }
 
 @media (max-width: 920px) {
+  .procedure-filter-primary-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .procedure-search-field {
+    grid-column: 1 / -1;
+  }
+
   .filter-panel,
   .organization-grid,
   .attachment-list.grid,
@@ -2101,6 +2151,11 @@ button:disabled,
 }
 
 @media (max-width: 560px) {
+  .procedure-filter-primary-row,
+  .procedure-filter-secondary-row {
+    grid-template-columns: 1fr;
+  }
+
   .filter-panel,
   .form-grid,
   .organization-grid,
