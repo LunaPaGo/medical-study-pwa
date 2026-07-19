@@ -444,12 +444,18 @@ a:focus-visible {
 
 .primary-action-button {
   flex: 0 0 auto;
+  color: #ffffff;
+}
+
+.primary-action-button span {
+  color: #ffffff;
 }
 
 .primary-action-button svg {
   width: 18px;
   height: 18px;
-  color: currentColor;
+  color: #ffffff;
+  stroke: #ffffff;
 }
 
 .primary-button:disabled {

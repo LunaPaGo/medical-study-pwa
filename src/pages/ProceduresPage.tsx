@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ClipboardPlus, Search } from 'lucide-react';
+import { PrimaryActionButton } from '../components/ui/PrimaryActionButton';
 import { ProcedureCard } from '../features/procedures/ProcedureCard';
 import { filterProcedures } from '../features/procedures/procedureRepository';
 import { useProcedureData, useProcedureMutations } from '../features/procedures/useProcedureData';
@@ -66,10 +66,9 @@ export function ProceduresPage({ favoritesOnly = false }: Props) {
             <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
           ) : (
             !favoritesOnly && (
-              <Link className="primary-button" to="/procedimientos/nuevo">
-                <ClipboardPlus size={18} />
-                Nuevo procedimiento
-              </Link>
+              <PrimaryActionButton aria-label="Nuevo procedimiento" icon={<ClipboardPlus />} iconOnlyOnMobile to="/procedimientos/nuevo">
+                Nuevo
+              </PrimaryActionButton>
             )
           )}
         </div>
