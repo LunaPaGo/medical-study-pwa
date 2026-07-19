@@ -853,7 +853,7 @@ button:disabled,
 
 .topic-list.list,
 .medication-list.list {
-  gap: 0;
+  gap: var(--space-3);
 }
 
 .topic-card {
@@ -868,10 +868,19 @@ button:disabled,
 
 .topic-card-list {
   gap: var(--space-2);
-  border-width: 0 0 1px;
-  border-radius: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--surface-muted));
   box-shadow: none;
-  padding: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.topic-card-list:hover {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  background: color-mix(in srgb, var(--surface) 88%, var(--surface-muted));
 }
 
 .compact-card-main {
