@@ -78,9 +78,9 @@ export function IdealBodyWeightCalculator() {
 
       <CalculatorFormula
         formulas={[
-          'Varones: Peso ideal = 50 kg + 2,3 kg por cada pulgada por encima de 5 pies',
-          'Mujeres: Peso ideal = 45,5 kg + 2,3 kg por cada pulgada por encima de 5 pies',
-          'Pulgadas por encima de 5 pies = (altura en cm − 152,4) / 2,54'
+          'Varón: Peso ideal = 50 + 0,906 × (altura en cm − 152,4)',
+          'Mujer: Peso ideal = 45,5 + 0,906 × (altura en cm − 152,4)',
+          'La fórmula original de Devine fue definida en pies y pulgadas; aquí se presenta su equivalencia en centímetros.'
         ]}
       />
 
