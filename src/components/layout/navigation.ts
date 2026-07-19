@@ -17,6 +17,8 @@ export const bottomRoutes: AppRoute[] = [
   { label: 'Temas', path: '/temas', icon: BookOpen },
   { label: 'Fármacos', path: '/farmacologia', icon: Pill },
   { label: 'Proced.', path: '/procedimientos', icon: ClipboardList },
+  { label: 'Calculadoras', path: '/calculadoras', icon: Calculator },
+  { label: 'Buscar', path: '/buscar', icon: Search },
   { label: 'Archivos', path: '/archivos', icon: Files },
   { label: 'Favoritos', path: '/favoritos', icon: Heart }
 ];
