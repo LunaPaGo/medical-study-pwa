@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { GitCompare, Grid2X2, List, Pill, Search } from 'lucide-react';
+import { PrimaryActionButton } from '../components/ui/PrimaryActionButton';
 import { MedicationCard } from '../features/medications/MedicationCard';
 import { filterMedications } from '../features/medications/medicationRepository';
 import { useMedicationData, useMedicationMutations } from '../features/medications/useMedicationData';
@@ -94,10 +95,9 @@ export function MedicationsPage() {
           {isReadOnly ? (
             <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
           ) : (
-            <Link className="primary-button" to="/farmacologia/nuevo">
-              <Pill size={18} />
+            <PrimaryActionButton icon={<Pill />} to="/farmacologia/nuevo">
               Nuevo medicamento
-            </Link>
+            </PrimaryActionButton>
           )}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { BookPlus, Grid2X2, List, SlidersHorizontal } from 'lucide-react';
+import { PrimaryActionButton } from '../components/ui/PrimaryActionButton';
 import { OrganizationManager } from '../features/topics/OrganizationManager';
 import { TopicCard } from '../features/topics/TopicCard';
 import { useStudyListViewPreference } from '../features/theme/useStudyListViewPreference';
@@ -84,10 +84,9 @@ export function TopicsPage({ favoritesOnly = false }: Props) {
           {isReadOnly ? (
             <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
           ) : (
-            <Link className="primary-button" to="/temas/nuevo">
-              <BookPlus size={18} />
+            <PrimaryActionButton icon={<BookPlus />} to="/temas/nuevo">
               Nuevo tema
-            </Link>
+            </PrimaryActionButton>
           )}
         </div>
       </div>
