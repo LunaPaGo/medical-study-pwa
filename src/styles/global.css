@@ -584,11 +584,30 @@ button:disabled,
 
 .medication-heading-actions {
   align-items: center;
+  flex-wrap: nowrap;
   justify-content: flex-end;
+  min-width: max-content;
 }
 
 .medication-heading-actions .primary-button {
   margin-left: auto;
+  min-width: 180px;
+  white-space: nowrap;
+}
+
+.medication-heading-actions .view-switch {
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 920px) {
+  .medication-heading-actions {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .medication-heading-actions .primary-button {
+    margin-left: 0;
+  }
 }
 
 .filter-panel,
