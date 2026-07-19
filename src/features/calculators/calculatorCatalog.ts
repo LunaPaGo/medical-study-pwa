@@ -1,13 +1,16 @@
 import type { ComponentType } from 'react';
 import { BazettQtcCalculator } from './cardiovascular/BazettQtcCalculator';
 import { CorrectedSodiumCalculator } from './laboratory/CorrectedSodiumCalculator';
+import { Curb65Calculator } from './respiratory/Curb65Calculator';
 import { FenaCalculator } from './laboratory/FenaCalculator';
 import { GlasgowComaScaleCalculator } from './tools/GlasgowComaScaleCalculator';
 import { IdealBodyWeightCalculator } from './anesthesiology/IdealBodyWeightCalculator';
 import { MeanArterialPressureCalculator } from './cardiovascular/MeanArterialPressureCalculator';
 import { PafiCalculator } from './respiratory/PafiCalculator';
 import { PediatricEndotrachealTubeCalculator } from './pediatrics/PediatricEndotrachealTubeCalculator';
+import { QsofaCalculator } from './tools/QsofaCalculator';
 import { ShockIndexCalculator } from './cardiovascular/ShockIndexCalculator';
+import { WellsPulmonaryEmbolismCalculator } from './respiratory/WellsPulmonaryEmbolismCalculator';
 
 export type CalculatorCategoryId =
   | 'cardiovascular'
@@ -59,6 +62,16 @@ export const calculatorCategories: CalculatorCategory[] = [
         id: 'pafi-ratio',
         title: 'PaO₂/FiO₂ — PAFI',
         component: PafiCalculator
+      },
+      {
+        id: 'curb-65',
+        title: 'CURB-65',
+        component: Curb65Calculator
+      },
+      {
+        id: 'wells-pulmonary-embolism',
+        title: 'Wells para Tromboembolismo Pulmonar',
+        component: WellsPulmonaryEmbolismCalculator
       }
     ]
   },
@@ -108,6 +121,11 @@ export const calculatorCategories: CalculatorCategory[] = [
         id: 'glasgow-coma-scale',
         title: 'Escala de Coma de Glasgow',
         component: GlasgowComaScaleCalculator
+      },
+      {
+        id: 'qsofa',
+        title: 'qSOFA',
+        component: QsofaCalculator
       }
     ]
   }
