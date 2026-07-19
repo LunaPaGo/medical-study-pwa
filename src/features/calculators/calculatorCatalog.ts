@@ -3,6 +3,7 @@ import { BazettQtcCalculator } from './cardiovascular/BazettQtcCalculator';
 import { CorrectedSodiumCalculator } from './laboratory/CorrectedSodiumCalculator';
 import { Curb65Calculator } from './respiratory/Curb65Calculator';
 import { FenaCalculator } from './laboratory/FenaCalculator';
+import { GestationalAgeCalculator } from './pediatrics/GestationalAgeCalculator';
 import { GlasgowComaScaleCalculator } from './tools/GlasgowComaScaleCalculator';
 import { IdealBodyWeightCalculator } from './anesthesiology/IdealBodyWeightCalculator';
 import { MeanArterialPressureCalculator } from './cardiovascular/MeanArterialPressureCalculator';
@@ -110,6 +111,11 @@ export const calculatorCategories: CalculatorCategory[] = [
         id: 'pediatric-endotracheal-tube',
         title: 'Tubo endotraqueal pediátrico',
         component: PediatricEndotrachealTubeCalculator
+      },
+      {
+        id: 'gestational-age',
+        title: 'Edad gestacional',
+        component: GestationalAgeCalculator
       }
     ]
   },
