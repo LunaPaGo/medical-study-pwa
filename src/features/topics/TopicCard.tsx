@@ -1,18 +1,53 @@
 import { Copy, Edit3, Eye, Heart, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { TopicWithRelations } from '../../types/topic';
+import type { StudyListViewMode } from '../theme/useStudyListViewPreference';
 import { formatDate, stripHtml } from './topicUtils';
 
 type Props = {
   topic: TopicWithRelations;
   readOnly?: boolean;
+  viewMode?: StudyListViewMode;
   onDelete: (topic: TopicWithRelations) => void;
   onDuplicate: (topic: TopicWithRelations) => void;
   onToggleFavorite: (topic: TopicWithRelations) => void;
 };
 
-export function TopicCard({ topic, readOnly = false, onDelete, onDuplicate, onToggleFavorite }: Props) {
+export function TopicCard({ topic, readOnly = false, viewMode = 'grid', onDelete, onDuplicate, onToggleFavorite }: Props) {
   const summary = stripHtml(topic.content_html);
+
+  if (viewMode === 'list') {
+    return (
+      <article className="topic-card topic-card-list">
+        <div className="compact-card-main">
+          <div className="compact-card-title-row">
+            <span className={`status-pill ${topic.status}`}>{topic.status === 'complete' ? 'Completo' : 'Borrador'}</span>
+            <h2>{topic.title}</h2>
+            <span className="compact-updated">Modificado {formatDate(topic.updated_at)}</span>
+          </div>
+          {topic.subtitle && <p>{topic.subtitle}</p>}
+          <div className="compact-card-actions">
+            <Link className="ghost-button" to={`/temas/${topic.id}`}>
+              Ver
+            </Link>
+            {!readOnly && (
+              <Link className="ghost-button" to={`/temas/${topic.id}/editar`}>
+                Editar
+              </Link>
+            )}
+            <button
+              className={`ghost-button ${topic.is_favorite ? 'favorite-active' : ''}`}
+              disabled={readOnly}
+              type="button"
+              onClick={() => onToggleFavorite(topic)}
+            >
+              Favorito
+            </button>
+          </div>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <article className="topic-card">

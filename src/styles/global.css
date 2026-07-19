@@ -570,6 +570,18 @@ button:disabled,
   gap: var(--space-3);
 }
 
+.view-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.view-switch .ghost-button.active {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+
 .filter-panel,
 .form-grid,
 .organization-grid {
@@ -839,6 +851,11 @@ button:disabled,
   gap: var(--space-5);
 }
 
+.topic-list.list,
+.medication-list.list {
+  gap: 0;
+}
+
 .topic-card {
   display: grid;
   gap: var(--space-5);
@@ -847,6 +864,62 @@ button:disabled,
   background: var(--surface);
   box-shadow: var(--shadow);
   padding: var(--space-7);
+}
+
+.topic-card-list {
+  gap: var(--space-2);
+  border-width: 0 0 1px;
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--space-3) 0;
+}
+
+.compact-card-main {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.compact-card-title-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.compact-card-title-row h2 {
+  margin: 0;
+  overflow: hidden;
+  font-size: calc(1rem * var(--density-heading-scale));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-card-title-row h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.compact-card-main p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-updated {
+  color: var(--muted);
+  font-size: var(--xsmall-text-size);
+  white-space: nowrap;
+}
+
+.compact-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.compact-card-actions .ghost-button {
+  min-height: calc(var(--control-height) * 0.78);
+  padding: 0 var(--space-3);
 }
 
 .topic-card-header {

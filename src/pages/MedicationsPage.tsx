@@ -4,8 +4,9 @@ import { GitCompare, Grid2X2, List, Pill, Search } from 'lucide-react';
 import { MedicationCard } from '../features/medications/MedicationCard';
 import { filterMedications } from '../features/medications/medicationRepository';
 import { useMedicationData, useMedicationMutations } from '../features/medications/useMedicationData';
+import { useStudyListViewPreference } from '../features/theme/useStudyListViewPreference';
 import { useAuth } from '../hooks/useAuth';
-import type { MedicationSort, MedicationViewMode, MedicationWithRelations } from '../types/medication';
+import type { MedicationSort, MedicationWithRelations } from '../types/medication';
 
 export function MedicationsPage() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export function MedicationsPage() {
   const [status, setStatus] = useState('');
   const [favoriteOnly, setFavoriteOnly] = useState(false);
   const [sort, setSort] = useState<MedicationSort>('updated_desc');
-  const [viewMode, setViewMode] = useState<MedicationViewMode>('grid');
+  const { viewMode, setViewMode } = useStudyListViewPreference();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const groups = useMemo(
@@ -78,12 +79,16 @@ export function MedicationsPage() {
           <p>Fichas de medicamentos para estudiar, consultar rápido, adjuntar archivos y comparar fármacos.</p>
         </div>
         <div className="heading-actions">
-          <button className="ghost-button icon-button" type="button" onClick={() => setViewMode('grid')} title="Tarjetas">
-            <Grid2X2 size={18} />
-          </button>
-          <button className="ghost-button icon-button" type="button" onClick={() => setViewMode('list')} title="Lista">
-            <List size={18} />
-          </button>
+          <div className="view-switch" aria-label="Modo de visualización">
+            <button className={`ghost-button ${viewMode === 'list' ? 'active' : ''}`} type="button" onClick={() => setViewMode('list')}>
+              <List size={18} />
+              Lista
+            </button>
+            <button className={`ghost-button ${viewMode === 'grid' ? 'active' : ''}`} type="button" onClick={() => setViewMode('grid')}>
+              <Grid2X2 size={18} />
+              Tarjetas
+            </button>
+          </div>
           <button className="ghost-button" type="button" onClick={compare}>
             <GitCompare size={18} />
             Comparar
@@ -162,6 +167,7 @@ export function MedicationsPage() {
             medication={medication}
             selected={selectedIds.includes(medication.id)}
             readOnly={isReadOnly}
+            viewMode={viewMode}
             onSelect={toggleSelected}
             onDelete={remove}
             onDuplicate={(item) => mutations.duplicateMedication.mutate(item)}

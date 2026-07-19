@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookPlus, SlidersHorizontal } from 'lucide-react';
+import { BookPlus, Grid2X2, List, SlidersHorizontal } from 'lucide-react';
 import { OrganizationManager } from '../features/topics/OrganizationManager';
 import { TopicCard } from '../features/topics/TopicCard';
+import { useStudyListViewPreference } from '../features/theme/useStudyListViewPreference';
 import { filterTopics } from '../features/topics/topicUtils';
 import { useTopicData, useTopicMutations } from '../features/topics/useTopicData';
 import { useAuth } from '../hooks/useAuth';
@@ -22,6 +23,7 @@ export function TopicsPage({ favoritesOnly = false }: Props) {
   const [specialty, setSpecialty] = useState('');
   const [sort, setSort] = useState<TopicSort>('updated_desc');
   const [showOrganization, setShowOrganization] = useState(false);
+  const { viewMode, setViewMode } = useStudyListViewPreference();
 
   const specialties = useMemo(
     () =>
@@ -69,6 +71,16 @@ export function TopicsPage({ favoritesOnly = false }: Props) {
               Organización
             </button>
           )}
+          <div className="view-switch" aria-label="Modo de visualización">
+            <button className={`ghost-button ${viewMode === 'list' ? 'active' : ''}`} type="button" onClick={() => setViewMode('list')}>
+              <List size={18} />
+              Lista
+            </button>
+            <button className={`ghost-button ${viewMode === 'grid' ? 'active' : ''}`} type="button" onClick={() => setViewMode('grid')}>
+              <Grid2X2 size={18} />
+              Tarjetas
+            </button>
+          </div>
           {isReadOnly ? (
             <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
           ) : (
@@ -122,12 +134,13 @@ export function TopicsPage({ favoritesOnly = false }: Props) {
 
       {isLoading && <div className="panel empty-state">Cargando temas...</div>}
 
-      <div className="topic-list">
+      <div className={`topic-list ${viewMode}`}>
         {topics.map((topic) => (
           <TopicCard
             key={topic.id}
             topic={topic}
             readOnly={isReadOnly}
+            viewMode={viewMode}
             onDelete={remove}
             onDuplicate={(item) => mutations.duplicateTopic.mutate(item)}
             onToggleFavorite={(item) => mutations.toggleFavorite.mutate(item)}
