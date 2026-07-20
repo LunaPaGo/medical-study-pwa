@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Archive, CheckCircle2, DownloadCloud, FileSearch, RotateCcw, XCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useEditorLineSpacing } from '../theme/useEditorLineSpacing';
 import { useInterfaceDensity } from '../theme/useInterfaceDensity';
 import { useThemePreference } from '../theme/useThemePreference';
 import { createCompleteBackup, getLastBackupExport } from './backupExportService';
@@ -58,6 +59,7 @@ function formatSize(bytes: number) {
 export function BackupPage() {
   const { user, isReadOnly } = useAuth();
   const { density, setInterfaceDensity } = useInterfaceDensity();
+  const { lineSpacing, setEditorLineSpacing } = useEditorLineSpacing();
   const { preference: themePreference, setThemePreference } = useThemePreference();
   const [progress, setProgress] = useState<BackupProgress>(initialProgress);
   const [isExporting, setIsExporting] = useState(false);
@@ -230,6 +232,36 @@ export function BackupPage() {
               type="radio"
             />
             Normal
+          </label>
+        </div>
+        <h3>Interlineado</h3>
+        <div className="appearance-options" role="radiogroup" aria-label="Interlineado del editor">
+          <label>
+            <input
+              checked={lineSpacing === 'compact'}
+              name="editor-line-spacing"
+              onChange={() => setEditorLineSpacing('compact')}
+              type="radio"
+            />
+            Compacto
+          </label>
+          <label>
+            <input
+              checked={lineSpacing === 'normal'}
+              name="editor-line-spacing"
+              onChange={() => setEditorLineSpacing('normal')}
+              type="radio"
+            />
+            Normal
+          </label>
+          <label>
+            <input
+              checked={lineSpacing === 'wide'}
+              name="editor-line-spacing"
+              onChange={() => setEditorLineSpacing('wide')}
+              type="radio"
+            />
+            Amplio
           </label>
         </div>
       </section>
