@@ -1252,6 +1252,19 @@ button:disabled,
   line-height: var(--editor-line-height);
 }
 
+.rich-editor-content p,
+.rich-editor-content li,
+.rich-editor-content blockquote,
+.rich-editor-content td,
+.rich-editor-content th,
+.reader-content p,
+.reader-content li,
+.reader-content blockquote,
+.reader-content td,
+.reader-content th {
+  line-height: var(--editor-line-height);
+}
+
 .rich-editor-content:focus {
   outline: none;
 }

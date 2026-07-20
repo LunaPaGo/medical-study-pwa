@@ -12,7 +12,7 @@ export function getEditorLineSpacing(): EditorLineSpacing {
 }
 
 export function applyEditorLineSpacing(lineSpacing: EditorLineSpacing = getEditorLineSpacing()) {
-  document.documentElement.dataset.editorLineSpacing = lineSpacing;
+  document.documentElement.setAttribute('data-editor-line-spacing', lineSpacing);
   return lineSpacing;
 }
 
