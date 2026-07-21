@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import type { Attachment, AttachmentOwnerType } from '../../types/attachment';
 import { medicationDataKey } from '../medications/useMedicationData';
 import { procedureDataKey } from '../procedures/useProcedureData';
+import { flushSyncQueue } from '../topics/topicRepository';
 import { topicDataKey } from '../topics/useTopicData';
 import { createAttachment, deleteAttachment, getAttachments, renameAttachment, runManualAttachmentSync } from './attachmentRepository';
 
@@ -54,7 +55,19 @@ export function useAttachmentMutations() {
       onSuccess: invalidate
     }),
     sync: useMutation({
-      mutationFn: () => runManualAttachmentSync(user!.id),
+      mutationFn: async () => {
+        const summary = await runManualAttachmentSync(user!.id);
+        const queueResult = await flushSyncQueue(user!.id, { forceRetry: true });
+        return {
+          ...summary,
+          errors: [
+            ...summary.errors,
+            ...(queueResult.failed > 0
+              ? [`${queueResult.failed} cambio${queueResult.failed === 1 ? '' : 's'} pendiente${queueResult.failed === 1 ? '' : 's'} no se pudo sincronizar.`]
+              : [])
+          ]
+        };
+      },
       onSuccess: invalidate
     })
   };

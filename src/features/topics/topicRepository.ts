@@ -85,15 +85,26 @@ function logSyncStep(message: string, details?: Record<string, unknown>) {
 
 function normalizeSyncError(error: unknown) {
   if (error && typeof error === 'object') {
-    const item = error as { message?: unknown; code?: unknown; status?: unknown; details?: unknown };
+    const item = error as { message?: unknown; code?: unknown; status?: unknown; details?: unknown; hint?: unknown };
     return {
       message: typeof item.message === 'string' ? item.message : 'Error de sincronización.',
       code: typeof item.code === 'string' ? item.code : undefined,
       status: typeof item.status === 'number' || typeof item.status === 'string' ? item.status : undefined,
-      details: typeof item.details === 'string' ? item.details : undefined
+      details: typeof item.details === 'string' ? item.details : undefined,
+      hint: typeof item.hint === 'string' ? item.hint : undefined
     };
   }
   return { message: error instanceof Error ? error.message : 'Error de sincronización.' };
+}
+
+function serializeSyncError(errorInfo: ReturnType<typeof normalizeSyncError>) {
+  return JSON.stringify({
+    code: errorInfo.code ?? null,
+    message: errorInfo.message,
+    details: errorInfo.details ?? null,
+    hint: errorInfo.hint ?? null,
+    status: errorInfo.status ?? null
+  });
 }
 
 function nextRetryAfter(attemptCount: number) {
@@ -101,8 +112,8 @@ function nextRetryAfter(attemptCount: number) {
   return new Date(Date.now() + delayMs).toISOString();
 }
 
-function isSyncItemDue(item: SyncQueueItem) {
-  return !item.retry_after || Date.parse(item.retry_after) <= Date.now();
+function isSyncItemDue(item: SyncQueueItem, forceRetry = false) {
+  return forceRetry || !item.retry_after || Date.parse(item.retry_after) <= Date.now();
 }
 
 function topicForSupabase(topic: Topic): SupabaseTopicPayload {
@@ -562,19 +573,19 @@ export type FlushSyncQueueResult = {
   nextRetryAt: string | null;
 };
 
-export async function flushSyncQueue(userId: string) {
+export async function flushSyncQueue(userId: string, options: { forceRetry?: boolean } = {}) {
   if (!navigator.onLine) return { flushed: 0, attempted: 0, failed: 0, nextRetryAt: null };
 
   const db = await localDbPromise;
   const allItems = (await db.getAllFromIndex('sync_queue', 'user_id', userId)).sort((a, b) =>
     a.created_at.localeCompare(b.created_at)
   );
-  const items = allItems.filter(isSyncItemDue);
+  const items = allItems.filter((item) => isSyncItemDue(item, options.forceRetry));
   let flushed = 0;
   let attempted = 0;
   let failed = 0;
 
-  logSyncStep('flush_start', { pending: allItems.length, due: items.length });
+  logSyncStep('flush_start', { pending: allItems.length, due: items.length, forceRetry: Boolean(options.forceRetry) });
 
   for (const item of items) {
     attempted += 1;
@@ -618,7 +629,7 @@ export async function flushSyncQueue(userId: string) {
         ...item,
         attempt_count: attemptCount,
         last_attempt_at: nowIso(),
-        last_error: [errorInfo.status, errorInfo.code, errorInfo.message].filter(Boolean).join(' · '),
+        last_error: serializeSyncError(errorInfo),
         retry_after: retryAfter
       };
       await db.put('sync_queue', failedItem);
