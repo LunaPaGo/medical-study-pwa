@@ -1,8 +1,9 @@
 import { FormEvent, useMemo, useRef, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Save, Star } from 'lucide-react';
 import { ExternalUpdateNotice } from '../components/forms/ExternalUpdateNotice';
+import { usePersistentEditingSession } from '../features/editingSessions/usePersistentEditingSession';
 import { MedicationAttachmentsPanel } from '../features/medications/MedicationAttachmentsPanel';
 import { createEmptyMedicationValues } from '../features/medications/medicationRepository';
 import { medicationDataKey, useMedicationData, useMedicationMutations } from '../features/medications/useMedicationData';
@@ -16,15 +17,17 @@ import { medicationSchema } from '../validation/medication';
 
 type MedicationStudyJsonField = (typeof medicationStudySections)[number]['jsonField'];
 type MedicationStudyHtmlField = (typeof medicationStudySections)[number]['htmlField'];
+type DraftUuid = ReturnType<Crypto['randomUUID']>;
 
 export function MedicationFormPage() {
   const { medicationId } = useParams();
-  const draftMedicationId = useRef(crypto.randomUUID());
+  const [searchParams] = useSearchParams();
+  const draftMedicationId = useRef((searchParams.get('draftId') ?? crypto.randomUUID()) as DraftUuid);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data, isLoading } = useMedicationData();
   const mutations = useMedicationMutations();
-  const { isReadOnly } = useAuth();
+  const { isReadOnly, user } = useAuth();
   const existing = data?.medications.find((medication) => medication.id === medicationId);
 
   const initialValues = useMemo<MedicationFormValues>(() => {
@@ -70,6 +73,22 @@ export function MedicationFormPage() {
     recordUpdatedAt: existing?.updated_at
   });
   const [error, setError] = useState('');
+  const medicationOwnerId = values.id ?? existing?.id ?? draftMedicationId.current;
+  const editingRoute = medicationId
+    ? `/farmacologia/${medicationId}/editar`
+    : `/farmacologia/nuevo?draftId=${encodeURIComponent(draftMedicationId.current)}`;
+  const { clearSession } = usePersistentEditingSession({
+    enabled: Boolean(user?.id) && !isReadOnly,
+    userId: user?.id,
+    entityType: 'medication',
+    entityId: medicationId ?? null,
+    draftId: medicationId ? null : draftMedicationId.current,
+    values,
+    setValues,
+    isDirty,
+    baseRecordUpdatedAt: existing?.updated_at,
+    route: editingRoute
+  });
 
   if (!isLoading && medicationId && !existing) {
     return <Navigate to="/farmacologia" replace />;
@@ -78,8 +97,6 @@ export function MedicationFormPage() {
   if (isReadOnly) {
     return <Navigate to={existing ? `/farmacologia/${existing.id}` : '/farmacologia'} replace />;
   }
-
-  const medicationOwnerId = values.id ?? existing?.id ?? draftMedicationId.current;
 
   const update = <K extends keyof MedicationFormValues>(key: K, value: MedicationFormValues[K]) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -98,6 +115,7 @@ export function MedicationFormPage() {
       {
         onSuccess(medication) {
           markSaved(parsed.data);
+          void clearSession();
           navigate(`/farmacologia/${medication.id}`);
         }
       }

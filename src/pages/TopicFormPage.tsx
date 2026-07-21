@@ -1,8 +1,9 @@
 import { FormEvent, useMemo, useRef, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Save, Star } from 'lucide-react';
 import { ExternalUpdateNotice } from '../components/forms/ExternalUpdateNotice';
 import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
+import { usePersistentEditingSession } from '../features/editingSessions/usePersistentEditingSession';
 import { emptyTipTapDocument, getTopicDocument } from '../features/topics/tiptapDocument';
 import { topicSections } from '../features/topics/topicSectionCatalog';
 import { useTopicData, useTopicMutations } from '../features/topics/useTopicData';
@@ -36,11 +37,12 @@ const emptyValues: TopicFormValues = {
 
 export function TopicFormPage() {
   const { topicId } = useParams();
-  const draftTopicId = useRef(crypto.randomUUID());
+  const [searchParams] = useSearchParams();
+  const draftTopicId = useRef(searchParams.get('draftId') ?? crypto.randomUUID());
   const navigate = useNavigate();
   const { data, isLoading } = useTopicData();
   const mutations = useTopicMutations();
-  const { isReadOnly } = useAuth();
+  const { isReadOnly, user } = useAuth();
   const existing = data?.topics.find((topic) => topic.id === topicId);
   const initialValues = useMemo<TopicFormValues>(() => {
     if (!existing) return { ...emptyValues, id: draftTopicId.current };
@@ -84,6 +86,19 @@ export function TopicFormPage() {
   });
   const [error, setError] = useState('');
   const topicOwnerId = values.id ?? existing?.id ?? draftTopicId.current;
+  const editingRoute = topicId ? `/temas/${topicId}/editar` : `/temas/nuevo?draftId=${encodeURIComponent(draftTopicId.current)}`;
+  const { clearSession } = usePersistentEditingSession({
+    enabled: Boolean(user?.id) && !isReadOnly,
+    userId: user?.id,
+    entityType: 'topic',
+    entityId: topicId ?? null,
+    draftId: topicId ? null : draftTopicId.current,
+    values,
+    setValues,
+    isDirty,
+    baseRecordUpdatedAt: existing?.updated_at,
+    route: editingRoute
+  });
 
   if (!isLoading && topicId && !existing) {
     return <Navigate to="/temas" replace />;
@@ -110,6 +125,7 @@ export function TopicFormPage() {
       {
         onSuccess(topic) {
           markSaved(parsed.data);
+          void clearSession();
           navigate(`/temas/${topic.id}`);
         }
       }

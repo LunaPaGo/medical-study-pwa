@@ -1,9 +1,10 @@
 import { FormEvent, useMemo, useRef, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Save, Star } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ProcedureAttachmentsPanel } from '../features/procedures/ProcedureAttachmentsPanel';
 import { ExternalUpdateNotice } from '../components/forms/ExternalUpdateNotice';
+import { usePersistentEditingSession } from '../features/editingSessions/usePersistentEditingSession';
 import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
 import { createEmptyProcedureValues } from '../features/procedures/procedureRepository';
 import { procedureStudySections } from '../features/procedures/procedureSectionCatalog';
@@ -15,15 +16,17 @@ import { procedureSchema } from '../validation/procedure';
 
 type ProcedureJsonField = (typeof procedureStudySections)[number]['jsonField'];
 type ProcedureHtmlField = (typeof procedureStudySections)[number]['htmlField'];
+type DraftUuid = ReturnType<Crypto['randomUUID']>;
 
 export function ProcedureFormPage() {
   const { procedureId } = useParams();
-  const draftProcedureId = useRef(crypto.randomUUID());
+  const [searchParams] = useSearchParams();
+  const draftProcedureId = useRef((searchParams.get('draftId') ?? crypto.randomUUID()) as DraftUuid);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data, isLoading } = useProcedureData();
   const mutations = useProcedureMutations();
-  const { isReadOnly } = useAuth();
+  const { isReadOnly, user } = useAuth();
   const existing = data?.procedures.find((procedure) => procedure.id === procedureId);
 
   const initialValues = useMemo<ProcedureFormValues>(() => {
@@ -62,6 +65,21 @@ export function ProcedureFormPage() {
   });
   const [error, setError] = useState('');
   const procedureOwnerId = values.id ?? existing?.id ?? draftProcedureId.current;
+  const editingRoute = procedureId
+    ? `/procedimientos/${procedureId}/editar`
+    : `/procedimientos/nuevo?draftId=${encodeURIComponent(draftProcedureId.current)}`;
+  const { clearSession } = usePersistentEditingSession({
+    enabled: Boolean(user?.id) && !isReadOnly,
+    userId: user?.id,
+    entityType: 'procedure',
+    entityId: procedureId ?? null,
+    draftId: procedureId ? null : draftProcedureId.current,
+    values,
+    setValues,
+    isDirty,
+    baseRecordUpdatedAt: existing?.updated_at,
+    route: editingRoute
+  });
 
   if (!isLoading && procedureId && !existing) {
     return <Navigate to="/procedimientos" replace />;
@@ -88,6 +106,7 @@ export function ProcedureFormPage() {
       {
         onSuccess(procedure) {
           markSaved(parsed.data);
+          void clearSession();
           navigate(`/procedimientos/${procedure.id}`);
         }
       }

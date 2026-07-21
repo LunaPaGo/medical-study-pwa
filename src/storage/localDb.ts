@@ -1,5 +1,6 @@
 import { openDB } from 'idb';
 import type { Attachment, AttachmentLink, MedicationAttachment, PendingAttachmentFile, ProcedureAttachment, TopicAttachment } from '../types/attachment';
+import type { EditingSession } from '../types/editingSession';
 import type { Medication, MedicationTag } from '../types/medication';
 import type { Procedure, ProcedureTag } from '../types/procedure';
 import type { Category, Folder, SyncQueueItem, Tag, Topic, TopicRelation, TopicTag } from '../types/topic';
@@ -13,6 +14,11 @@ type MedicalStudyDb = {
   app_cache: {
     key: string;
     value: { key: string; value: unknown; updated_at: string };
+  };
+  editing_sessions: {
+    key: string;
+    value: EditingSession;
+    indexes: { user_id: string; updated_at: string; entity: [string, string, string] };
   };
   topics: {
     key: string;
@@ -96,7 +102,7 @@ type MedicalStudyDb = {
   };
 };
 
-export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 9, {
+export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 10, {
   upgrade(db) {
     if (!db.objectStoreNames.contains('sync_queue')) {
       const queue = db.createObjectStore('sync_queue', { keyPath: 'id' });
@@ -106,6 +112,13 @@ export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 9
 
     if (!db.objectStoreNames.contains('app_cache')) {
       db.createObjectStore('app_cache', { keyPath: 'key' });
+    }
+
+    if (!db.objectStoreNames.contains('editing_sessions')) {
+      const sessions = db.createObjectStore('editing_sessions', { keyPath: 'key' });
+      sessions.createIndex('user_id', 'user_id');
+      sessions.createIndex('updated_at', 'updated_at');
+      sessions.createIndex('entity', ['entity_type', 'entity_id', 'draft_id']);
     }
 
     if (!db.objectStoreNames.contains('topics')) {
