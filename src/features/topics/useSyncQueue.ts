@@ -30,19 +30,51 @@ export function useAutomaticTopicSync() {
   const isOnline = useOnlineStatus();
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [retryBlockedUntil, setRetryBlockedUntil] = useState<string | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
   const pendingCount = useSyncQueueCount();
 
   useEffect(() => {
     if (!user?.id || !isOnline || pendingCount === 0 || isSyncing) return;
 
+    const retryBlockedUntilTime = retryBlockedUntil ? Date.parse(retryBlockedUntil) : 0;
+    if (retryBlockedUntilTime > Date.now()) return;
+
     setIsSyncing(true);
     flushSyncQueue(user.id)
-      .then(() => {
+      .then((result) => {
         queryClient.invalidateQueries({ queryKey: topicDataKey });
         queryClient.invalidateQueries({ queryKey: medicationDataKey });
+        if (result.nextRetryAt && (result.failed > 0 || result.attempted === 0)) {
+          setRetryBlockedUntil(result.nextRetryAt);
+        } else {
+          setRetryBlockedUntil(null);
+        }
+      })
+      .catch((error) => {
+        if (import.meta.env.DEV) {
+          console.warn('[sync_queue] flush_unhandled_error', error);
+        }
       })
       .finally(() => setIsSyncing(false));
-  }, [isOnline, isSyncing, pendingCount, queryClient, user?.id]);
+  }, [isOnline, isSyncing, pendingCount, queryClient, retryBlockedUntil, retryTick, user?.id]);
+
+  useEffect(() => {
+    if (!retryBlockedUntil) return;
+
+    const delay = Date.parse(retryBlockedUntil) - Date.now();
+    if (delay <= 0) {
+      setRetryBlockedUntil(null);
+      setRetryTick((current) => current + 1);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setRetryBlockedUntil(null);
+      setRetryTick((current) => current + 1);
+    }, delay);
+    return () => window.clearTimeout(timeout);
+  }, [retryBlockedUntil]);
 
   return { pendingCount, isSyncing };
 }

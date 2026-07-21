@@ -122,4 +122,8 @@ export type SyncQueueItem = {
   action: SyncAction;
   payload: unknown;
   created_at: string;
+  attempt_count?: number;
+  last_attempt_at?: string;
+  last_error?: string;
+  retry_after?: string;
 };

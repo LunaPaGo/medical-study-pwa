@@ -236,5 +236,24 @@ export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 1
       procedureAttachments.createIndex('procedure_id', 'procedure_id');
       procedureAttachments.createIndex('attachment_id', 'attachment_id');
     }
+  },
+  blocked() {
+    if (import.meta.env.DEV) {
+      console.warn('[indexeddb] Upgrade de medical-study-local-db bloqueado por una conexión anterior.');
+    }
+  },
+  blocking() {
+    if (import.meta.env.DEV) {
+      console.warn('[indexeddb] Esta conexión está bloqueando una versión nueva de medical-study-local-db.');
+    }
   }
+});
+
+void localDbPromise.then((db) => {
+  db.addEventListener('versionchange', () => {
+    db.close();
+    if (import.meta.env.DEV) {
+      console.info('[indexeddb] Conexión local cerrada por cambio de versión.');
+    }
+  });
 });

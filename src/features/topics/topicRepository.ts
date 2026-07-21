@@ -7,6 +7,7 @@ import type {
   OrganizationKind,
   SyncAction,
   SyncEntity,
+  SyncQueueItem,
   Tag,
   Topic,
   TopicFormValues,
@@ -74,6 +75,34 @@ function generateId() {
 
 function emitSyncQueueChanged() {
   window.dispatchEvent(new Event('sync-queue-changed'));
+}
+
+function logSyncStep(message: string, details?: Record<string, unknown>) {
+  if (import.meta.env.DEV) {
+    console.info(`[sync_queue] ${message}`, details ?? {});
+  }
+}
+
+function normalizeSyncError(error: unknown) {
+  if (error && typeof error === 'object') {
+    const item = error as { message?: unknown; code?: unknown; status?: unknown; details?: unknown };
+    return {
+      message: typeof item.message === 'string' ? item.message : 'Error de sincronización.',
+      code: typeof item.code === 'string' ? item.code : undefined,
+      status: typeof item.status === 'number' || typeof item.status === 'string' ? item.status : undefined,
+      details: typeof item.details === 'string' ? item.details : undefined
+    };
+  }
+  return { message: error instanceof Error ? error.message : 'Error de sincronización.' };
+}
+
+function nextRetryAfter(attemptCount: number) {
+  const delayMs = Math.min(5 * 60 * 1000, 5000 * 2 ** Math.min(attemptCount, 5));
+  return new Date(Date.now() + delayMs).toISOString();
+}
+
+function isSyncItemDue(item: SyncQueueItem) {
+  return !item.retry_after || Date.parse(item.retry_after) <= Date.now();
 }
 
 function topicForSupabase(topic: Topic): SupabaseTopicPayload {
@@ -517,17 +546,40 @@ export async function getPendingSyncCount(userId: string) {
   return (await db.getAllFromIndex('sync_queue', 'user_id', userId)).length;
 }
 
+export async function getNextSyncRetryAt(userId: string) {
+  const db = await localDbPromise;
+  const items = await db.getAllFromIndex('sync_queue', 'user_id', userId);
+  return items
+    .map((item) => item.retry_after)
+    .filter((value): value is string => Boolean(value))
+    .sort((a, b) => a.localeCompare(b))[0] ?? null;
+}
+
+export type FlushSyncQueueResult = {
+  flushed: number;
+  attempted: number;
+  failed: number;
+  nextRetryAt: string | null;
+};
+
 export async function flushSyncQueue(userId: string) {
-  if (!navigator.onLine) return 0;
+  if (!navigator.onLine) return { flushed: 0, attempted: 0, failed: 0, nextRetryAt: null };
 
   const db = await localDbPromise;
-  const items = (await db.getAllFromIndex('sync_queue', 'user_id', userId)).sort((a, b) =>
+  const allItems = (await db.getAllFromIndex('sync_queue', 'user_id', userId)).sort((a, b) =>
     a.created_at.localeCompare(b.created_at)
   );
+  const items = allItems.filter(isSyncItemDue);
   let flushed = 0;
+  let attempted = 0;
+  let failed = 0;
+
+  logSyncStep('flush_start', { pending: allItems.length, due: items.length });
 
   for (const item of items) {
+    attempted += 1;
     try {
+      logSyncStep('remote_attempt_start', { id: item.id, entity: item.entity, action: item.action });
       if (item.entity === 'topic') {
         if (item.action === 'delete') {
           const payload = item.payload as { id: string; user_id: string };
@@ -556,11 +608,39 @@ export async function flushSyncQueue(userId: string) {
 
       await db.delete('sync_queue', item.id);
       flushed += 1;
-    } catch {
-      break;
+      logSyncStep('remote_attempt_success', { id: item.id, entity: item.entity, action: item.action });
+    } catch (error) {
+      failed += 1;
+      const errorInfo = normalizeSyncError(error);
+      const attemptCount = (item.attempt_count ?? 0) + 1;
+      const retryAfter = nextRetryAfter(attemptCount);
+      const failedItem: SyncQueueItem = {
+        ...item,
+        attempt_count: attemptCount,
+        last_attempt_at: nowIso(),
+        last_error: [errorInfo.status, errorInfo.code, errorInfo.message].filter(Boolean).join(' · '),
+        retry_after: retryAfter
+      };
+      await db.put('sync_queue', failedItem);
+      logSyncStep('remote_attempt_error', {
+        id: item.id,
+        entity: item.entity,
+        action: item.action,
+        attemptCount,
+        retryAfter,
+        error: errorInfo
+      });
     }
   }
 
+  const remaining = await db.getAllFromIndex('sync_queue', 'user_id', userId);
+  const nextRetryAt =
+    remaining
+      .map((item) => item.retry_after)
+      .filter((value): value is string => Boolean(value))
+      .sort((a, b) => a.localeCompare(b))[0] ?? null;
+
+  logSyncStep('flush_complete', { flushed, attempted, failed, remaining: remaining.length, nextRetryAt });
   emitSyncQueueChanged();
-  return flushed;
+  return { flushed, attempted, failed, nextRetryAt };
 }
