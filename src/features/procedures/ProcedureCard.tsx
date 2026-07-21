@@ -11,12 +11,15 @@ type Props = {
 };
 
 export function ProcedureCard({ procedure, readOnly = false, onDelete, onToggleFavorite }: Props) {
+  const fallbackTitle = (procedure as ProcedureWithRelations & { title?: string | null }).title;
+  const procedureTitle = procedure.name || fallbackTitle || 'Procedimiento sin nombre';
+
   return (
     <article className="topic-card procedure-card">
       <div className="topic-card-header">
         <div>
           <span className={`status-pill ${procedure.status}`}>{procedure.status === 'complete' ? 'Completo' : 'Borrador'}</span>
-          <h2>{procedure.name}</h2>
+          <h2>{procedureTitle}</h2>
           {procedure.summary && <p>{procedure.summary}</p>}
         </div>
         <button

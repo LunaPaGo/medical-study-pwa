@@ -8,6 +8,7 @@ import { router } from './routes/router';
 import { initializeEditorLineSpacing } from './features/theme/editorLineSpacing';
 import { initializeInterfaceDensity } from './features/theme/interfaceDensity';
 import { initializeThemePreference } from './features/theme/theme';
+import { cleanupObsoleteProcedureSyncQueue } from './features/procedures/cleanupObsoleteProcedureSyncQueue';
 import './styles/global.css';
 
 console.info('APP_BOOT_START');
@@ -15,6 +16,11 @@ console.info('APP_BOOT_START');
 initializeThemePreference();
 initializeInterfaceDensity();
 initializeEditorLineSpacing();
+cleanupObsoleteProcedureSyncQueue().catch((error) => {
+  if (import.meta.env.DEV) {
+    console.warn('[procedures] No se pudo limpiar la cola obsoleta de procedimientos.', error);
+  }
+});
 
 registerSW({
   immediate: true,
