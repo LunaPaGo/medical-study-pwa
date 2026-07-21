@@ -11,10 +11,13 @@ type ProcedurePayload = { procedure: Procedure; tagIds: string[] };
 type QueuedProcedurePayload = ProcedurePayload | { id: string; user_id: string };
 type ProcedureStudyJsonField = (typeof procedureStudySections)[number]['jsonField'];
 type ProcedureStudyHtmlField = (typeof procedureStudySections)[number]['htmlField'];
-type SupabaseProcedurePayload = Omit<Procedure, 'name' | ProcedureStudyJsonField> & {
+type SupabaseProcedurePayload = Omit<Procedure, 'name' | 'category' | ProcedureStudyJsonField> & {
   title: string;
+  category: string;
 } & Record<ProcedureStudyJsonField, Json>;
 type SupabaseProcedureRecord = Procedure & { title?: string | null };
+
+const defaultProcedureCategory = 'Sin categoría';
 
 function nowIso() {
   return new Date().toISOString();
@@ -26,6 +29,10 @@ function generateId() {
 
 function normalizeOptional(value: string) {
   return value.trim() ? value.trim() : null;
+}
+
+function normalizeProcedureCategory(value?: string | null) {
+  return value?.trim() || defaultProcedureCategory;
 }
 
 function emitSyncQueueChanged() {
@@ -82,7 +89,7 @@ function procedureForSupabase(procedure: Procedure): SupabaseProcedurePayload {
     user_id: procedure.user_id,
     title: procedure.name,
     summary: procedure.summary,
-    category: procedure.category,
+    category: normalizeProcedureCategory(procedure.category),
     status: procedure.status,
     is_favorite: procedure.is_favorite,
     technique_json: getTopicDocument(procedure.technique_json) as Json,
@@ -99,6 +106,7 @@ function normalizeProcedure(item: SupabaseProcedureRecord): Procedure {
   return {
     ...item,
     name: item.name ?? item.title ?? '',
+    category: normalizeProcedureCategory(item.category),
     search_text: item.search_text ?? '',
     ...procedureStudyValues(item)
   };
@@ -267,7 +275,7 @@ export async function saveProcedure(userId: string, values: ProcedureFormValues,
     user_id: userId,
     name: values.name.trim(),
     summary: normalizeOptional(values.summary),
-    category: normalizeOptional(values.category),
+    category: normalizeProcedureCategory(values.category),
     status: values.status,
     is_favorite: values.is_favorite,
     search_text: '',
