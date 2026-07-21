@@ -11,7 +11,10 @@ type ProcedurePayload = { procedure: Procedure; tagIds: string[] };
 type QueuedProcedurePayload = ProcedurePayload | { id: string; user_id: string };
 type ProcedureStudyJsonField = (typeof procedureStudySections)[number]['jsonField'];
 type ProcedureStudyHtmlField = (typeof procedureStudySections)[number]['htmlField'];
-type SupabaseProcedurePayload = Omit<Procedure, ProcedureStudyJsonField> & Record<ProcedureStudyJsonField, Json>;
+type SupabaseProcedurePayload = Omit<Procedure, 'name' | ProcedureStudyJsonField> & {
+  title: string;
+} & Record<ProcedureStudyJsonField, Json>;
+type SupabaseProcedureRecord = Procedure & { title?: string | null };
 
 function nowIso() {
   return new Date().toISOString();
@@ -77,7 +80,7 @@ function procedureForSupabase(procedure: Procedure): SupabaseProcedurePayload {
   return {
     id: procedure.id,
     user_id: procedure.user_id,
-    name: procedure.name,
+    title: procedure.name,
     summary: procedure.summary,
     category: procedure.category,
     status: procedure.status,
@@ -92,10 +95,10 @@ function procedureForSupabase(procedure: Procedure): SupabaseProcedurePayload {
   };
 }
 
-function normalizeProcedure(item: Procedure): Procedure {
+function normalizeProcedure(item: SupabaseProcedureRecord): Procedure {
   return {
     ...item,
-    name: item.name ?? '',
+    name: item.name ?? item.title ?? '',
     search_text: item.search_text ?? '',
     ...procedureStudyValues(item)
   };
@@ -234,7 +237,7 @@ async function pushProcedureToSupabase(payload: ProcedurePayload) {
     fields: Object.keys(remotePayload),
     tagCount: tagIds.length
   });
-  const { error: procedureError } = await supabase.from('procedures').upsert(remotePayload);
+  const { error: procedureError } = await supabase.from('procedures').upsert(remotePayload as never);
   if (procedureError) {
     logProcedureSyncError('upsert_error', procedureError, { procedureId: procedure.id, userId: procedure.user_id });
     throw procedureError;
