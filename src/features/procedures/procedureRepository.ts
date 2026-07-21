@@ -29,6 +29,28 @@ function emitSyncQueueChanged() {
   window.dispatchEvent(new Event('sync-queue-changed'));
 }
 
+function logProcedureSyncStep(message: string, details?: Record<string, unknown>) {
+  if (import.meta.env.DEV) {
+    console.info(`[procedure_sync] ${message}`, details ?? {});
+  }
+}
+
+function logProcedureSyncError(message: string, error: unknown, details?: Record<string, unknown>) {
+  if (!import.meta.env.DEV) return;
+  const supabaseError = error as { code?: unknown; message?: unknown; details?: unknown; hint?: unknown; status?: unknown };
+  console.warn(`[procedure_sync] ${message}`, {
+    ...details,
+    code: typeof supabaseError?.code === 'string' ? supabaseError.code : undefined,
+    message: typeof supabaseError?.message === 'string' ? supabaseError.message : undefined,
+    details: typeof supabaseError?.details === 'string' ? supabaseError.details : undefined,
+    hint: typeof supabaseError?.hint === 'string' ? supabaseError.hint : undefined,
+    status:
+      typeof supabaseError?.status === 'number' || typeof supabaseError?.status === 'string'
+        ? supabaseError.status
+        : undefined
+  });
+}
+
 function tiptapToText(document: TipTapDocument): string {
   const parts: string[] = [];
   const visit = (node?: TipTapDocument) => {
@@ -52,10 +74,22 @@ function procedureStudyValues(source: Pick<Procedure, ProcedureStudyJsonField | 
 }
 
 function procedureForSupabase(procedure: Procedure): SupabaseProcedurePayload {
-  return procedureStudySections.reduce(
-    (payload, section) => ({ ...payload, [section.jsonField]: procedure[section.jsonField] as Json }),
-    { ...procedure } as unknown as SupabaseProcedurePayload
-  );
+  return {
+    id: procedure.id,
+    user_id: procedure.user_id,
+    name: procedure.name,
+    summary: procedure.summary,
+    category: procedure.category,
+    status: procedure.status,
+    is_favorite: procedure.is_favorite,
+    technique_json: getTopicDocument(procedure.technique_json) as Json,
+    technique_html: procedure.technique_html || '<p></p>',
+    considerations_json: getTopicDocument(procedure.considerations_json) as Json,
+    considerations_html: procedure.considerations_html || '<p></p>',
+    search_text: procedure.search_text ?? '',
+    created_at: procedure.created_at,
+    updated_at: procedure.updated_at
+  };
 }
 
 function normalizeProcedure(item: Procedure): Procedure {
@@ -77,6 +111,8 @@ async function getByUser<T extends { user_id: string }>(
 
 async function enqueueProcedure(userId: string, action: SyncAction, payload: QueuedProcedurePayload) {
   const db = await localDbPromise;
+  const procedureId = 'procedure' in payload ? payload.procedure.id : payload.id;
+  logProcedureSyncStep('enqueue', { action, procedureId, userId });
   await db.put('sync_queue', {
     id: generateId(),
     user_id: userId,
@@ -191,17 +227,34 @@ export async function getProcedureById(userId: string, procedureId: string) {
 
 async function pushProcedureToSupabase(payload: ProcedurePayload) {
   const { procedure, tagIds } = payload;
-  const { error: procedureError } = await supabase.from('procedures').upsert(procedureForSupabase(procedure));
-  if (procedureError) throw procedureError;
+  const remotePayload = procedureForSupabase(procedure);
+  logProcedureSyncStep('upsert_start', {
+    procedureId: procedure.id,
+    userId: procedure.user_id,
+    fields: Object.keys(remotePayload),
+    tagCount: tagIds.length
+  });
+  const { error: procedureError } = await supabase.from('procedures').upsert(remotePayload);
+  if (procedureError) {
+    logProcedureSyncError('upsert_error', procedureError, { procedureId: procedure.id, userId: procedure.user_id });
+    throw procedureError;
+  }
 
   const { error: deleteError } = await supabase.from('procedure_tags').delete().eq('procedure_id', procedure.id).eq('user_id', procedure.user_id);
-  if (deleteError) throw deleteError;
+  if (deleteError) {
+    logProcedureSyncError('delete_tags_error', deleteError, { procedureId: procedure.id, userId: procedure.user_id });
+    throw deleteError;
+  }
 
   if (tagIds.length > 0) {
     const rows = tagIds.map((tagId) => ({ procedure_id: procedure.id, tag_id: tagId, user_id: procedure.user_id }));
     const { error: tagError } = await supabase.from('procedure_tags').insert(rows);
-    if (tagError) throw tagError;
+    if (tagError) {
+      logProcedureSyncError('insert_tags_error', tagError, { procedureId: procedure.id, userId: procedure.user_id, tagCount: rows.length });
+      throw tagError;
+    }
   }
+  logProcedureSyncStep('upsert_success', { procedureId: procedure.id, userId: procedure.user_id, tagCount: tagIds.length });
 }
 
 export async function saveProcedure(userId: string, values: ProcedureFormValues, existing?: ProcedureWithRelations) {
