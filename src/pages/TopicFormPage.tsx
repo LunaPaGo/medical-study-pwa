@@ -1,11 +1,13 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Save, Star } from 'lucide-react';
+import { ExternalUpdateNotice } from '../components/forms/ExternalUpdateNotice';
 import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
 import { emptyTipTapDocument, getTopicDocument } from '../features/topics/tiptapDocument';
 import { topicSections } from '../features/topics/topicSectionCatalog';
 import { useTopicData, useTopicMutations } from '../features/topics/useTopicData';
 import { useAuth } from '../hooks/useAuth';
+import { useProtectedFormHydration } from '../hooks/useProtectedFormHydration';
 import type { TopicFormValues } from '../types/topic';
 import { topicSchema } from '../validation/topic';
 
@@ -67,13 +69,21 @@ export function TopicFormPage() {
     };
   }, [existing]);
 
-  const [values, setValues] = useState<TopicFormValues>(initialValues);
+  const {
+    values,
+    setValues,
+    isDirty,
+    hasExternalUpdate,
+    markSaved,
+    acceptExternalUpdate,
+    dismissExternalUpdate
+  } = useProtectedFormHydration<TopicFormValues>({
+    initialValues,
+    recordKey: `topic:${topicId ?? `new:${draftTopicId.current}`}`,
+    recordUpdatedAt: existing?.updated_at
+  });
   const [error, setError] = useState('');
   const topicOwnerId = values.id ?? existing?.id ?? draftTopicId.current;
-
-  useEffect(() => {
-    setValues(initialValues);
-  }, [initialValues]);
 
   if (!isLoading && topicId && !existing) {
     return <Navigate to="/temas" replace />;
@@ -99,6 +109,7 @@ export function TopicFormPage() {
       { values: parsed.data, existing },
       {
         onSuccess(topic) {
+          markSaved(parsed.data);
           navigate(`/temas/${topic.id}`);
         }
       }
@@ -210,6 +221,8 @@ export function TopicFormPage() {
           ))}
         </div>
 
+        {hasExternalUpdate && <ExternalUpdateNotice onAccept={acceptExternalUpdate} onDismiss={dismissExternalUpdate} />}
+        {isDirty && <div className="notice warning">Tenés cambios locales sin guardar. Las actualizaciones automáticas no reemplazarán este formulario.</div>}
         {error && <div className="notice error">{error}</div>}
 
         <div className="form-actions">

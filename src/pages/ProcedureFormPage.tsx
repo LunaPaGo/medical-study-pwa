@@ -1,13 +1,15 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Save, Star } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ProcedureAttachmentsPanel } from '../features/procedures/ProcedureAttachmentsPanel';
+import { ExternalUpdateNotice } from '../components/forms/ExternalUpdateNotice';
 import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
 import { createEmptyProcedureValues } from '../features/procedures/procedureRepository';
 import { procedureStudySections } from '../features/procedures/procedureSectionCatalog';
 import { procedureDataKey, useProcedureData, useProcedureMutations } from '../features/procedures/useProcedureData';
 import { useAuth } from '../hooks/useAuth';
+import { useProtectedFormHydration } from '../hooks/useProtectedFormHydration';
 import type { ProcedureFormValues } from '../types/procedure';
 import { procedureSchema } from '../validation/procedure';
 
@@ -45,13 +47,21 @@ export function ProcedureFormPage() {
     };
   }, [existing]);
 
-  const [values, setValues] = useState<ProcedureFormValues>(initialValues);
+  const {
+    values,
+    setValues,
+    isDirty,
+    hasExternalUpdate,
+    markSaved,
+    acceptExternalUpdate,
+    dismissExternalUpdate
+  } = useProtectedFormHydration<ProcedureFormValues>({
+    initialValues,
+    recordKey: `procedure:${procedureId ?? `new:${draftProcedureId.current}`}`,
+    recordUpdatedAt: existing?.updated_at
+  });
   const [error, setError] = useState('');
   const procedureOwnerId = values.id ?? existing?.id ?? draftProcedureId.current;
-
-  useEffect(() => {
-    setValues(initialValues);
-  }, [initialValues]);
 
   if (!isLoading && procedureId && !existing) {
     return <Navigate to="/procedimientos" replace />;
@@ -77,6 +87,7 @@ export function ProcedureFormPage() {
       { values: parsed.data, existing },
       {
         onSuccess(procedure) {
+          markSaved(parsed.data);
           navigate(`/procedimientos/${procedure.id}`);
         }
       }
@@ -170,6 +181,8 @@ export function ProcedureFormPage() {
           onChanged={() => queryClient.invalidateQueries({ queryKey: procedureDataKey })}
         />
 
+        {hasExternalUpdate && <ExternalUpdateNotice onAccept={acceptExternalUpdate} onDismiss={dismissExternalUpdate} />}
+        {isDirty && <div className="notice warning">Tenés cambios locales sin guardar. Las actualizaciones automáticas no reemplazarán este formulario.</div>}
         {error && <div className="notice error">{error}</div>}
 
         <div className="form-actions">

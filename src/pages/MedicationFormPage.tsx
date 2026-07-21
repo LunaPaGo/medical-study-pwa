@@ -1,7 +1,8 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Save, Star } from 'lucide-react';
+import { ExternalUpdateNotice } from '../components/forms/ExternalUpdateNotice';
 import { MedicationAttachmentsPanel } from '../features/medications/MedicationAttachmentsPanel';
 import { createEmptyMedicationValues } from '../features/medications/medicationRepository';
 import { medicationDataKey, useMedicationData, useMedicationMutations } from '../features/medications/useMedicationData';
@@ -9,6 +10,7 @@ import { medicationRichFields } from '../features/medications/medicationFields';
 import { medicationStudySections } from '../features/medications/medicationStudySectionCatalog';
 import { RichTextSectionPanel } from '../features/studySections/RichTextSectionPanel';
 import { useAuth } from '../hooks/useAuth';
+import { useProtectedFormHydration } from '../hooks/useProtectedFormHydration';
 import type { MedicationFormValues, MedicationRichField } from '../types/medication';
 import { medicationSchema } from '../validation/medication';
 
@@ -54,12 +56,20 @@ export function MedicationFormPage() {
     };
   }, [existing]);
 
-  const [values, setValues] = useState<MedicationFormValues>(initialValues);
+  const {
+    values,
+    setValues,
+    isDirty,
+    hasExternalUpdate,
+    markSaved,
+    acceptExternalUpdate,
+    dismissExternalUpdate
+  } = useProtectedFormHydration<MedicationFormValues>({
+    initialValues,
+    recordKey: `medication:${medicationId ?? `new:${draftMedicationId.current}`}`,
+    recordUpdatedAt: existing?.updated_at
+  });
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    setValues(initialValues);
-  }, [initialValues]);
 
   if (!isLoading && medicationId && !existing) {
     return <Navigate to="/farmacologia" replace />;
@@ -87,6 +97,7 @@ export function MedicationFormPage() {
       { values: parsed.data, existing },
       {
         onSuccess(medication) {
+          markSaved(parsed.data);
           navigate(`/farmacologia/${medication.id}`);
         }
       }
@@ -189,6 +200,8 @@ export function MedicationFormPage() {
           onChanged={() => queryClient.invalidateQueries({ queryKey: medicationDataKey })}
         />
 
+        {hasExternalUpdate && <ExternalUpdateNotice onAccept={acceptExternalUpdate} onDismiss={dismissExternalUpdate} />}
+        {isDirty && <div className="notice warning">Tenés cambios locales sin guardar. Las actualizaciones automáticas no reemplazarán este formulario.</div>}
         {error && <div className="notice error">{error}</div>}
 
         <div className="form-actions">

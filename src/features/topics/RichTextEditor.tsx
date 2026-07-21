@@ -47,6 +47,7 @@ type Props = {
 export function RichTextEditor({ value, onChange, owner }: Props) {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const lastEmittedContentRef = useRef('');
   const { user } = useAuth();
   const { data: attachments = [] } = useAttachments();
   const attachmentMutations = useAttachmentMutations();
@@ -72,8 +73,10 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
       }
     },
     onUpdate({ editor: activeEditor }) {
+      const json = activeEditor.getJSON() as TipTapDocument;
+      lastEmittedContentRef.current = JSON.stringify(json);
       onChange({
-        json: activeEditor.getJSON() as TipTapDocument,
+        json,
         html: activeEditor.getHTML()
       });
     }
@@ -84,6 +87,7 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
 
     const current = JSON.stringify(editor.getJSON());
     const next = JSON.stringify(value);
+    if (next === lastEmittedContentRef.current) return;
     if (current !== next) {
       editor.commands.setContent(value);
     }
