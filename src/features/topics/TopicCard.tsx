@@ -43,6 +43,11 @@ export function TopicCard({ topic, readOnly = false, viewMode = 'grid', onDelete
             >
               Favorito
             </button>
+            {!readOnly && (
+              <button className="ghost-button danger-action" type="button" onClick={() => onDelete(topic)}>
+                Eliminar
+              </button>
+            )}
           </div>
         </div>
       </article>

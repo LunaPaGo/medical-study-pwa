@@ -48,6 +48,11 @@ export function MedicationCard({ medication, selected, readOnly = false, viewMod
             >
               Favorito
             </button>
+            {!readOnly && (
+              <button className="ghost-button danger-action" type="button" onClick={() => onDelete(medication)}>
+                Eliminar
+              </button>
+            )}
           </div>
         </div>
       </article>
