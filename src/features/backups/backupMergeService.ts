@@ -4,10 +4,11 @@ import { localDbPromise } from '../../storage/localDb';
 import type { Attachment, AttachmentLink, MedicationAttachment, ProcedureAttachment, TopicAttachment } from '../../types/attachment';
 import type { Json } from '../../types/database';
 import type { Medication, MedicationTag } from '../../types/medication';
-import type { Procedure, ProcedureTag } from '../../types/procedure';
+import type { ProcedureTag } from '../../types/procedure';
 import type { Category, Folder, Tag, Topic, TopicRelation, TopicTag } from '../../types/topic';
 import { syncAttachmentsFromSupabase } from '../attachments/attachmentRepository';
 import { loadMedicationData } from '../medications/medicationRepository';
+import { procedureFromSupabase, procedureToSupabase } from '../procedures/procedureMapper';
 import { loadProcedureData } from '../procedures/procedureRepository';
 import { loadTopicData } from '../topics/topicRepository';
 import { getBackupFileBlob, parseValidatedBackupZip, type ParsedBackup } from './backupImportService';
@@ -202,7 +203,7 @@ async function fetchCurrentData(userId: string): Promise<CurrentData> {
     topic_tags: (topicTagsResult.data ?? []) as TopicTag[],
     medications: (medicationsResult.data ?? []) as Medication[],
     medication_tags: (medicationTagsResult.data ?? []) as MedicationTag[],
-    procedures: (proceduresResult.data ?? []) as Procedure[],
+    procedures: (proceduresResult.data ?? []).map((procedure) => procedureFromSupabase(procedure)),
     procedure_tags: (procedureTagsResult.data ?? []) as ProcedureTag[],
     attachments: (attachmentsResult.data ?? []) as Attachment[],
     attachment_links: (attachmentLinksResult.data ?? []) as AttachmentLink[],
@@ -692,7 +693,7 @@ export async function restoreBackupMerge(
     content_json: topic.content_json as Json
   }));
   await upsertTimestamped('medications', 'medications', parsed.data.medications, current.medications, userId, result.entities.medications, comparableRecord, (medication) => medication as unknown as Record<string, Json | string | boolean | null>);
-  await upsertTimestamped('procedures', 'procedures', parsed.data.procedures, current.procedures, userId, result.entities.procedures, comparableRecord, (procedure) => procedure as unknown as Record<string, Json | string | boolean | null>);
+  await upsertTimestamped('procedures', 'procedures', parsed.data.procedures, current.procedures, userId, result.entities.procedures, comparableRecord, (procedure) => procedureToSupabase(procedure));
   await restoreAttachments(parsed, current, userId, filePlans, result.entities.attachments, result.files);
 
   const refreshed = await fetchCurrentData(userId);

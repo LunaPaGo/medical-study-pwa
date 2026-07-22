@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { z } from 'zod';
 import { backupFormat, backupVersion, type BackupManifest, type BackupValidationCheck, type BackupValidationResult } from './backupTypes';
+import { normalizeProcedureCategory } from '../procedures/procedureMapper';
 import { topicRelationTypes } from '../topics/topicRelationCatalog';
 
 const uuidSchema = z.string().uuid();
@@ -157,7 +158,7 @@ const procedureSchema = z.object({
   ...baseUserRecord,
   name: z.string(),
   summary: nullableString,
-  category: nullableString,
+  category: z.string().nullable().optional().transform((value) => normalizeProcedureCategory(value)),
   status: z.enum(['draft', 'complete']),
   is_favorite: z.boolean(),
   technique_json: tiptapSchema.optional().default(defaultTipTapDocument),

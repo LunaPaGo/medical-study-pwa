@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import type { BackupData, BackupManifest } from './backupTypes';
+import { procedureFromSupabase } from '../procedures/procedureMapper';
 import { validateBackupZip } from './backupValidation';
 
 type OrganizationBackup = {
@@ -31,6 +32,9 @@ export async function parseValidatedBackupZip(file: File): Promise<ParsedBackup>
 
   const zip = await JSZip.loadAsync(file);
   const organization = await readJson<OrganizationBackup>(zip, 'data/organization.json');
+  const procedures = zip.file('data/procedures.json')
+    ? (await readJson<BackupData['procedures']>(zip, 'data/procedures.json')).map((procedure) => procedureFromSupabase(procedure))
+    : [];
 
   return {
     zip,
@@ -45,7 +49,7 @@ export async function parseValidatedBackupZip(file: File): Promise<ParsedBackup>
       topic_tags: organization.topic_tags,
       medications: await readJson<BackupData['medications']>(zip, 'data/medications.json'),
       medication_tags: organization.medication_tags,
-      procedures: zip.file('data/procedures.json') ? await readJson<BackupData['procedures']>(zip, 'data/procedures.json') : [],
+      procedures,
       procedure_tags: organization.procedure_tags ?? [],
       attachments: await readJson<BackupData['attachments']>(zip, 'data/attachments.json'),
       attachment_links: await readJson<BackupData['attachment_links']>(zip, 'data/attachment_links.json'),

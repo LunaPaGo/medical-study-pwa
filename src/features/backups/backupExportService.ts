@@ -5,6 +5,7 @@ import { localDbPromise } from '../../storage/localDb';
 import type { Attachment } from '../../types/attachment';
 import type { Json } from '../../types/database';
 import { runManualAttachmentSync } from '../attachments/attachmentRepository';
+import { getProcedureDisplayName, procedureFromSupabase } from '../procedures/procedureMapper';
 import { flushSyncQueue } from '../topics/topicRepository';
 import { backupFormat, backupVersion, type BackupData, type BackupExportResult, type BackupManifest, type BackupProgress } from './backupTypes';
 
@@ -78,7 +79,7 @@ async function collectBackupData(userId: string): Promise<BackupData> {
       getRows<BackupData['topic_tags'][number]>('topic_tags', userId),
       getRows<BackupData['medications'][number]>('medications', userId),
       getRows<BackupData['medication_tags'][number]>('medication_tags', userId),
-      getRows<BackupData['procedures'][number]>('procedures', userId),
+      getRows<BackupData['procedures'][number]>('procedures', userId).then((rows) => rows.map((procedure) => procedureFromSupabase(procedure))),
       getRows<BackupData['procedure_tags'][number]>('procedure_tags', userId),
       getRows<BackupData['attachments'][number]>('attachments', userId),
       getRows<BackupData['attachment_links'][number]>('attachment_links', userId),
@@ -151,10 +152,11 @@ function detectMedicalImageWarnings(data: BackupData) {
   });
 
   data.procedures.forEach((procedure) => {
+    const name = getProcedureDisplayName(procedure);
     [procedure.technique_json, procedure.considerations_json].forEach((value) => {
       collectMedicalImageIds(value as Json).forEach((attachmentId) => {
-        if (!attachmentIds.has(attachmentId)) warnings.push(`El procedimiento "${procedure.name}" referencia una imagen inexistente (${attachmentId}).`);
-        if (!procedureAttachmentIds.has(attachmentId)) warnings.push(`El procedimiento "${procedure.name}" tiene una imagen medicalImage sin relación procedure_attachments (${attachmentId}).`);
+        if (!attachmentIds.has(attachmentId)) warnings.push(`El procedimiento "${name}" referencia una imagen inexistente (${attachmentId}).`);
+        if (!procedureAttachmentIds.has(attachmentId)) warnings.push(`El procedimiento "${name}" tiene una imagen medicalImage sin relación procedure_attachments (${attachmentId}).`);
       });
     });
   });
