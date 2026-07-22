@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { medicationDataKey } from '../medications/useMedicationData';
+import { procedureDataKey } from '../procedures/useProcedureData';
 import { flushSyncQueue, getPendingSyncCount } from './topicRepository';
 import { topicDataKey } from './useTopicData';
 
@@ -45,6 +46,7 @@ export function useAutomaticTopicSync() {
       .then((result) => {
         queryClient.invalidateQueries({ queryKey: topicDataKey });
         queryClient.invalidateQueries({ queryKey: medicationDataKey });
+        queryClient.invalidateQueries({ queryKey: procedureDataKey });
         if (result.nextRetryAt && (result.failed > 0 || result.attempted === 0)) {
           setRetryBlockedUntil(result.nextRetryAt);
         } else {
