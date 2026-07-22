@@ -1,5 +1,6 @@
 import { supabase } from '../../services/supabase';
 import { localDbPromise } from '../../storage/localDb';
+import type { Attachment, TopicAttachment } from '../../types/attachment';
 import type { Json } from '../../types/database';
 import type {
   Category,
@@ -188,13 +189,15 @@ async function replaceTopicTags(topicId: string, userId: string, tagIds: string[
 }
 
 async function cacheRemoteData(userId: string) {
-  const [topicsResult, foldersResult, categoriesResult, tagsResult, topicTagsResult, topicRelationsResult] = await Promise.all([
+  const [topicsResult, foldersResult, categoriesResult, tagsResult, topicTagsResult, topicRelationsResult, topicAttachmentsResult, attachmentsResult] = await Promise.all([
     supabase.from('topics').select('*').eq('user_id', userId),
     supabase.from('folders').select('*').eq('user_id', userId),
     supabase.from('categories').select('*').eq('user_id', userId),
     supabase.from('tags').select('*').eq('user_id', userId),
     supabase.from('topic_tags').select('*').eq('user_id', userId),
-    supabase.from('topic_relations').select('*').eq('user_id', userId)
+    supabase.from('topic_relations').select('*').eq('user_id', userId),
+    supabase.from('topic_attachments').select('*').eq('user_id', userId),
+    supabase.from('attachments').select('*').eq('user_id', userId)
   ]);
 
   const firstError =
@@ -203,14 +206,16 @@ async function cacheRemoteData(userId: string) {
     categoriesResult.error ??
     tagsResult.error ??
     topicTagsResult.error ??
-    topicRelationsResult.error;
+    topicRelationsResult.error ??
+    topicAttachmentsResult.error ??
+    attachmentsResult.error;
 
   if (firstError) {
     throw firstError;
   }
 
   const db = await localDbPromise;
-  const tx = db.transaction(['topics', 'folders', 'categories', 'tags', 'topic_tags', 'topic_relations'], 'readwrite');
+  const tx = db.transaction(['topics', 'folders', 'categories', 'tags', 'topic_tags', 'topic_relations', 'topic_attachments', 'attachments'], 'readwrite');
 
   const normalizedTopics = (topicsResult.data ?? []).map((item) => normalizeTopic(item as Topic));
   await Promise.all(normalizedTopics.map((item) => tx.objectStore('topics').put(item.topic)));
@@ -219,6 +224,8 @@ async function cacheRemoteData(userId: string) {
   await Promise.all((tagsResult.data ?? []).map((item) => tx.objectStore('tags').put(item as Tag)));
   await Promise.all((topicTagsResult.data ?? []).map((item) => tx.objectStore('topic_tags').put(item as TopicTag)));
   await Promise.all((topicRelationsResult.data ?? []).map((item) => tx.objectStore('topic_relations').put(item as TopicRelation)));
+  await Promise.all((topicAttachmentsResult.data ?? []).map((item) => tx.objectStore('topic_attachments').put(item as TopicAttachment)));
+  await Promise.all((attachmentsResult.data ?? []).map((item) => tx.objectStore('attachments').put({ ...(item as Attachment), sync_status: 'synced' })));
 
   await tx.done;
 
