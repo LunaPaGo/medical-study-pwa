@@ -2,6 +2,7 @@ import { Edit3, Eye, Heart, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { ProcedureWithRelations } from '../../types/procedure';
 import { formatDate } from '../topics/topicUtils';
+import { getProcedureDisplayName } from './procedureMapper';
 
 type Props = {
   procedure: ProcedureWithRelations;
@@ -11,8 +12,7 @@ type Props = {
 };
 
 export function ProcedureCard({ procedure, readOnly = false, onDelete, onToggleFavorite }: Props) {
-  const fallbackTitle = (procedure as ProcedureWithRelations & { title?: string | null }).title;
-  const procedureTitle = procedure.name || fallbackTitle || 'Procedimiento sin nombre';
+  const procedureTitle = getProcedureDisplayName(procedure);
 
   return (
     <article className="topic-card procedure-card">

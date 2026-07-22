@@ -1,23 +1,16 @@
 import { supabase } from '../../services/supabase';
 import { localDbPromise } from '../../storage/localDb';
 import type { Attachment, ProcedureAttachment } from '../../types/attachment';
-import type { Json } from '../../types/database';
 import type { Procedure, ProcedureFilterOptions, ProcedureFormValues, ProcedureTag, ProcedureWithRelations } from '../../types/procedure';
 import type { SyncAction, Tag, TipTapDocument } from '../../types/topic';
-import { emptyTipTapDocument, getTopicDocument } from '../topics/tiptapDocument';
+import { emptyTipTapDocument } from '../topics/tiptapDocument';
+import { normalizeProcedureCategory, procedureFromSupabase, procedureStudyValues, procedureToSupabase } from './procedureMapper';
 import { procedureStudySections } from './procedureSectionCatalog';
 
 type ProcedurePayload = { procedure: Procedure; tagIds: string[] };
 type QueuedProcedurePayload = ProcedurePayload | { id: string; user_id: string };
 type ProcedureStudyJsonField = (typeof procedureStudySections)[number]['jsonField'];
 type ProcedureStudyHtmlField = (typeof procedureStudySections)[number]['htmlField'];
-type SupabaseProcedurePayload = Omit<Procedure, 'name' | 'category' | ProcedureStudyJsonField> & {
-  title: string;
-  category: string;
-} & Record<ProcedureStudyJsonField, Json>;
-type SupabaseProcedureRecord = Procedure & { title?: string | null };
-
-const defaultProcedureCategory = 'Sin categoría';
 
 function nowIso() {
   return new Date().toISOString();
@@ -29,10 +22,6 @@ function generateId() {
 
 function normalizeOptional(value: string) {
   return value.trim() ? value.trim() : null;
-}
-
-function normalizeProcedureCategory(value?: string | null) {
-  return value?.trim() || defaultProcedureCategory;
 }
 
 function emitSyncQueueChanged() {
@@ -70,46 +59,6 @@ function tiptapToText(document: TipTapDocument): string {
   };
   visit(document);
   return parts.join(' ');
-}
-
-function procedureStudyValues(source: Pick<Procedure, ProcedureStudyJsonField | ProcedureStudyHtmlField>) {
-  return procedureStudySections.reduce(
-    (fields, section) => ({
-      ...fields,
-      [section.jsonField]: getTopicDocument(source[section.jsonField]),
-      [section.htmlField]: source[section.htmlField] || '<p></p>'
-    }),
-    {} as Pick<Procedure, ProcedureStudyJsonField | ProcedureStudyHtmlField>
-  );
-}
-
-function procedureForSupabase(procedure: Procedure): SupabaseProcedurePayload {
-  return {
-    id: procedure.id,
-    user_id: procedure.user_id,
-    title: procedure.name,
-    summary: procedure.summary,
-    category: normalizeProcedureCategory(procedure.category),
-    status: procedure.status,
-    is_favorite: procedure.is_favorite,
-    technique_json: getTopicDocument(procedure.technique_json) as Json,
-    technique_html: procedure.technique_html || '<p></p>',
-    considerations_json: getTopicDocument(procedure.considerations_json) as Json,
-    considerations_html: procedure.considerations_html || '<p></p>',
-    search_text: procedure.search_text ?? '',
-    created_at: procedure.created_at,
-    updated_at: procedure.updated_at
-  };
-}
-
-function normalizeProcedure(item: SupabaseProcedureRecord): Procedure {
-  return {
-    ...item,
-    name: item.name ?? item.title ?? '',
-    category: normalizeProcedureCategory(item.category),
-    search_text: item.search_text ?? '',
-    ...procedureStudyValues(item)
-  };
 }
 
 async function getByUser<T extends { user_id: string }>(
@@ -183,7 +132,7 @@ async function cacheRemoteProcedureData(userId: string) {
 
   const db = await localDbPromise;
   const tx = db.transaction(['procedures', 'procedure_tags', 'tags', 'procedure_attachments', 'attachments'], 'readwrite');
-  await Promise.all((proceduresResult.data ?? []).map((item) => tx.objectStore('procedures').put(normalizeProcedure(item as Procedure))));
+  await Promise.all((proceduresResult.data ?? []).map((item) => tx.objectStore('procedures').put(procedureFromSupabase(item))));
   await Promise.all((procedureTagsResult.data ?? []).map((item) => tx.objectStore('procedure_tags').put(item as ProcedureTag)));
   await Promise.all((tagsResult.data ?? []).map((item) => tx.objectStore('tags').put(item as Tag)));
   await Promise.all((procedureAttachmentsResult.data ?? []).map((item) => tx.objectStore('procedure_attachments').put(item as ProcedureAttachment)));
@@ -223,7 +172,7 @@ export async function loadProcedureData(userId: string, shouldSyncRemote = navig
 
   return {
     procedures: procedures.map((procedure) => ({
-      ...normalizeProcedure(procedure),
+      ...procedureFromSupabase(procedure),
       tags: tagsByProcedure.get(procedure.id) ?? [],
       attachments: attachmentsByProcedure.get(procedure.id) ?? []
     })) as ProcedureWithRelations[],
@@ -238,7 +187,7 @@ export async function getProcedureById(userId: string, procedureId: string) {
 
 async function pushProcedureToSupabase(payload: ProcedurePayload) {
   const { procedure, tagIds } = payload;
-  const remotePayload = procedureForSupabase(procedure);
+  const remotePayload = procedureToSupabase(procedure);
   logProcedureSyncStep('upsert_start', {
     procedureId: procedure.id,
     userId: procedure.user_id,
