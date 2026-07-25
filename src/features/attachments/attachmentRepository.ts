@@ -110,6 +110,41 @@ function emitSyncQueueChanged() {
   window.dispatchEvent(new Event('sync-queue-changed'));
 }
 
+function describeAttachmentSyncError(stage: string, error: unknown) {
+  const parts = [stage];
+  if (error && typeof error === 'object') {
+    const item = error as { name?: unknown; code?: unknown; status?: unknown; statusCode?: unknown; message?: unknown; details?: unknown; hint?: unknown };
+    const code = typeof item.code === 'string' ? item.code : undefined;
+    const status =
+      typeof item.status === 'number' || typeof item.status === 'string'
+        ? item.status
+        : typeof item.statusCode === 'number' || typeof item.statusCode === 'string'
+          ? item.statusCode
+          : undefined;
+    const name = typeof item.name === 'string' ? item.name : undefined;
+    const message = typeof item.message === 'string' ? item.message : undefined;
+    const details = typeof item.details === 'string' ? item.details : undefined;
+    const hint = typeof item.hint === 'string' ? item.hint : undefined;
+    if (name) parts.push(`name=${name}`);
+    if (code) parts.push(`code=${code}`);
+    if (status) parts.push(`status=${status}`);
+    if (message) parts.push(message);
+    if (details) parts.push(`details=${details}`);
+    if (hint) parts.push(`hint=${hint}`);
+  } else if (error instanceof Error) {
+    parts.push(error.message);
+  }
+  return parts.join(' · ');
+}
+
+async function runAttachmentSyncStage<T>(stage: string, action: () => Promise<T>) {
+  try {
+    return await action();
+  } catch (error) {
+    throw new Error(describeAttachmentSyncError(stage, error));
+  }
+}
+
 async function enqueueAttachment(userId: string, action: SyncAction, payload: AttachmentPayload | { id: string; user_id: string }) {
   const db = await localDbPromise;
   await db.put('sync_queue', {
@@ -292,18 +327,22 @@ export async function getAttachmentById(attachmentId: string) {
 }
 
 async function uploadAttachmentFiles(attachment: Attachment, pending: PendingAttachmentFile) {
-  const { error: uploadError } = await supabase.storage.from(bucketName).upload(attachment.storage_path, pending.file, {
-    contentType: attachment.mime_type,
-    upsert: true
-  });
-  if (uploadError) throw uploadError;
-
-  if (pending.thumbnail && attachment.thumbnail_path) {
-    const { error: thumbnailError } = await supabase.storage.from(bucketName).upload(attachment.thumbnail_path, pending.thumbnail, {
-      contentType: 'image/jpeg',
+  await runAttachmentSyncStage(`storage:file:${attachment.id}:${attachment.storage_path}`, async () => {
+    const { error: uploadError } = await supabase.storage.from(bucketName).upload(attachment.storage_path, pending.file, {
+      contentType: attachment.mime_type,
       upsert: true
     });
-    if (thumbnailError) throw thumbnailError;
+    if (uploadError) throw uploadError;
+  });
+
+  if (pending.thumbnail && attachment.thumbnail_path) {
+    await runAttachmentSyncStage(`storage:thumbnail:${attachment.id}:${attachment.thumbnail_path}`, async () => {
+      const { error: thumbnailError } = await supabase.storage.from(bucketName).upload(attachment.thumbnail_path!, pending.thumbnail!, {
+        contentType: 'image/jpeg',
+        upsert: true
+      });
+      if (thumbnailError) throw thumbnailError;
+    });
   }
 }
 
@@ -332,41 +371,55 @@ async function pushAttachmentToSupabase(payload: AttachmentPayload) {
     updated_at: payload.attachment.updated_at
   };
 
-  const { error } = await supabase.from('attachments').upsert(record);
-  if (error) {
+  await runAttachmentSyncStage(`db:attachments:${payload.attachment.id}`, async () => {
+    const { error } = await supabase.from('attachments').upsert(record);
+    if (error) throw error;
+  }).catch((error) => {
     if (uploadedPaths.length > 0) {
-      await supabase.storage.from(bucketName).remove(uploadedPaths).catch(() => undefined);
+      void supabase.storage.from(bucketName).remove(uploadedPaths).catch(() => undefined);
     }
     throw error;
-  }
+  });
 
   if (payload.link) {
-    const { error: linkError } = await supabase.from('attachment_links').upsert(payload.link);
-    if (linkError) throw linkError;
+    const link = payload.link;
+    await runAttachmentSyncStage(`db:attachment_links:${payload.attachment.id}:${link.owner_type}:${link.owner_id}`, async () => {
+      const { error: linkError } = await supabase.from('attachment_links').upsert(link);
+      if (linkError) throw linkError;
+    });
   }
 
   if (payload.topicAttachment) {
-    const { error: topicLinkError } = await supabase
-      .from('topic_attachments')
-      .upsert(payload.topicAttachment, { onConflict: 'topic_id,attachment_id', ignoreDuplicates: true });
-    if (topicLinkError) throw topicLinkError;
-    await db.put('topic_attachments', payload.topicAttachment);
+    const topicAttachment = payload.topicAttachment;
+    await runAttachmentSyncStage(`db:topic_attachments:${topicAttachment.topic_id}:${payload.attachment.id}`, async () => {
+      const { error: topicLinkError } = await supabase
+        .from('topic_attachments')
+        .upsert(topicAttachment, { onConflict: 'topic_id,attachment_id', ignoreDuplicates: true });
+      if (topicLinkError) throw topicLinkError;
+    });
+    await db.put('topic_attachments', topicAttachment);
   }
 
   if (payload.medicationAttachment) {
-    const { error: medicationLinkError } = await supabase
-      .from('medication_attachments')
-      .upsert(payload.medicationAttachment, { onConflict: 'medication_id,attachment_id', ignoreDuplicates: true });
-    if (medicationLinkError) throw medicationLinkError;
-    await db.put('medication_attachments', payload.medicationAttachment);
+    const medicationAttachment = payload.medicationAttachment;
+    await runAttachmentSyncStage(`db:medication_attachments:${medicationAttachment.medication_id}:${payload.attachment.id}`, async () => {
+      const { error: medicationLinkError } = await supabase
+        .from('medication_attachments')
+        .upsert(medicationAttachment, { onConflict: 'medication_id,attachment_id', ignoreDuplicates: true });
+      if (medicationLinkError) throw medicationLinkError;
+    });
+    await db.put('medication_attachments', medicationAttachment);
   }
 
   if (payload.procedureAttachment) {
-    const { error: procedureLinkError } = await supabase
-      .from('procedure_attachments')
-      .upsert(payload.procedureAttachment, { onConflict: 'procedure_id,attachment_id', ignoreDuplicates: true });
-    if (procedureLinkError) throw procedureLinkError;
-    await db.put('procedure_attachments', payload.procedureAttachment);
+    const procedureAttachment = payload.procedureAttachment;
+    await runAttachmentSyncStage(`db:procedure_attachments:${procedureAttachment.procedure_id}:${payload.attachment.id}`, async () => {
+      const { error: procedureLinkError } = await supabase
+        .from('procedure_attachments')
+        .upsert(procedureAttachment, { onConflict: 'procedure_id,attachment_id', ignoreDuplicates: true });
+      if (procedureLinkError) throw procedureLinkError;
+    });
+    await db.put('procedure_attachments', procedureAttachment);
   }
 
   await db.put('attachments', { ...payload.attachment, sync_status: 'synced', error_message: null });
@@ -599,7 +652,7 @@ export async function createAttachment(
     try {
       await pushAttachmentToSupabase(payload);
     } catch (error) {
-      await db.put('attachments', { ...attachment, sync_status: 'error', error_message: error instanceof Error ? error.message : 'Error al subir.' });
+      await db.put('attachments', { ...attachment, sync_status: 'error', error_message: describeAttachmentSyncError('attachment:create', error) });
       await enqueueAttachment(userId, 'upsert', payload);
     }
   } else {
@@ -618,7 +671,8 @@ export async function renameAttachment(userId: string, attachment: Attachment, f
   if (navigator.onLine) {
     try {
       await pushAttachmentToSupabase(payload);
-    } catch {
+    } catch (error) {
+      await db.put('attachments', { ...updated, sync_status: 'error', error_message: describeAttachmentSyncError('attachment:rename', error) });
       await enqueueAttachment(userId, 'upsert', payload);
     }
   } else {

@@ -121,6 +121,7 @@ export function AttachmentCard({ attachment, viewMode, onPreview, onRename, onRe
             {attachment.sync_status === 'error' && 'Error, se reintentará'}
           </span>
         )}
+        {attachment.sync_status === 'error' && attachment.error_message && <span className="attachment-error-detail">{attachment.error_message}</span>}
       </div>
       <div className="card-actions">
         <button className="ghost-button" type="button" onClick={() => onPreview(attachment)}>
