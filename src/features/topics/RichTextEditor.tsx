@@ -95,16 +95,19 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
 
   if (!editor) return null;
 
-  const insertAttachmentImage = async (attachment: Attachment) => {
+  const insertAttachmentImage = async (attachment: Attachment, options: { linkOwner?: boolean } = {}) => {
     if (!isImageAttachment(attachment)) return;
-    if (owner?.ownerType === 'topic' && user?.id) {
-      await linkAttachmentToTopic(user.id, owner.ownerId, attachment.id);
-    }
-    if (owner?.ownerType === 'medication' && user?.id) {
-      await linkAttachmentToMedication(user.id, owner.ownerId, attachment.id);
-    }
-    if (owner?.ownerType === 'procedure' && user?.id) {
-      await linkAttachmentToProcedure(user.id, owner.ownerId, attachment.id);
+    const shouldLinkOwner = options.linkOwner ?? true;
+    if (shouldLinkOwner) {
+      if (owner?.ownerType === 'topic' && user?.id) {
+        await linkAttachmentToTopic(user.id, owner.ownerId, attachment.id);
+      }
+      if (owner?.ownerType === 'medication' && user?.id) {
+        await linkAttachmentToMedication(user.id, owner.ownerId, attachment.id);
+      }
+      if (owner?.ownerType === 'procedure' && user?.id) {
+        await linkAttachmentToProcedure(user.id, owner.ownerId, attachment.id);
+      }
     }
     const displayUrl = await getAttachmentDisplayUrl(attachment).catch(() => '');
     editor
@@ -127,7 +130,7 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
 
   const uploadAndInsertImage = async (file: File) => {
     const attachment = await attachmentMutations.upload.mutateAsync({ file, owner });
-    await insertAttachmentImage(attachment);
+    await insertAttachmentImage(attachment, { linkOwner: false });
   };
 
   const uploadImage = (event: ChangeEvent<HTMLInputElement>) => {

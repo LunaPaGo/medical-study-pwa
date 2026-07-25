@@ -346,19 +346,25 @@ async function pushAttachmentToSupabase(payload: AttachmentPayload) {
   }
 
   if (payload.topicAttachment) {
-    const { error: topicLinkError } = await supabase.from('topic_attachments').upsert(payload.topicAttachment);
+    const { error: topicLinkError } = await supabase
+      .from('topic_attachments')
+      .upsert(payload.topicAttachment, { onConflict: 'topic_id,attachment_id', ignoreDuplicates: true });
     if (topicLinkError) throw topicLinkError;
     await db.put('topic_attachments', payload.topicAttachment);
   }
 
   if (payload.medicationAttachment) {
-    const { error: medicationLinkError } = await supabase.from('medication_attachments').upsert(payload.medicationAttachment);
+    const { error: medicationLinkError } = await supabase
+      .from('medication_attachments')
+      .upsert(payload.medicationAttachment, { onConflict: 'medication_id,attachment_id', ignoreDuplicates: true });
     if (medicationLinkError) throw medicationLinkError;
     await db.put('medication_attachments', payload.medicationAttachment);
   }
 
   if (payload.procedureAttachment) {
-    const { error: procedureLinkError } = await supabase.from('procedure_attachments').upsert(payload.procedureAttachment);
+    const { error: procedureLinkError } = await supabase
+      .from('procedure_attachments')
+      .upsert(payload.procedureAttachment, { onConflict: 'procedure_id,attachment_id', ignoreDuplicates: true });
     if (procedureLinkError) throw procedureLinkError;
     await db.put('procedure_attachments', payload.procedureAttachment);
   }
