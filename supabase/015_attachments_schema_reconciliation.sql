@@ -18,7 +18,7 @@ declare
     'thumbnail_path',
     'created_at',
     'updated_at'
-  ];
+  ]::text[];
   column_record record;
   constraint_record record;
   index_record record;
@@ -29,7 +29,7 @@ begin
   raise notice 'Audit public.attachments columns';
   for column_record in
     select
-      column_name,
+      column_name::text as column_name,
       data_type,
       udt_name,
       is_nullable,
@@ -151,7 +151,7 @@ begin
   raise notice 'Reconciling legacy columns outside current contract';
   for column_record in
     select
-      column_name,
+      column_name::text as column_name,
       is_nullable,
       column_default,
       identity_generation,
@@ -159,7 +159,7 @@ begin
     from information_schema.columns
     where table_schema = 'public'
       and table_name = 'attachments'
-      and column_name <> all(contract_columns)
+      and column_name::text <> all(contract_columns)
     order by ordinal_position
   loop
     if column_record.identity_generation is not null or column_record.is_generated <> 'NEVER' then
@@ -184,7 +184,7 @@ begin
       select
         c.oid,
         c.conname,
-        array_agg(a.attname order by a.attname) as columns
+        array_agg(a.attname::text order by a.attname::text)::text[] as columns
       from pg_constraint c
       join pg_class t on t.oid = c.conrelid
       join pg_namespace n on n.oid = t.relnamespace
@@ -198,11 +198,11 @@ begin
     select conname, columns
     from constraint_columns
     where columns && (
-      select array_agg(column_name)
+      select array_agg(column_name::text)::text[]
       from information_schema.columns
       where table_schema = 'public'
         and table_name = 'attachments'
-        and column_name <> all(contract_columns)
+        and column_name::text <> all(contract_columns)
     )
       and not columns && contract_columns
   loop
