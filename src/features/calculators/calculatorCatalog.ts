@@ -4,6 +4,7 @@ import { CorrectedSodiumCalculator } from './laboratory/CorrectedSodiumCalculato
 import { Curb65Calculator } from './respiratory/Curb65Calculator';
 import { FenaCalculator } from './laboratory/FenaCalculator';
 import { GestationalAgeCalculator } from './pediatrics/GestationalAgeCalculator';
+import { VaccinationCalculator } from './pediatrics/VaccinationCalculator';
 import { GlasgowComaScaleCalculator } from './tools/GlasgowComaScaleCalculator';
 import { IdealBodyWeightCalculator } from './anesthesiology/IdealBodyWeightCalculator';
 import { MeanArterialPressureCalculator } from './cardiovascular/MeanArterialPressureCalculator';
@@ -116,6 +117,11 @@ export const calculatorCategories: CalculatorCategory[] = [
         id: 'gestational-age',
         title: 'Edad gestacional',
         component: GestationalAgeCalculator
+      },
+      {
+        id: 'argentina-national-vaccination-schedule',
+        title: 'Vacunación — Calendario Nacional Argentina',
+        component: VaccinationCalculator
       }
     ]
   },
