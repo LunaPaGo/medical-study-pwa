@@ -1,5 +1,4 @@
 import { FormEvent, useState } from 'react';
-import { CalculatorInfo } from '../components/CalculatorInfo';
 import {
   calculateExactAge,
   formatLocalDateInput,
@@ -25,33 +24,53 @@ type VaccinationResult = {
   reached: VaccinationRecommendationResult;
 };
 
-type MilestoneListProps = {
-  milestones: readonly VaccinationScheduleEntry[];
-};
+function formatDisplayDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+}
 
-function MilestoneList({ milestones }: MilestoneListProps) {
-  const groups = milestones.reduce<Array<{ label: string; entries: VaccinationScheduleEntry[] }>>((result, milestone) => {
-    const currentGroup = result[result.length - 1];
-    if (currentGroup?.label === milestone.ageWindow.label) currentGroup.entries.push(milestone);
-    else result.push({ label: milestone.ageWindow.label, entries: [milestone] });
-    return result;
-  }, []);
-
+function HistoricalScheduleTable({ entries }: { entries: readonly VaccinationScheduleEntry[] }) {
   return (
-    <div className="calculator-interpretation-grid">
-      {groups.map((group) => (
-        <section key={group.label}>
-          <strong>{group.label}</strong>
-          <ul className="calculator-interpretation-list">
-            {group.entries.map((milestone) => (
-              <li key={milestone.id}>
-                <strong>{milestone.vaccine} — {milestone.dose}.</strong>{' '}
-                {milestone.description}
-                {milestone.notes && <> {milestone.notes}</>}
-              </li>
-            ))}
-          </ul>
-        </section>
+    <div className="vaccination-history-scroll">
+      <table className="vaccination-history-table">
+        <thead>
+          <tr>
+            <th aria-label="Hito" />
+            <th>Edad</th>
+            <th>Vacuna</th>
+            <th>Dosis</th>
+            <th>Descripción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry) => (
+            <tr key={entry.id}>
+              <td className="vaccination-milestone-cell" data-label="Hito"><span aria-hidden="true" className="vaccination-milestone-dot" /></td>
+              <td data-label="Edad">{entry.ageWindow.label}</td>
+              <td data-label="Vacuna"><strong>{entry.vaccine}</strong></td>
+              <td data-label="Dosis">{entry.dose}</td>
+              <td data-label="Descripción">{entry.description}{entry.notes && <small>{entry.notes}</small>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function RecommendationCards({ entries, variant }: { entries: readonly VaccinationScheduleEntry[]; variant: 'current' | 'conditional' }) {
+  return (
+    <div className="vaccination-recommendation-grid">
+      {entries.map((entry) => (
+        <article className={`vaccination-recommendation-card ${variant}`} key={entry.id}>
+          <div className="vaccination-recommendation-heading">
+            <strong>{entry.vaccine}</strong>
+            <span>{entry.ageWindow.label}</span>
+          </div>
+          <b>{entry.dose}</b>
+          <p>{entry.description}</p>
+          {entry.notes && <small>{entry.notes}</small>}
+        </article>
       ))}
     </div>
   );
@@ -123,10 +142,6 @@ export function VaccinationCalculator() {
 
   return (
     <form className="calculator-form" onSubmit={handleSubmit}>
-      <CalculatorInfo title="Alcance">
-        Esta herramienta presenta las vacunas esperadas o recomendadas según edad y no determina por sí sola si una persona tiene el esquema completo.
-      </CalculatorInfo>
-
       <fieldset className="calculator-option-group">
         <legend>Calcular por:</legend>
         <label>
@@ -193,54 +208,78 @@ export function VaccinationCalculator() {
       </div>
 
       {result && !error && (
-        <div aria-live="polite">
-          <div className="calculator-result">
-            <span>Edad actual</span>
-            <strong>{formatVaccinationAge(result.context.age)}</strong>
+        <div aria-live="polite" className="vaccination-results">
+          <header className="vaccination-result-summary">
+            <article>
+              <span>Edad actual</span>
+              <strong>{formatVaccinationAge(result.context.age)}</strong>
+              <small>Calculado al {formatDisplayDate(result.context.referenceDate)}</small>
+            </article>
+            <article>
+              <span>Modo de cálculo</span>
+              <strong>{result.context.inputMode === 'birthDate' ? 'Fecha de nacimiento' : 'Edad ingresada'}</strong>
+              <small>{result.context.birthDate ? formatDisplayDate(result.context.birthDate) : formatVaccinationAge(result.context.age)}</small>
+            </article>
+            <article>
+              <span>Referencia</span>
+              <strong>Calendario Nacional de Vacunación 2026</strong>
+              <small>Ministerio de Salud de la Nación Argentina</small>
+            </article>
+          </header>
+
+          <div className="vaccination-dashboard">
+            <section className="vaccination-results-panel vaccination-history-panel">
+              <div className="vaccination-panel-heading">
+                <span className="vaccination-panel-kicker">Historial esperado por edad</span>
+                <h3>Debería haber recibido según calendario</h3>
+              </div>
+              {result.reached.entries.length > 0 ? (
+                <HistoricalScheduleTable entries={result.reached.entries} />
+              ) : (
+                <p className="vaccination-empty-state">No se reconstruyen retrospectivamente calendarios pediátricos históricos que no estén modelados.</p>
+              )}
+            </section>
+
+            <div className="vaccination-dashboard-side">
+              <section className="vaccination-results-panel vaccination-current-panel">
+                <div className="vaccination-panel-heading">
+                  <span className="vaccination-panel-kicker">Hito activo</span>
+                  <h3>Corresponde actualmente</h3>
+                </div>
+                {result.current.entries.length > 0 ? (
+                  <RecommendationCards entries={result.current.entries} variant="current" />
+                ) : (
+                  <p className="vaccination-empty-state">No hay un hito rutinario específico del calendario para esta edad.</p>
+                )}
+                <p className="vaccination-panel-footnote">Esto no permite determinar si existen esquemas incompletos.</p>
+              </section>
+
+              <section className="vaccination-results-panel vaccination-conditional-panel">
+                <div className="vaccination-panel-heading">
+                  <span className="vaccination-panel-kicker">Requiere contexto adicional</span>
+                  <h3>Indicaciones a verificar según antecedentes o situación</h3>
+                </div>
+                {result.conditional.entries.length > 0 ? (
+                  <RecommendationCards entries={result.conditional.entries} variant="conditional" />
+                ) : (
+                  <p className="vaccination-empty-state">No hay indicaciones condicionales específicas identificadas solamente con estos datos.</p>
+                )}
+                {result.conditional.warnings.map((warning) => <p className="vaccination-context-warning" key={warning}>{warning}</p>)}
+              </section>
+            </div>
           </div>
-
-          <section className="calculator-info-block">
-            <span>Debería haber recibido según calendario</span>
-            {result.reached.entries.length > 0 ? (
-              <MilestoneList milestones={result.reached.entries} />
-            ) : (
-              <p>No se reconstruyen retrospectivamente calendarios pediátricos históricos que no estén modelados.</p>
-            )}
-          </section>
-
-          <section className="calculator-info-block">
-            <span>Corresponde actualmente</span>
-            {result.current.entries.length > 0 ? (
-              <MilestoneList milestones={result.current.entries} />
-            ) : (
-              <p>No hay un hito rutinario específico del calendario para esta edad.</p>
-            )}
-            <p>Esto no permite determinar si existen esquemas incompletos.</p>
-          </section>
-
-          <section className="calculator-info-block">
-            <span>Indicaciones a verificar según antecedentes o situación</span>
-            {result.conditional.entries.length > 0 ? (
-              <MilestoneList milestones={result.conditional.entries} />
-            ) : (
-              <p>No hay indicaciones condicionales específicas identificadas solamente con estos datos.</p>
-            )}
-            {result.conditional.warnings.map((warning) => <p className="notice warning" key={warning}>{warning}</p>)}
-          </section>
         </div>
       )}
 
-      <CalculatorInfo title="Importante">
-        Para determinar dosis faltantes es necesario revisar el carnet y los antecedentes de vacunación.
-      </CalculatorInfo>
-
-      <CalculatorInfo title="Situaciones especiales">
-        Embarazo, inmunocompromiso, enfermedades crónicas, personal de salud, condiciones epidemiológicas y otras situaciones especiales pueden modificar las indicaciones.
-      </CalculatorInfo>
-
-      <CalculatorInfo title="Fuente">
-        Basado en el Calendario Nacional de Vacunación 2026 — Ministerio de Salud de la Nación Argentina.
-      </CalculatorInfo>
+      <section className="vaccination-important-notes">
+        <div>
+          <span>Notas importantes</span>
+          <p>Esta herramienta presenta las vacunas esperadas o recomendadas según edad y no determina por sí sola si una persona tiene el esquema completo.</p>
+          <p>Para determinar dosis faltantes es necesario revisar el carnet y los antecedentes de vacunación.</p>
+          <p>Embarazo, inmunocompromiso, enfermedades crónicas, personal de salud, condiciones epidemiológicas y otras situaciones especiales pueden modificar las indicaciones.</p>
+          <p>Basado en el Calendario Nacional de Vacunación 2026 — Ministerio de Salud de la Nación Argentina.</p>
+        </div>
+      </section>
     </form>
   );
 }
