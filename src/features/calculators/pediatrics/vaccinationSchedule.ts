@@ -1,4 +1,4 @@
-import { startOfLocalCalendarDay } from './vaccinationAge';
+import { parseLocalCalendarDate, startOfLocalCalendarDay, type VaccinationPatientContext } from './vaccinationAge';
 
 export type VaccinationAgeWindow = {
   label: string;
@@ -15,6 +15,14 @@ export type VaccinationScheduleEntry = {
   observation?: string;
   eligibility?: 'early-second-mmr';
 };
+
+export type VaccinationRecommendationResult = {
+  milestones: readonly VaccinationScheduleEntry[];
+  warnings: readonly string[];
+};
+
+export const exactBirthDateRequiredWarning =
+  'Esta recomendación depende de la fecha de nacimiento exacta. Ingresá la fecha de nacimiento para determinarla.';
 
 const window = (label: string, startMonths: number, endMonthsExclusive: number): VaccinationAgeWindow => ({
   label,
@@ -193,61 +201,63 @@ export const vaccinationSchedule: readonly VaccinationScheduleEntry[] = [
   }
 ];
 
-function daysInMonth(year: number, monthIndex: number): number {
-  return new Date(year, monthIndex + 1, 0).getDate();
-}
-
-function addCalendarMonthsClamped(date: Date, months: number): Date {
-  const localDate = startOfLocalCalendarDay(date);
-  const totalMonths = localDate.getFullYear() * 12 + localDate.getMonth() + months;
-  const targetYear = Math.floor(totalMonths / 12);
-  const targetMonth = totalMonths - targetYear * 12;
-  const day = Math.min(localDate.getDate(), daysInMonth(targetYear, targetMonth));
-  return new Date(targetYear, targetMonth, day);
-}
-
 export function isEligibleForEarlySecondMMR(birthDate: Date): boolean {
   const cohortStart = new Date(2024, 6, 1);
   return startOfLocalCalendarDay(birthDate).getTime() >= cohortStart.getTime();
 }
 
-function isEntryEligible(entry: VaccinationScheduleEntry, birthDate: Date): boolean {
-  if (entry.eligibility === 'early-second-mmr') return isEligibleForEarlySecondMMR(birthDate);
-  return true;
+type EligibilityResult = 'eligible' | 'ineligible' | 'unknown';
+
+function getEntryEligibility(entry: VaccinationScheduleEntry, context: VaccinationPatientContext): EligibilityResult {
+  if (!entry.eligibility) return 'eligible';
+  if (!context.birthDate) return 'unknown';
+
+  const birthDate = parseLocalCalendarDate(context.birthDate);
+  if (!birthDate) return 'unknown';
+  if (entry.eligibility === 'early-second-mmr') {
+    return isEligibleForEarlySecondMMR(birthDate) ? 'eligible' : 'ineligible';
+  }
+  return 'eligible';
 }
 
-function hasReachedWindow(entry: VaccinationScheduleEntry, birthDate: Date, referenceDate: Date): boolean {
-  return referenceDate.getTime() >= addCalendarMonthsClamped(birthDate, entry.ageWindow.startMonths).getTime();
+function completedMonths(context: VaccinationPatientContext): number {
+  return context.age.years * 12 + context.age.months;
 }
 
-function isWindowActive(entry: VaccinationScheduleEntry, birthDate: Date, referenceDate: Date): boolean {
-  const start = addCalendarMonthsClamped(birthDate, entry.ageWindow.startMonths);
-  const end = addCalendarMonthsClamped(birthDate, entry.ageWindow.endMonthsExclusive);
-  return referenceDate.getTime() >= start.getTime() && referenceDate.getTime() < end.getTime();
+function hasReachedWindow(entry: VaccinationScheduleEntry, context: VaccinationPatientContext): boolean {
+  return completedMonths(context) >= entry.ageWindow.startMonths;
 }
 
-export function getReachedVaccinationMilestones(
-  birthDate: Date,
-  referenceDate = new Date()
-): readonly VaccinationScheduleEntry[] {
-  const birth = startOfLocalCalendarDay(birthDate);
-  const reference = startOfLocalCalendarDay(referenceDate);
-  if (birth.getTime() > reference.getTime()) return [];
-
-  return vaccinationSchedule.filter(
-    (entry) => isEntryEligible(entry, birth) && hasReachedWindow(entry, birth, reference)
-  );
+function isWindowActive(entry: VaccinationScheduleEntry, context: VaccinationPatientContext): boolean {
+  const ageInCompletedMonths = completedMonths(context);
+  return ageInCompletedMonths >= entry.ageWindow.startMonths && ageInCompletedMonths < entry.ageWindow.endMonthsExclusive;
 }
 
-export function getCurrentVaccinationMilestones(
-  birthDate: Date,
-  referenceDate = new Date()
-): readonly VaccinationScheduleEntry[] {
-  const birth = startOfLocalCalendarDay(birthDate);
-  const reference = startOfLocalCalendarDay(referenceDate);
-  if (birth.getTime() > reference.getTime()) return [];
+function getRecommendations(
+  context: VaccinationPatientContext,
+  matchesWindow: (entry: VaccinationScheduleEntry, context: VaccinationPatientContext) => boolean
+): VaccinationRecommendationResult {
+  const milestones: VaccinationScheduleEntry[] = [];
+  let requiresExactBirthDate = false;
 
-  return vaccinationSchedule.filter(
-    (entry) => isEntryEligible(entry, birth) && isWindowActive(entry, birth, reference)
-  );
+  for (const entry of vaccinationSchedule) {
+    if (!matchesWindow(entry, context)) continue;
+
+    const eligibility = getEntryEligibility(entry, context);
+    if (eligibility === 'eligible') milestones.push(entry);
+    if (eligibility === 'unknown') requiresExactBirthDate = true;
+  }
+
+  return {
+    milestones,
+    warnings: requiresExactBirthDate ? [exactBirthDateRequiredWarning] : []
+  };
+}
+
+export function getReachedVaccinationMilestones(context: VaccinationPatientContext): VaccinationRecommendationResult {
+  return getRecommendations(context, hasReachedWindow);
+}
+
+export function getCurrentVaccinationMilestones(context: VaccinationPatientContext): VaccinationRecommendationResult {
+  return getRecommendations(context, isWindowActive);
 }

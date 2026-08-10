@@ -1,10 +1,55 @@
 const millisecondsPerDay = 24 * 60 * 60 * 1000;
 
-export type ExactAge = {
+export type VaccinationAge = {
   years: number;
   months: number;
   days: number;
 };
+
+export type VaccinationInputMode = 'birthDate' | 'age';
+
+export type VaccinationPatientContext = {
+  age: VaccinationAge;
+  birthDate?: string;
+  inputMode: VaccinationInputMode;
+};
+
+export type ManualVaccinationAgeValidation =
+  | { age: VaccinationAge; error: null }
+  | { age: null; error: string };
+
+function parseNonNegativeInteger(value: string): number | null {
+  const trimmedValue = value.trim();
+  if (!/^\d+$/.test(trimmedValue)) return null;
+
+  const parsedValue = Number(trimmedValue);
+  if (!Number.isSafeInteger(parsedValue)) return null;
+  return parsedValue;
+}
+
+export function validateManualVaccinationAge(
+  yearsValue: string,
+  monthsValue: string,
+  daysValue: string
+): ManualVaccinationAgeValidation {
+  const years = parseNonNegativeInteger(yearsValue);
+  const months = parseNonNegativeInteger(monthsValue || '0');
+  const days = parseNonNegativeInteger(daysValue || '0');
+
+  if (years === null) return { age: null, error: 'Ingresá los años como un número entero mayor o igual a 0.' };
+  if (months === null || months > 11) return { age: null, error: 'Los meses deben ser un número entero entre 0 y 11.' };
+  if (days === null || days > 30) return { age: null, error: 'Los días deben ser un número entero entre 0 y 30.' };
+
+  return { age: { years, months, days }, error: null };
+}
+
+export function formatVaccinationAge(age: VaccinationAge): string {
+  const parts: string[] = [];
+  if (age.years > 0) parts.push(`${age.years} ${age.years === 1 ? 'año' : 'años'}`);
+  if (age.months > 0) parts.push(`${age.months} ${age.months === 1 ? 'mes' : 'meses'}`);
+  if (age.days > 0) parts.push(`${age.days} ${age.days === 1 ? 'día' : 'días'}`);
+  return parts.length > 0 ? parts.join(', ').replace(/, ([^,]*)$/, ' y $1') : '0 días';
+}
 
 export function parseLocalCalendarDate(value: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -55,7 +100,7 @@ function differenceInCalendarDays(laterDate: Date, earlierDate: Date): number {
   return Math.round((laterUtc - earlierUtc) / millisecondsPerDay);
 }
 
-export function calculateExactAge(birthDate: Date, referenceDate = new Date()): ExactAge {
+export function calculateExactAge(birthDate: Date, referenceDate = new Date()): VaccinationAge {
   const birth = startOfLocalCalendarDay(birthDate);
   const reference = startOfLocalCalendarDay(referenceDate);
 

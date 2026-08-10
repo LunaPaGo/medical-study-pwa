@@ -3,20 +3,24 @@ import { CalculatorInfo } from '../components/CalculatorInfo';
 import {
   calculateExactAge,
   formatLocalDateInput,
+  formatVaccinationAge,
   parseLocalCalendarDate,
   startOfLocalCalendarDay,
-  type ExactAge
+  validateManualVaccinationAge,
+  type VaccinationInputMode,
+  type VaccinationPatientContext
 } from './vaccinationAge';
 import {
   getCurrentVaccinationMilestones,
   getReachedVaccinationMilestones,
+  type VaccinationRecommendationResult,
   type VaccinationScheduleEntry
 } from './vaccinationSchedule';
 
 type VaccinationResult = {
-  age: ExactAge;
-  currentMilestones: readonly VaccinationScheduleEntry[];
-  reachedMilestones: readonly VaccinationScheduleEntry[];
+  context: VaccinationPatientContext;
+  current: VaccinationRecommendationResult;
+  reached: VaccinationRecommendationResult;
 };
 
 type MilestoneListProps = {
@@ -38,39 +42,66 @@ function MilestoneList({ milestones }: MilestoneListProps) {
 }
 
 export function VaccinationCalculator() {
+  const [inputMode, setInputMode] = useState<VaccinationInputMode>('birthDate');
   const [birthDate, setBirthDate] = useState('');
+  const [years, setYears] = useState('');
+  const [months, setMonths] = useState('0');
+  const [days, setDays] = useState('0');
   const [error, setError] = useState('');
   const [result, setResult] = useState<VaccinationResult | null>(null);
   const today = startOfLocalCalendarDay(new Date());
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function clearInputs() {
+    setBirthDate('');
+    setYears('');
+    setMonths('0');
+    setDays('0');
+    setError('');
+    setResult(null);
+  }
 
-    const parsedBirthDate = parseLocalCalendarDate(birthDate);
-    if (!parsedBirthDate) {
-      setResult(null);
-      setError('Seleccioná una fecha de nacimiento válida.');
-      return;
+  function changeInputMode(nextMode: VaccinationInputMode) {
+    if (nextMode === inputMode) return;
+    setInputMode(nextMode);
+    clearInputs();
+  }
+
+  function buildContext(): VaccinationPatientContext | null {
+    if (inputMode === 'birthDate') {
+      const parsedBirthDate = parseLocalCalendarDate(birthDate);
+      if (!parsedBirthDate) {
+        setError('Seleccioná una fecha de nacimiento válida.');
+        return null;
+      }
+      if (parsedBirthDate.getTime() > today.getTime()) {
+        setError('La fecha de nacimiento no puede ser futura.');
+        return null;
+      }
+      return { age: calculateExactAge(parsedBirthDate, today), birthDate, inputMode };
     }
 
-    if (parsedBirthDate.getTime() > today.getTime()) {
+    const validation = validateManualVaccinationAge(years, months, days);
+    if (validation.age === null) {
+      setError(validation.error);
+      return null;
+    }
+    return { age: validation.age, inputMode };
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const context = buildContext();
+    if (!context) {
       setResult(null);
-      setError('La fecha de nacimiento no puede ser futura.');
       return;
     }
 
     setError('');
     setResult({
-      age: calculateExactAge(parsedBirthDate, today),
-      currentMilestones: getCurrentVaccinationMilestones(parsedBirthDate, today),
-      reachedMilestones: getReachedVaccinationMilestones(parsedBirthDate, today)
+      context,
+      current: getCurrentVaccinationMilestones(context),
+      reached: getReachedVaccinationMilestones(context)
     });
-  }
-
-  function resetCalculator() {
-    setBirthDate('');
-    setError('');
-    setResult(null);
   }
 
   return (
@@ -79,52 +110,92 @@ export function VaccinationCalculator() {
         Esta herramienta muestra el calendario esperado por edad y no determina por sí sola si una persona tiene el esquema completo.
       </CalculatorInfo>
 
-      <label>
-        Fecha de nacimiento
-        <input
-          max={formatLocalDateInput(today)}
-          onChange={(event) => {
-            setBirthDate(event.target.value);
-            setError('');
-            setResult(null);
-          }}
-          type="date"
-          value={birthDate}
-        />
-      </label>
+      <fieldset className="calculator-option-group">
+        <legend>Calcular por:</legend>
+        <label>
+          <input checked={inputMode === 'birthDate'} name="vaccination-input-mode" onChange={() => changeInputMode('birthDate')} type="radio" />
+          Fecha de nacimiento
+        </label>
+        <label>
+          <input checked={inputMode === 'age'} name="vaccination-input-mode" onChange={() => changeInputMode('age')} type="radio" />
+          Edad
+        </label>
+      </fieldset>
+
+      {inputMode === 'birthDate' ? (
+        <label>
+          Fecha de nacimiento
+          <input
+            max={formatLocalDateInput(today)}
+            onChange={(event) => {
+              setBirthDate(event.target.value);
+              setError('');
+              setResult(null);
+            }}
+            type="date"
+            value={birthDate}
+          />
+        </label>
+      ) : (
+        <section className="calculator-info-block">
+          <span>Edad</span>
+          <div className="calculator-interpretation-grid">
+            <label>
+              Años
+              <input inputMode="numeric" min="0" onChange={(event) => {
+                setYears(event.target.value);
+                setError('');
+                setResult(null);
+              }} step="1" type="number" value={years} />
+            </label>
+            <label>
+              Meses
+              <input inputMode="numeric" max="11" min="0" onChange={(event) => {
+                setMonths(event.target.value);
+                setError('');
+                setResult(null);
+              }} step="1" type="number" value={months} />
+            </label>
+            <label>
+              Días
+              <input inputMode="numeric" max="30" min="0" onChange={(event) => {
+                setDays(event.target.value);
+                setError('');
+                setResult(null);
+              }} step="1" type="number" value={days} />
+            </label>
+          </div>
+        </section>
+      )}
 
       {error && <div className="notice warning">{error}</div>}
 
       <div className="calculator-actions">
-        <button className="primary-button" type="submit">
-          Calcular
-        </button>
-        <button className="ghost-button" type="button" onClick={resetCalculator}>
-          Reiniciar
-        </button>
+        <button className="primary-button" type="submit">Calcular</button>
+        <button className="ghost-button" type="button" onClick={clearInputs}>Reiniciar</button>
       </div>
 
       {result && !error && (
         <div aria-live="polite">
           <div className="calculator-result">
             <span>Edad actual</span>
-            <strong>
-              {result.age.years} años, {result.age.months} meses, {result.age.days} días
-            </strong>
+            <strong>{formatVaccinationAge(result.context.age)}</strong>
           </div>
 
           <section className="calculator-info-block">
             <span>Debería haber recibido según calendario</span>
-            <MilestoneList milestones={result.reachedMilestones} />
+            <MilestoneList milestones={result.reached.milestones} />
+            {result.reached.warnings.map((warning) => <p className="notice warning" key={warning}>{warning}</p>)}
           </section>
 
           <section className="calculator-info-block">
             <span>Corresponde actualmente</span>
-            {result.currentMilestones.length > 0 ? (
-              <MilestoneList milestones={result.currentMilestones} />
+            {result.current.milestones.length > 0 ? (
+              <MilestoneList milestones={result.current.milestones} />
             ) : (
               <p>No hay un hito rutinario específico del calendario para esta edad.</p>
             )}
+            {result.current.warnings.map((warning) => <p className="notice warning" key={warning}>{warning}</p>)}
             <p>Esto no permite determinar si existen esquemas incompletos.</p>
           </section>
         </div>
