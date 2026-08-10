@@ -11,14 +11,16 @@ import {
   type VaccinationPatientContext
 } from './vaccinationAge';
 import {
-  getCurrentVaccinationMilestones,
-  getReachedVaccinationMilestones,
+  getConditionalRecommendations,
+  getVaccinesDueNow,
+  getVaccinesReached,
   type VaccinationRecommendationResult,
   type VaccinationScheduleEntry
 } from './vaccinationSchedule';
 
 type VaccinationResult = {
   context: VaccinationPatientContext;
+  conditional: VaccinationRecommendationResult;
   current: VaccinationRecommendationResult;
   reached: VaccinationRecommendationResult;
 };
@@ -28,16 +30,30 @@ type MilestoneListProps = {
 };
 
 function MilestoneList({ milestones }: MilestoneListProps) {
+  const groups = milestones.reduce<Array<{ label: string; entries: VaccinationScheduleEntry[] }>>((result, milestone) => {
+    const currentGroup = result[result.length - 1];
+    if (currentGroup?.label === milestone.ageWindow.label) currentGroup.entries.push(milestone);
+    else result.push({ label: milestone.ageWindow.label, entries: [milestone] });
+    return result;
+  }, []);
+
   return (
-    <ul className="calculator-interpretation-list">
-      {milestones.map((milestone) => (
-        <li key={milestone.id}>
-          <strong>{milestone.ageWindow.label} — {milestone.vaccine}: {milestone.dose}.</strong>{' '}
-          {milestone.description}
-          {milestone.observation && <> {milestone.observation}</>}
-        </li>
+    <div className="calculator-interpretation-grid">
+      {groups.map((group) => (
+        <section key={group.label}>
+          <strong>{group.label}</strong>
+          <ul className="calculator-interpretation-list">
+            {group.entries.map((milestone) => (
+              <li key={milestone.id}>
+                <strong>{milestone.vaccine} — {milestone.dose}.</strong>{' '}
+                {milestone.description}
+                {milestone.notes && <> {milestone.notes}</>}
+              </li>
+            ))}
+          </ul>
+        </section>
       ))}
-    </ul>
+    </div>
   );
 }
 
@@ -77,7 +93,7 @@ export function VaccinationCalculator() {
         setError('La fecha de nacimiento no puede ser futura.');
         return null;
       }
-      return { age: calculateExactAge(parsedBirthDate, today), birthDate, inputMode };
+      return { age: calculateExactAge(parsedBirthDate, today), birthDate, inputMode, referenceDate: formatLocalDateInput(today) };
     }
 
     const validation = validateManualVaccinationAge(years, months, days);
@@ -85,7 +101,7 @@ export function VaccinationCalculator() {
       setError(validation.error);
       return null;
     }
-    return { age: validation.age, inputMode };
+    return { age: validation.age, inputMode, referenceDate: formatLocalDateInput(today) };
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -99,15 +115,16 @@ export function VaccinationCalculator() {
     setError('');
     setResult({
       context,
-      current: getCurrentVaccinationMilestones(context),
-      reached: getReachedVaccinationMilestones(context)
+      conditional: getConditionalRecommendations(context),
+      current: getVaccinesDueNow(context),
+      reached: getVaccinesReached(context)
     });
   }
 
   return (
     <form className="calculator-form" onSubmit={handleSubmit}>
       <CalculatorInfo title="Alcance">
-        Esta herramienta muestra el calendario esperado por edad y no determina por sí sola si una persona tiene el esquema completo.
+        Esta herramienta presenta las vacunas esperadas o recomendadas según edad y no determina por sí sola si una persona tiene el esquema completo.
       </CalculatorInfo>
 
       <fieldset className="calculator-option-group">
@@ -184,29 +201,45 @@ export function VaccinationCalculator() {
 
           <section className="calculator-info-block">
             <span>Debería haber recibido según calendario</span>
-            <MilestoneList milestones={result.reached.milestones} />
-            {result.reached.warnings.map((warning) => <p className="notice warning" key={warning}>{warning}</p>)}
+            {result.reached.entries.length > 0 ? (
+              <MilestoneList milestones={result.reached.entries} />
+            ) : (
+              <p>No se reconstruyen retrospectivamente calendarios pediátricos históricos que no estén modelados.</p>
+            )}
           </section>
 
           <section className="calculator-info-block">
             <span>Corresponde actualmente</span>
-            {result.current.milestones.length > 0 ? (
-              <MilestoneList milestones={result.current.milestones} />
+            {result.current.entries.length > 0 ? (
+              <MilestoneList milestones={result.current.entries} />
             ) : (
               <p>No hay un hito rutinario específico del calendario para esta edad.</p>
             )}
-            {result.current.warnings.map((warning) => <p className="notice warning" key={warning}>{warning}</p>)}
             <p>Esto no permite determinar si existen esquemas incompletos.</p>
+          </section>
+
+          <section className="calculator-info-block">
+            <span>Indicaciones a verificar según antecedentes o situación</span>
+            {result.conditional.entries.length > 0 ? (
+              <MilestoneList milestones={result.conditional.entries} />
+            ) : (
+              <p>No hay indicaciones condicionales específicas identificadas solamente con estos datos.</p>
+            )}
+            {result.conditional.warnings.map((warning) => <p className="notice warning" key={warning}>{warning}</p>)}
           </section>
         </div>
       )}
 
       <CalculatorInfo title="Importante">
-        Para determinar vacunas faltantes es necesario revisar el carnet y los antecedentes de vacunación.
+        Para determinar dosis faltantes es necesario revisar el carnet y los antecedentes de vacunación.
+      </CalculatorInfo>
+
+      <CalculatorInfo title="Situaciones especiales">
+        Embarazo, inmunocompromiso, enfermedades crónicas, personal de salud, condiciones epidemiológicas y otras situaciones especiales pueden modificar las indicaciones.
       </CalculatorInfo>
 
       <CalculatorInfo title="Fuente">
-        Basado en el Calendario Nacional de Vacunación 2026 del Ministerio de Salud de la Nación Argentina.
+        Basado en el Calendario Nacional de Vacunación 2026 — Ministerio de Salud de la Nación Argentina.
       </CalculatorInfo>
     </form>
   );

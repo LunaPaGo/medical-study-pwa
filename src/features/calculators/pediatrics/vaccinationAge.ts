@@ -12,6 +12,7 @@ export type VaccinationPatientContext = {
   age: VaccinationAge;
   birthDate?: string;
   inputMode: VaccinationInputMode;
+  referenceDate: string;
 };
 
 export type ManualVaccinationAgeValidation =
