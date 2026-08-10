@@ -150,10 +150,11 @@ export function VaccinationCalculator() {
         Esta herramienta presenta las vacunas esperadas o recomendadas según edad y no determina por sí sola si una persona tiene el esquema completo.
       </CalculatorInfo>
 
-      <div className="vaccination-official-reference">
+      <section className="calculator-info-block vaccination-official-reference">
+        <span>Referencia oficial</span>
         <a
           aria-describedby={!isOnline ? 'vaccination-official-reference-status' : undefined}
-          className="vaccination-official-reference-link"
+          className="ghost-button vaccination-official-reference-link"
           href="https://www.argentina.gob.ar/sites/default/files/2026-03-10_calendario_nacional_vacunacion_70x50_web.pdf"
           onClick={(event) => {
             if (!isOnline) event.preventDefault();
@@ -173,7 +174,7 @@ export function VaccinationCalculator() {
             Se necesita conexión a internet para abrir el calendario oficial.
           </p>
         )}
-      </div>
+      </section>
 
       <fieldset className="calculator-option-group">
         <legend>Calcular por:</legend>

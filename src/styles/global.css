@@ -2196,6 +2196,8 @@ button:disabled,
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-3);
+  width: fit-content;
+  max-width: 100%;
   min-height: var(--control-height);
   border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--line));
   border-radius: 8px;
