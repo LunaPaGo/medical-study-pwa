@@ -2185,6 +2185,57 @@ button:disabled,
   gap: var(--space-5);
 }
 
+.vaccination-official-reference {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+.vaccination-official-reference-link {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-height);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface));
+  color: var(--text);
+  padding: var(--space-2) var(--space-4);
+  text-decoration: none;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.vaccination-official-reference-link:hover {
+  border-color: color-mix(in srgb, var(--primary) 48%, var(--line));
+  background: color-mix(in srgb, var(--primary) 9%, var(--surface));
+}
+
+.vaccination-official-reference-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.vaccination-official-reference-link span {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.vaccination-official-reference-link strong {
+  font-size: 0.88rem;
+}
+
+.vaccination-official-reference-link small,
+.vaccination-official-reference-status {
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.vaccination-official-reference-status {
+  margin: 0;
+}
+
 .vaccination-result-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

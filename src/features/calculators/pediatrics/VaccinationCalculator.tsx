@@ -1,4 +1,7 @@
 import { FormEvent, useState } from 'react';
+import { CalendarDays, ExternalLink } from 'lucide-react';
+import { useOnlineStatus } from '../../../hooks/useOnlineStatus';
+import { CalculatorInfo } from '../components/CalculatorInfo';
 import {
   calculateExactAge,
   formatLocalDateInput,
@@ -77,6 +80,7 @@ function RecommendationCards({ entries, variant }: { entries: readonly Vaccinati
 }
 
 export function VaccinationCalculator() {
+  const isOnline = useOnlineStatus();
   const [inputMode, setInputMode] = useState<VaccinationInputMode>('birthDate');
   const [birthDate, setBirthDate] = useState('');
   const [years, setYears] = useState('');
@@ -142,6 +146,35 @@ export function VaccinationCalculator() {
 
   return (
     <form className="calculator-form" onSubmit={handleSubmit}>
+      <CalculatorInfo title="Alcance">
+        Esta herramienta presenta las vacunas esperadas o recomendadas según edad y no determina por sí sola si una persona tiene el esquema completo.
+      </CalculatorInfo>
+
+      <div className="vaccination-official-reference">
+        <a
+          aria-describedby={!isOnline ? 'vaccination-official-reference-status' : undefined}
+          className="vaccination-official-reference-link"
+          href="https://www.argentina.gob.ar/sites/default/files/2026-03-10_calendario_nacional_vacunacion_70x50_web.pdf"
+          onClick={(event) => {
+            if (!isOnline) event.preventDefault();
+          }}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <CalendarDays aria-hidden="true" size={18} />
+          <span>
+            <strong>Ver Calendario Nacional 2026</strong>
+            <small>Ministerio de Salud de la Nación Argentina</small>
+          </span>
+          <ExternalLink aria-hidden="true" size={16} />
+        </a>
+        {!isOnline && (
+          <p className="vaccination-official-reference-status" id="vaccination-official-reference-status" role="status">
+            Se necesita conexión a internet para abrir el calendario oficial.
+          </p>
+        )}
+      </div>
+
       <fieldset className="calculator-option-group">
         <legend>Calcular por:</legend>
         <label>
