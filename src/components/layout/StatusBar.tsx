@@ -17,7 +17,7 @@ export function StatusBar() {
     <header className="status-bar">
       <div>
         <span className={isOnline ? 'status-dot online' : 'status-dot offline'} />
-        {isReadOnly ? 'Offline: solo lectura' : isOnline ? 'Online' : 'Offline'}
+        {isReadOnly ? 'Offline: edición de Temas' : isOnline ? 'Online' : 'Offline'}
       </div>
       <div>
         <RefreshCcw size={16} aria-hidden="true" />

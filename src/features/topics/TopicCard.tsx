@@ -30,11 +30,9 @@ export function TopicCard({ topic, readOnly = false, viewMode = 'grid', onDelete
             <Link className="ghost-button" to={`/temas/${topic.id}`}>
               Ver
             </Link>
-            {!readOnly && (
-              <Link className="ghost-button" to={`/temas/${topic.id}/editar`}>
-                Editar
-              </Link>
-            )}
+            <Link className="ghost-button" to={`/temas/${topic.id}/editar`}>
+              Editar
+            </Link>
             <button
               className={`ghost-button ${topic.is_favorite ? 'favorite-active' : ''}`}
               disabled={readOnly}
@@ -91,14 +89,12 @@ export function TopicCard({ topic, readOnly = false, viewMode = 'grid', onDelete
           <Eye size={17} />
           Ver
         </Link>
-        {readOnly ? (
-          <span className="notice warning readonly-inline">Solo lectura</span>
-        ) : (
+        <Link className="ghost-button" to={`/temas/${topic.id}/editar`}>
+          <Edit3 size={17} />
+          Editar
+        </Link>
+        {!readOnly && (
           <>
-            <Link className="ghost-button" to={`/temas/${topic.id}/editar`}>
-              <Edit3 size={17} />
-              Editar
-            </Link>
             <button className="ghost-button" type="button" onClick={() => onDuplicate(topic)}>
               <Copy size={17} />
               Duplicar

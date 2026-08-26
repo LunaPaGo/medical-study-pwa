@@ -50,14 +50,12 @@ export function TopicDetailPage() {
             <FileDown size={18} />
             {wordExport.isExporting ? 'Exportando...' : 'Exportar a Word'}
           </button>
-          {isReadOnly ? (
-            <span className="notice warning readonly-inline">Modo sin conexión: solo lectura.</span>
-          ) : (
+          <Link className="ghost-button" to={`/temas/${topic.id}/editar`}>
+            <Edit3 size={18} />
+            Editar
+          </Link>
+          {!isReadOnly && (
             <>
-              <Link className="ghost-button" to={`/temas/${topic.id}/editar`}>
-                <Edit3 size={18} />
-                Editar
-              </Link>
               <button className="ghost-button" type="button" onClick={() => mutations.duplicateTopic.mutate(topic)}>
                 <Copy size={18} />
                 Duplicar

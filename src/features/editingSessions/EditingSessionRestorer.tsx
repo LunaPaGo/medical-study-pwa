@@ -10,12 +10,12 @@ export function EditingSessionRestorer() {
   const checkedRef = useRef(false);
 
   useEffect(() => {
-    if (!user?.id || checkedRef.current || isReadOnly) return;
+    if (!user?.id || checkedRef.current) return;
     checkedRef.current = true;
 
     getLatestEditingSessionForUser(user.id)
       .then((session) => {
-        if (!session) return;
+        if (!session || (isReadOnly && session.entity_type !== 'topic')) return;
         const currentRoute = `${location.pathname}${location.search}`;
         if (session.route && session.route !== currentRoute) {
           navigate(session.route, { replace: true });

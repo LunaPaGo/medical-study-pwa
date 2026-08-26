@@ -88,7 +88,7 @@ export function TopicFormPage() {
   const topicOwnerId = values.id ?? existing?.id ?? draftTopicId.current;
   const editingRoute = topicId ? `/temas/${topicId}/editar` : `/temas/nuevo?draftId=${encodeURIComponent(draftTopicId.current)}`;
   const { clearSession } = usePersistentEditingSession({
-    enabled: Boolean(user?.id) && !isReadOnly,
+    enabled: Boolean(user?.id),
     userId: user?.id,
     entityType: 'topic',
     entityId: topicId ?? null,
@@ -102,10 +102,6 @@ export function TopicFormPage() {
 
   if (!isLoading && topicId && !existing) {
     return <Navigate to="/temas" replace />;
-  }
-
-  if (isReadOnly) {
-    return <Navigate to={existing ? `/temas/${existing.id}` : '/temas'} replace />;
   }
 
   const update = <K extends keyof TopicFormValues>(key: K, value: TopicFormValues[K]) => {
@@ -184,7 +180,12 @@ export function TopicFormPage() {
             </select>
           </label>
           <label className="checkbox-label">
-            <input checked={values.is_favorite} type="checkbox" onChange={(event) => update('is_favorite', event.target.checked)} />
+            <input
+              checked={values.is_favorite}
+              disabled={isReadOnly}
+              type="checkbox"
+              onChange={(event) => update('is_favorite', event.target.checked)}
+            />
             <Star size={18} />
             Favorito
           </label>

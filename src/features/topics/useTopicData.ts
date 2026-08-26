@@ -36,7 +36,7 @@ export function useTopicMutations() {
   return {
     saveTopic: useMutation({
       mutationFn: ({ values, existing }: { values: TopicFormValues; existing?: TopicWithRelations }) => {
-        ensureWritable();
+        if (!user?.id) throw new Error('Se requiere una sesión local aprobada para guardar temas.');
         return saveTopic(user!.id, values, existing);
       },
       onSuccess: invalidate

@@ -151,15 +151,57 @@ function normalizeTopic(topic: Topic): { topic: Topic; wasConvertedFromHtml: boo
 
 async function enqueue(userId: string, entity: SyncEntity, action: SyncAction, payload: QueuedPayload) {
   const db = await localDbPromise;
-  await db.put('sync_queue', {
+  const item: SyncQueueItem = {
     id: generateId(),
     user_id: userId,
     entity,
     action,
     payload,
     created_at: nowIso()
-  });
+  };
+
+  if (entity === 'topic' && action === 'upsert') {
+    const topicId = (payload as TopicPayload).topic.id;
+    const tx = db.transaction('sync_queue', 'readwrite');
+    const queuedItems = await tx.store.index('user_id').getAll(userId);
+    const redundantUpserts = queuedItems.filter(
+      (queuedItem) =>
+        queuedItem.entity === 'topic' &&
+        queuedItem.action === 'upsert' &&
+        (queuedItem.payload as TopicPayload).topic.id === topicId
+    );
+    await Promise.all(redundantUpserts.map((queuedItem) => tx.store.delete(queuedItem.id)));
+    await tx.store.put(item);
+    await tx.done;
+  } else {
+    await db.put('sync_queue', item);
+  }
   emitSyncQueueChanged();
+}
+
+async function getPendingTopicIds(userId: string) {
+  const db = await localDbPromise;
+  const queuedItems = await db.getAllFromIndex('sync_queue', 'user_id', userId);
+  return new Set(
+    queuedItems
+      .filter((item) => item.entity === 'topic' && item.action === 'upsert')
+      .map((item) => (item.payload as TopicPayload).topic.id)
+  );
+}
+
+async function clearQueuedTopicUpserts(userId: string, topicId: string) {
+  const db = await localDbPromise;
+  const tx = db.transaction('sync_queue', 'readwrite');
+  const queuedItems = await tx.store.index('user_id').getAll(userId);
+  const matchingItems = queuedItems.filter(
+    (item) =>
+      item.entity === 'topic' &&
+      item.action === 'upsert' &&
+      (item.payload as TopicPayload).topic.id === topicId
+  );
+  await Promise.all(matchingItems.map((item) => tx.store.delete(item.id)));
+  await tx.done;
+  if (matchingItems.length > 0) emitSyncQueueChanged();
 }
 
 async function getByUser<T extends { user_id: string }>(
@@ -189,6 +231,7 @@ async function replaceTopicTags(topicId: string, userId: string, tagIds: string[
 }
 
 async function cacheRemoteData(userId: string) {
+  const pendingTopicIds = await getPendingTopicIds(userId);
   const [topicsResult, foldersResult, categoriesResult, tagsResult, topicTagsResult, topicRelationsResult, topicAttachmentsResult, attachmentsResult] = await Promise.all([
     supabase.from('topics').select('*').eq('user_id', userId),
     supabase.from('folders').select('*').eq('user_id', userId),
@@ -217,12 +260,18 @@ async function cacheRemoteData(userId: string) {
   const db = await localDbPromise;
   const tx = db.transaction(['topics', 'folders', 'categories', 'tags', 'topic_tags', 'topic_relations', 'topic_attachments', 'attachments'], 'readwrite');
 
-  const normalizedTopics = (topicsResult.data ?? []).map((item) => normalizeTopic(item as Topic));
+  const normalizedTopics = (topicsResult.data ?? [])
+    .map((item) => normalizeTopic(item as Topic))
+    .filter((item) => !pendingTopicIds.has(item.topic.id));
   await Promise.all(normalizedTopics.map((item) => tx.objectStore('topics').put(item.topic)));
   await Promise.all((foldersResult.data ?? []).map((item) => tx.objectStore('folders').put(item as Folder)));
   await Promise.all((categoriesResult.data ?? []).map((item) => tx.objectStore('categories').put(item as Category)));
   await Promise.all((tagsResult.data ?? []).map((item) => tx.objectStore('tags').put(item as Tag)));
-  await Promise.all((topicTagsResult.data ?? []).map((item) => tx.objectStore('topic_tags').put(item as TopicTag)));
+  await Promise.all(
+    (topicTagsResult.data ?? [])
+      .filter((item) => !pendingTopicIds.has((item as TopicTag).topic_id))
+      .map((item) => tx.objectStore('topic_tags').put(item as TopicTag))
+  );
   await Promise.all((topicRelationsResult.data ?? []).map((item) => tx.objectStore('topic_relations').put(item as TopicRelation)));
   await Promise.all((topicAttachmentsResult.data ?? []).map((item) => tx.objectStore('topic_attachments').put(item as TopicAttachment)));
   await Promise.all((attachmentsResult.data ?? []).map((item) => tx.objectStore('attachments').put({ ...(item as Attachment), sync_status: 'synced' })));
@@ -377,6 +426,7 @@ export async function saveTopic(userId: string, values: TopicFormValues, existin
   if (navigator.onLine) {
     try {
       await pushTopicToSupabase(payload);
+      await clearQueuedTopicUpserts(userId, topic.id);
     } catch {
       await enqueue(userId, 'topic', 'upsert', payload);
     }
@@ -639,7 +689,20 @@ export async function flushSyncQueue(userId: string, options: { forceRetry?: boo
         last_error: serializeSyncError(errorInfo),
         retry_after: retryAfter
       };
-      await db.put('sync_queue', failedItem);
+      if (item.entity === 'topic' && item.action === 'upsert') {
+        const topicId = (item.payload as TopicPayload).topic.id;
+        const queuedItems = await db.getAllFromIndex('sync_queue', 'user_id', userId);
+        const hasNewerTopicState = queuedItems.some(
+          (queuedItem) =>
+            queuedItem.id !== item.id &&
+            queuedItem.entity === 'topic' &&
+            queuedItem.action === 'upsert' &&
+            (queuedItem.payload as TopicPayload).topic.id === topicId
+        );
+        if (!hasNewerTopicState) await db.put('sync_queue', failedItem);
+      } else {
+        await db.put('sync_queue', failedItem);
+      }
       logSyncStep('remote_attempt_error', {
         id: item.id,
         entity: item.entity,
