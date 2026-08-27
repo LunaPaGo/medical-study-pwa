@@ -8,6 +8,7 @@ import { VaccinationCalculator } from './pediatrics/VaccinationCalculator';
 import { GlasgowComaScaleCalculator } from './tools/GlasgowComaScaleCalculator';
 import { IdealBodyWeightCalculator } from './anesthesiology/IdealBodyWeightCalculator';
 import { MeanArterialPressureCalculator } from './cardiovascular/MeanArterialPressureCalculator';
+import { ModifiedTalScoreCalculator } from './pediatrics/ModifiedTalScoreCalculator';
 import { PafiCalculator } from './respiratory/PafiCalculator';
 import { PediatricEndotrachealTubeCalculator } from './pediatrics/PediatricEndotrachealTubeCalculator';
 import { QsofaCalculator } from './tools/QsofaCalculator';
@@ -117,6 +118,11 @@ export const calculatorCategories: CalculatorCategory[] = [
         id: 'gestational-age',
         title: 'Edad gestacional',
         component: GestationalAgeCalculator
+      },
+      {
+        id: 'modified-tal-score',
+        title: 'Puntaje de Tal modificado',
+        component: ModifiedTalScoreCalculator
       },
       {
         id: 'argentina-national-vaccination-schedule',
