@@ -384,7 +384,9 @@ async function pushAttachmentToSupabase(payload: AttachmentPayload) {
   if (payload.link) {
     const link = payload.link;
     await runAttachmentSyncStage(`db:attachment_links:${payload.attachment.id}:${link.owner_type}:${link.owner_id}`, async () => {
-      const { error: linkError } = await supabase.from('attachment_links').upsert(link);
+      const { error: linkError } = await supabase
+        .from('attachment_links')
+        .upsert(link, { onConflict: 'attachment_id,owner_type,owner_id', ignoreDuplicates: true });
       if (linkError) throw linkError;
     });
   }
