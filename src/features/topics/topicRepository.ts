@@ -1,4 +1,5 @@
 import { supabase } from '../../services/supabase';
+import { withTimeout } from '../../services/connectivity';
 import { localDbPromise } from '../../storage/localDb';
 import type { Attachment, TopicAttachment } from '../../types/attachment';
 import type { Json } from '../../types/database';
@@ -390,7 +391,13 @@ async function pushTopicToSupabase(payload: TopicPayload) {
   }
 }
 
-export async function saveTopic(userId: string, values: TopicFormValues, existing?: Topic) {
+export async function saveTopic(
+  userId: string,
+  values: TopicFormValues,
+  existing?: Topic,
+  options: { shouldSyncRemote?: boolean } = {}
+) {
+  const shouldSyncRemote = options.shouldSyncRemote ?? navigator.onLine;
   const timestamp = nowIso();
   const topic: Topic = {
     id: existing?.id ?? values.id ?? generateId(),
@@ -418,22 +425,30 @@ export async function saveTopic(userId: string, values: TopicFormValues, existin
     updated_at: timestamp
   };
 
+  if (import.meta.env.DEV) console.info('topic-save:local-write-start', { topicId: topic.id });
   const db = await localDbPromise;
   await db.put('topics', topic);
   await replaceTopicTags(topic.id, userId, values.tag_ids);
+  if (import.meta.env.DEV) console.info('topic-save:local-write-success', { topicId: topic.id });
 
   const payload = { topic, tagIds: values.tag_ids };
-  if (navigator.onLine) {
+  if (shouldSyncRemote) {
     try {
-      await pushTopicToSupabase(payload);
+      await withTimeout(pushTopicToSupabase(payload), 4500, 'TOPIC_REMOTE_SAVE');
       await clearQueuedTopicUpserts(userId, topic.id);
     } catch {
+      if (import.meta.env.DEV) console.info('topic-save:queue-start', { topicId: topic.id });
       await enqueue(userId, 'topic', 'upsert', payload);
+      if (import.meta.env.DEV) console.info('topic-save:queue-success', { topicId: topic.id });
     }
   } else {
+    if (import.meta.env.DEV) console.info('topic-save:remote-skipped-offline', { topicId: topic.id });
+    if (import.meta.env.DEV) console.info('topic-save:queue-start', { topicId: topic.id });
     await enqueue(userId, 'topic', 'upsert', payload);
+    if (import.meta.env.DEV) console.info('topic-save:queue-success', { topicId: topic.id });
   }
 
+  if (import.meta.env.DEV) console.info('topic-save:mutation-resolved', { topicId: topic.id });
   return topic;
 }
 

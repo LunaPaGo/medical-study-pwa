@@ -16,11 +16,11 @@ import {
 export const topicDataKey = ['topic-data'];
 
 export function useTopicData() {
-  const { user } = useAuth();
+  const { user, isReadOnly } = useAuth();
 
   return useQuery({
     queryKey: [...topicDataKey, user?.id],
-    queryFn: () => loadTopicData(user!.id),
+    queryFn: () => loadTopicData(user!.id, !isReadOnly && navigator.onLine),
     enabled: Boolean(user?.id)
   });
 }
@@ -29,6 +29,9 @@ export function useTopicMutations() {
   const { user, isReadOnly } = useAuth();
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: topicDataKey });
+  const invalidateInBackground = () => {
+    void invalidate();
+  };
   const ensureWritable = () => {
     if (isReadOnly) throw new Error('Modo sin conexión: solo lectura.');
   };
@@ -37,9 +40,11 @@ export function useTopicMutations() {
     saveTopic: useMutation({
       mutationFn: ({ values, existing }: { values: TopicFormValues; existing?: TopicWithRelations }) => {
         if (!user?.id) throw new Error('Se requiere una sesión local aprobada para guardar temas.');
-        return saveTopic(user!.id, values, existing);
+        return saveTopic(user!.id, values, existing, {
+          shouldSyncRemote: !isReadOnly && navigator.onLine
+        });
       },
-      onSuccess: invalidate
+      onSuccess: invalidateInBackground
     }),
     deleteTopic: useMutation({
       mutationFn: (topicId: string) => {

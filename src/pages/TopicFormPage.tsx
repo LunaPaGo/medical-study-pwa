@@ -110,6 +110,8 @@ export function TopicFormPage() {
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (import.meta.env.DEV) console.info('topic-save:submit-start');
+    setError('');
     const parsed = topicSchema.safeParse(values);
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? 'Revisá los datos del tema.');
@@ -122,7 +124,12 @@ export function TopicFormPage() {
         onSuccess(topic) {
           markSaved(parsed.data);
           void clearSession();
+          if (import.meta.env.DEV) console.info('topic-save:navigation', { topicId: topic.id });
           navigate(`/temas/${topic.id}`);
+        },
+        onError(saveError) {
+          if (import.meta.env.DEV) console.error('topic-save:error', saveError);
+          setError('No se pudo guardar el tema localmente. Tus cambios permanecen en esta sesión de edición.');
         }
       }
     );
