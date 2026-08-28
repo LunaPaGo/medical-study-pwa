@@ -1,7 +1,8 @@
-import { ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, FileJson, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { DecisionEdge, DecisionNode, DecisionNodeType, DecisionTree } from './clinicalApproachTypes';
 import { isDuplicateDecisionEdge, validateDecisionTree } from './decisionTreeValidation';
+import { DecisionTreeImportDialog } from './DecisionTreeImportDialog';
 
 const nodeTypes: Array<{ value: DecisionNodeType; label: string }> = [
   { value: 'start', label: 'Inicio' }, { value: 'question', label: 'Pregunta / decisión' }, { value: 'action', label: 'Acción' },
@@ -15,6 +16,7 @@ export function DecisionTreeEditor({ value, onChange }: { value: DecisionTree; o
   const [to, setTo] = useState('');
   const [label, setLabel] = useState('');
   const [operationError, setOperationError] = useState('');
+  const [showImporter, setShowImporter] = useState(false);
   const validation = validateDecisionTree(value);
   const start = value.nodes.find((node) => node.type === 'start');
   const nodeOption = (node: DecisionNode) => `${typeLabel(node.type)} · ${node.title.trim() || 'Sin título'}`;
@@ -54,7 +56,7 @@ export function DecisionTreeEditor({ value, onChange }: { value: DecisionTree; o
   };
 
   return <section className="approach-editor-shell decision-tree-editor">
-    <div><h2>Razonamiento / árbol de decisión</h2><p>La estructura clínica se define mediante nodos y conexiones serializables, sin depender de una representación gráfica.</p></div>
+    <div className="decision-tree-editor-title"><div><h2>Razonamiento / árbol de decisión</h2><p>La estructura clínica se define mediante nodos y conexiones serializables, sin depender de una representación gráfica.</p></div><button className="ghost-button" type="button" onClick={() => setShowImporter(true)}><FileJson size={17} />Importar algoritmo</button></div>
     {(validation.errors.length > 0 || validation.warnings.length > 0) && <div className="decision-tree-validation">{validation.errors.map((issue, index) => <span className="error" key={`error-${issue.code}-${index}`}>{issue.message}</span>)}{validation.warnings.map((issue, index) => <span className="warning" key={`warning-${issue.code}-${index}`}>{issue.message}</span>)}</div>}
     {operationError && <div className="notice error">{operationError}</div>}
     <section className="decision-tree-editor-area"><div className="decision-tree-editor-heading"><div><h3>Nodos</h3><p>Inicio, decisiones, acciones, alertas y destinos.</p></div><button className="secondary-button" type="button" onClick={addNode}><Plus size={17} />Agregar nodo</button></div>
@@ -74,5 +76,6 @@ export function DecisionTreeEditor({ value, onChange }: { value: DecisionTree; o
       {value.edges.length === 0 && <p className="decision-tree-empty">Todavía no agregaste conexiones.</p>}
       <div className="decision-edge-editor-list">{value.edges.map((edge) => <article key={edge.id}><label>Desde<select value={edge.from} onChange={(event) => updateEdge(edge.id, { from: event.target.value })}>{!value.nodes.some((node) => node.id === edge.from) && <option value={edge.from}>Nodo inexistente</option>}{value.nodes.map((node) => <option key={node.id} value={node.id}>{nodeOption(node)}</option>)}</select></label><label>Hacia<select value={edge.to} onChange={(event) => updateEdge(edge.id, { to: event.target.value })}>{!value.nodes.some((node) => node.id === edge.to) && <option value={edge.to}>Nodo inexistente</option>}{value.nodes.map((node) => <option key={node.id} value={node.id}>{nodeOption(node)}</option>)}</select></label><label>Etiqueta<input value={edge.label ?? ''} onChange={(event) => updateEdge(edge.id, { label: event.target.value || undefined })} /></label><button className="ghost-button danger-action" type="button" onClick={() => onChange({ ...value, edges: value.edges.filter((candidate) => candidate.id !== edge.id) })}><Trash2 size={16} />Eliminar</button></article>)}</div>
     </section>
+    {showImporter && <DecisionTreeImportDialog currentTree={value} onImport={(tree) => { setOperationError(''); onChange(tree); }} onClose={() => setShowImporter(false)} />}
   </section>;
 }
