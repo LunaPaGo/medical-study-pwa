@@ -8,6 +8,7 @@ import { RichTextEditor } from '../features/topics/RichTextEditor';
 import { ReasoningSectionEditor } from '../features/approaches/ReasoningSectionEditor';
 import { DifferentialDiagnosisEditor } from '../features/approaches/DifferentialDiagnosisEditor';
 import { ComplementaryStudiesEditor } from '../features/approaches/ComplementaryStudiesEditor';
+import { DispositionEditor } from '../features/approaches/DispositionEditor';
 import { useAuth } from '../hooks/useAuth';
 
 function ApproachEditorForm({ initial }: { initial: ClinicalApproach }) {
@@ -41,7 +42,8 @@ function ApproachEditorForm({ initial }: { initial: ClinicalApproach }) {
       <ReasoningSectionEditor title="Examen físico dirigido" titleLabel="Qué buscar" contentLabel="Desarrollo" addLabel="Agregar hallazgo / elemento" items={content.physicalExam} onChange={(physicalExam) => setContent((current) => ({ ...current, physicalExam }))} />
       <DifferentialDiagnosisEditor value={content.differentialDiagnosis} onChange={(differentialDiagnosis) => setContent((current) => ({ ...current, differentialDiagnosis }))} />
       <ComplementaryStudiesEditor studies={content.complementaryStudies} onChange={(complementaryStudies) => setContent((current) => ({ ...current, complementaryStudies }))} />
-      <section className="approach-editor-shell"><div><h2>Secciones estructuradas</h2><p>Se conserva su modelo completo aunque todavía no tengan editores especializados.</p></div><ol>{clinicalApproachSections.filter((section) => !['presentation', 'initial-assessment', 'life-threats', 'anamnesis', 'physical-exam', 'differential-diagnosis', 'complementary-studies', 'initial-treatment', 'reassessment', 'warnings-and-instructions', 'common-errors', 'clinical-pearls'].includes(section.id)).map((section) => <li key={section.id}><span>{section.title}</span><small>Estructura preparada</small></li>)}</ol></section>
+      <DispositionEditor value={content.disposition} onChange={(disposition) => setContent((current) => ({ ...current, disposition }))} />
+      <section className="approach-editor-shell"><div><h2>Secciones estructuradas</h2><p>Se conserva su modelo completo aunque todavía no tengan editores especializados.</p></div><ol>{clinicalApproachSections.filter((section) => !['presentation', 'initial-assessment', 'life-threats', 'anamnesis', 'physical-exam', 'differential-diagnosis', 'complementary-studies', 'initial-treatment', 'reassessment', 'disposition', 'warnings-and-instructions', 'common-errors', 'clinical-pearls'].includes(section.id)).map((section) => <li key={section.id}><span>{section.title}</span><small>Estructura preparada</small></li>)}</ol></section>
       {error && <div className="notice error">{error}</div>}
       <div className="form-actions"><button className="primary-button" type="submit" disabled={mutations.save.isPending}>{mutations.save.isPending ? 'Guardando localmente...' : 'Guardar abordaje'}</button><button className="ghost-button" type="button" disabled={mutations.save.isPending} onClick={() => navigate('/abordajes')}>Cancelar</button></div>
     </form>

@@ -2,7 +2,8 @@ import { ArrowRight } from 'lucide-react';
 import { TopicContentViewer } from '../topics/TopicContentViewer';
 import { clinicalApproachSections, type ClinicalApproachSectionId } from './clinicalApproachCatalog';
 import { hasClinicalApproachSection } from './clinicalApproachContent';
-import type { ClinicalApproachContent, ClinicalApproachViewMode, DifferentialDiagnosisItem, ReasoningItem, RichTextBlock } from './clinicalApproachTypes';
+import type { ClinicalApproachContent, ClinicalApproachViewMode, DifferentialDiagnosisItem, DispositionContent, ReasoningItem, RichTextBlock } from './clinicalApproachTypes';
+import { isEmptyTipTapDocument } from '../topics/tiptapDocument';
 
 function RichText({ document }: { document: RichTextBlock }) {
   return <TopicContentViewer content={document} />;
@@ -32,6 +33,17 @@ function ComplementaryStudies({ studies, mode }: { studies: ClinicalApproachCont
   </details>)}</div>;
 }
 
+const dispositionBranches: Array<{ key: keyof DispositionContent; title: string; variant: string }> = [
+  { key: 'discharge', title: 'Alta', variant: 'discharge' },
+  { key: 'admission', title: 'Internación', variant: 'admission' },
+  { key: 'criticalCare', title: 'Cuidados críticos', variant: 'critical' },
+  { key: 'referral', title: 'Derivación / interconsulta', variant: 'referral' }
+];
+
+function DispositionView({ disposition, mode }: { disposition: DispositionContent; mode: ClinicalApproachViewMode }) {
+  return <div className="approach-disposition-list">{dispositionBranches.filter((branch) => !isEmptyTipTapDocument(disposition[branch.key])).map((branch) => <details className={`approach-disposition-branch disposition-${branch.variant}`} key={branch.key} open={mode === 'quick'}><summary>{branch.title}</summary><div className="approach-disposition-body"><RichText document={disposition[branch.key]} /></div></details>)}</div>;
+}
+
 function SectionBody({ id, content, mode }: { id: ClinicalApproachSectionId; content: ClinicalApproachContent; mode: ClinicalApproachViewMode }) {
   switch (id) {
     case 'presentation': return <RichText document={content.presentation} />;
@@ -44,7 +56,7 @@ function SectionBody({ id, content, mode }: { id: ClinicalApproachSectionId; con
     case 'decision-tree': return <div className="approach-tree-placeholder">{content.decisionTree.nodes.map((node, index) => <div key={node.id} className={`approach-tree-node ${node.type}`}><span>{node.type}</span><strong>{node.title}</strong>{index < content.decisionTree.nodes.length - 1 && <ArrowRight size={18} aria-hidden="true" />}</div>)}</div>;
     case 'initial-treatment': return <RichText document={content.initialTreatment} />;
     case 'reassessment': return <RichText document={content.reassessment} />;
-    case 'disposition': return <div className="approach-disposition-grid"><article><strong>Alta</strong><RichText document={content.disposition.discharge} /></article><article><strong>Internación</strong><RichText document={content.disposition.admission} /></article><article><strong>Cuidados críticos</strong><RichText document={content.disposition.criticalCare} /></article><article><strong>Derivación / interconsulta</strong><RichText document={content.disposition.referral} /></article></div>;
+    case 'disposition': return <DispositionView disposition={content.disposition} mode={mode} />;
     case 'warnings-and-instructions': return <RichText document={content.warningsAndInstructions} />;
     case 'common-errors': return <RichText document={content.commonErrors} />;
     case 'clinical-pearls': return <RichText document={content.clinicalPearls} />;

@@ -1814,6 +1814,93 @@ button:disabled,
   justify-content: flex-end;
 }
 
+.disposition-editor-list,
+.approach-disposition-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.disposition-editor-branch,
+.approach-disposition-branch {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.disposition-editor-summary {
+  display: flex;
+  width: 100%;
+  min-height: var(--input-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+}
+
+.disposition-editor-summary[aria-expanded="true"] > svg {
+  transform: rotate(180deg);
+}
+
+.disposition-editor-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.disposition-editor-title > span {
+  display: grid;
+  gap: 2px;
+}
+
+.disposition-editor-title small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.disposition-editor-body {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  border-top: 1px solid var(--line);
+  padding: var(--space-4);
+}
+
+.disposition-editor-body > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--small-text-size);
+}
+
+.disposition-editor-body .rich-editor-content {
+  min-height: 170px;
+}
+
+.disposition-discharge {
+  border-left-color: color-mix(in srgb, var(--primary) 55%, var(--line));
+}
+
+.disposition-admission {
+  border-left-color: color-mix(in srgb, var(--warning) 55%, var(--line));
+}
+
+.disposition-critical {
+  border-left-color: color-mix(in srgb, var(--danger) 70%, var(--line));
+  background: color-mix(in srgb, var(--danger) 4%, var(--surface));
+}
+
+.disposition-referral {
+  border-left-color: color-mix(in srgb, var(--muted) 70%, var(--line));
+  background: var(--surface-muted);
+}
+
 .approach-reader {
   display: grid;
   gap: var(--space-7);
@@ -1966,15 +2053,13 @@ button:disabled,
   padding: var(--space-3) var(--space-4);
 }
 
-.approach-differential-grid,
-.approach-disposition-grid {
+.approach-differential-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4);
 }
 
 .approach-differential-group,
-.approach-disposition-grid article,
 .approach-study-item {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -2068,8 +2153,15 @@ button:disabled,
   text-transform: uppercase;
 }
 
-.approach-disposition-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.approach-disposition-branch summary {
+  cursor: pointer;
+  padding: var(--space-3) var(--space-4);
+  font-weight: 800;
+}
+
+.approach-disposition-body {
+  border-top: 1px solid var(--line);
+  padding: var(--space-3) var(--space-4);
 }
 
 .approach-related-list span {
@@ -2140,7 +2232,6 @@ button:disabled,
     padding: 0 var(--space-4);
   }
 
-  .approach-disposition-grid,
   .approach-editor-shell ol {
     grid-template-columns: 1fr;
   }
