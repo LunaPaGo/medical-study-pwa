@@ -1544,6 +1544,25 @@ button:disabled,
   color: var(--muted);
 }
 
+.approach-rich-editor-stack {
+  display: grid;
+  gap: var(--space-7);
+}
+
+.approach-rich-editor-stack > section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.approach-rich-editor-stack h3 {
+  margin: 0;
+  font-size: var(--card-title-size);
+}
+
+.approach-rich-editor-stack .rich-editor-content {
+  min-height: 220px;
+}
+
 .approach-reader {
   display: grid;
   gap: var(--space-7);

@@ -1,7 +1,8 @@
-import type { ClinicalApproachContent } from './clinicalApproachTypes';
+import type { ClinicalApproachContent, RichTextBlock } from './clinicalApproachTypes';
 
 export type ClinicalApproachSectionId = 'presentation' | 'initial-assessment' | 'life-threats' | 'anamnesis' | 'physical-exam' | 'differential-diagnosis' | 'complementary-studies' | 'decision-tree' | 'initial-treatment' | 'reassessment' | 'disposition' | 'warnings-and-instructions' | 'common-errors' | 'clinical-pearls' | 'related-content';
 export type ClinicalApproachSection = { id: ClinicalApproachSectionId; title: string; quick: boolean };
+export type ClinicalApproachRichTextKey = { [K in keyof ClinicalApproachContent]: ClinicalApproachContent[K] extends RichTextBlock ? K : never }[keyof ClinicalApproachContent];
 
 export const clinicalApproachSections: ClinicalApproachSection[] = [
   { id: 'presentation', title: 'Presentación clínica', quick: false },
@@ -19,6 +20,17 @@ export const clinicalApproachSections: ClinicalApproachSection[] = [
   { id: 'common-errors', title: 'Errores frecuentes', quick: false },
   { id: 'clinical-pearls', title: 'Perlas clínicas', quick: false },
   { id: 'related-content', title: 'Contenido relacionado', quick: false }
+];
+
+export const clinicalApproachRichTextSections: Array<{ key: ClinicalApproachRichTextKey; title: string }> = [
+  { key: 'presentation', title: 'Presentación clínica' },
+  { key: 'initialAssessment', title: 'Evaluación inicial y estabilidad' },
+  { key: 'lifeThreats', title: 'Amenazas vitales' },
+  { key: 'initialTreatment', title: 'Tratamiento inicial' },
+  { key: 'reassessment', title: 'Reevaluación' },
+  { key: 'warningsAndInstructions', title: 'Indicaciones y pautas de alarma' },
+  { key: 'commonErrors', title: 'Errores frecuentes' },
+  { key: 'clinicalPearls', title: 'Perlas clínicas' }
 ];
 
 export function isClinicalApproachContent(value: unknown): value is ClinicalApproachContent {

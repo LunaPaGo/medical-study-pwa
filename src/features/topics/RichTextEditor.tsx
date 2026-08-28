@@ -1,4 +1,4 @@
-import { ChangeEvent, DragEvent, ClipboardEvent, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Highlight from '@tiptap/extension-highlight';
@@ -15,7 +15,6 @@ import {
   Heading1,
   Heading2,
   Highlighter,
-  Image as ImageIcon,
   Italic,
   Link as LinkIcon,
   List,
@@ -25,18 +24,10 @@ import {
   Table as TableIcon,
   Underline as UnderlineIcon
 } from 'lucide-react';
-import type { Attachment, AttachmentOwnerType } from '../../types/attachment';
+import type { AttachmentOwnerType } from '../../types/attachment';
 import type { TipTapDocument } from '../../types/topic';
 import { MedicalImageNode } from '../attachments/MedicalImageNode';
-import {
-  getAttachmentDisplayUrl,
-  isImageAttachment,
-  linkAttachmentToMedication,
-  linkAttachmentToProcedure,
-  linkAttachmentToTopic
-} from '../attachments/attachmentRepository';
-import { useAuth } from '../../hooks/useAuth';
-import { useAttachmentMutations, useAttachments } from '../attachments/useAttachments';
+import { RichTextAttachmentSupport, type RichTextAttachmentRenderState } from './RichTextAttachmentSupport';
 import {
   isRichTextLineSpacing,
   LineSpacingExtension,
@@ -48,17 +39,11 @@ type Props = {
   value: TipTapDocument;
   onChange: (value: { json: TipTapDocument; html: string }) => void;
   owner?: { ownerType: AttachmentOwnerType; ownerId: string };
+  attachmentsEnabled?: boolean;
 };
 
-export function RichTextEditor({ value, onChange, owner }: Props) {
-  const imageInputRef = useRef<HTMLInputElement | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+export function RichTextEditor({ value, onChange, owner, attachmentsEnabled = Boolean(owner) }: Props) {
   const lastEmittedContentRef = useRef('');
-  const { user } = useAuth();
-  const { data: attachments = [] } = useAttachments();
-  const attachmentMutations = useAttachmentMutations();
-  const [showLibrary, setShowLibrary] = useState(false);
-  const [isDraggingImage, setIsDraggingImage] = useState(false);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -70,7 +55,7 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
       TableRow,
       TableHeader,
       TableCell,
-      MedicalImageNode,
+      ...(attachmentsEnabled ? [MedicalImageNode] : []),
       LineSpacingExtension
     ],
     content: value,
@@ -102,67 +87,6 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
 
   if (!editor) return null;
 
-  const insertAttachmentImage = async (attachment: Attachment, options: { linkOwner?: boolean } = {}) => {
-    if (!isImageAttachment(attachment)) return;
-    const shouldLinkOwner = options.linkOwner ?? true;
-    if (shouldLinkOwner) {
-      if (owner?.ownerType === 'topic' && user?.id) {
-        await linkAttachmentToTopic(user.id, owner.ownerId, attachment.id);
-      }
-      if (owner?.ownerType === 'medication' && user?.id) {
-        await linkAttachmentToMedication(user.id, owner.ownerId, attachment.id);
-      }
-      if (owner?.ownerType === 'procedure' && user?.id) {
-        await linkAttachmentToProcedure(user.id, owner.ownerId, attachment.id);
-      }
-    }
-    const displayUrl = await getAttachmentDisplayUrl(attachment).catch(() => '');
-    editor
-      .chain()
-      .focus()
-      .insertContent({
-        type: 'medicalImage',
-        attrs: {
-          attachmentId: attachment.id,
-          src: displayUrl,
-          alt: attachment.filename,
-          title: attachment.filename,
-          align: 'center',
-          width: '100%',
-          caption: ''
-        }
-      })
-      .run();
-  };
-
-  const uploadAndInsertImage = async (file: File) => {
-    const attachment = await attachmentMutations.upload.mutateAsync({ file, owner });
-    await insertAttachmentImage(attachment, { linkOwner: false });
-  };
-
-  const uploadImage = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (file) {
-      uploadAndInsertImage(file).catch(() => undefined);
-    }
-  };
-
-  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
-    const imageFile = Array.from(event.dataTransfer.files).find((file) => file.type.startsWith('image/'));
-    if (!imageFile) return;
-    event.preventDefault();
-    setIsDraggingImage(false);
-    uploadAndInsertImage(imageFile).catch(() => undefined);
-  };
-
-  const handlePaste = (event: ClipboardEvent<HTMLDivElement>) => {
-    const imageFile = Array.from(event.clipboardData.files).find((file) => file.type.startsWith('image/'));
-    if (!imageFile) return;
-    event.preventDefault();
-    uploadAndInsertImage(imageFile).catch(() => undefined);
-  };
-
   const setLink = () => {
     const previousUrl = editor.getAttributes('link').href as string | undefined;
     const url = window.prompt('Pegá el enlace', previousUrl ?? 'https://');
@@ -172,10 +96,6 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
       return;
     }
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-  };
-
-  const insertImagePlaceholder = () => {
-    imageInputRef.current?.click();
   };
 
   const activeLineSpacing = lineSpacingNodeTypes
@@ -192,21 +112,9 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
       .run();
   };
 
-  return (
-    <div
-      className={`rich-editor ${isDraggingImage ? 'dragging' : ''}`}
-      onDragOver={(event) => {
-        if (Array.from(event.dataTransfer.items).some((item) => item.type.startsWith('image/'))) {
-          event.preventDefault();
-          setIsDraggingImage(true);
-        }
-      }}
-      onDragLeave={() => setIsDraggingImage(false)}
-      onDrop={handleDrop}
-      onPaste={handlePaste}
-    >
-      <input ref={imageInputRef} hidden accept="image/*" type="file" onChange={uploadImage} />
-      <input ref={cameraInputRef} hidden accept="image/*" capture="environment" type="file" onChange={uploadImage} />
+  const renderEditor = (attachmentSupport?: RichTextAttachmentRenderState) => (
+    <div className={`rich-editor ${attachmentSupport?.containerClassName ?? ''}`} {...attachmentSupport?.containerEvents}>
+      {attachmentSupport?.inputs}
       <div className="editor-toolbar" aria-label="Herramientas del editor">
         <button type="button" title="Título" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
           <Heading1 size={18} />
@@ -262,53 +170,14 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
         <button type="button" title="Separador" onClick={() => editor.chain().focus().setHorizontalRule().run()}>
           <Minus size={18} />
         </button>
-        <button className="editor-text-button" type="button" title="Agregar imagen" onClick={insertImagePlaceholder}>
-          <ImageIcon size={18} />
-          Agregar imagen
-        </button>
-        <button className="editor-text-button" type="button" title="Tomar foto" onClick={() => cameraInputRef.current?.click()}>
-          <ImageIcon size={18} />
-          Cámara
-        </button>
-        <button className="editor-text-button" type="button" title="Elegir de biblioteca" onClick={() => setShowLibrary(true)}>
-          <ImageIcon size={18} />
-          Biblioteca
-        </button>
+        {attachmentSupport?.toolbar}
       </div>
       <EditorContent editor={editor} />
-      {isDraggingImage && <div className="editor-drop-hint">Soltá la imagen para insertarla en el tema</div>}
-      {showLibrary && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true">
-          <section className="preview-modal image-library-modal">
-            <div className="preview-header">
-              <div>
-                <strong>Elegir imagen de la biblioteca</strong>
-                <span>Se insertará en la posición actual del editor.</span>
-              </div>
-              <button className="ghost-button" type="button" onClick={() => setShowLibrary(false)}>
-                Cerrar
-              </button>
-            </div>
-            <div className="image-library-grid">
-              {attachments.filter(isImageAttachment).map((attachment) => (
-                <button
-                  key={attachment.id}
-                  className="library-image-option"
-                  type="button"
-                  onClick={() => {
-                    insertAttachmentImage(attachment)
-                      .then(() => setShowLibrary(false))
-                      .catch(() => undefined);
-                  }}
-                >
-                  <span>{attachment.filename}</span>
-                </button>
-              ))}
-              {attachments.filter(isImageAttachment).length === 0 && <p className="empty-state">Todavía no hay imágenes en la biblioteca.</p>}
-            </div>
-          </section>
-        </div>
-      )}
+      {attachmentSupport?.afterEditor}
     </div>
   );
+
+  if (!attachmentsEnabled) return renderEditor();
+
+  return <RichTextAttachmentSupport editor={editor} owner={owner}>{renderEditor}</RichTextAttachmentSupport>;
 }
