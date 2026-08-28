@@ -1,6 +1,6 @@
 export type TopicStatus = 'draft' | 'complete';
 export type TopicSort = 'updated_desc' | 'title_asc';
-export type SyncEntity = 'topic' | 'folder' | 'category' | 'tag' | 'attachment' | 'medication' | 'procedure';
+export type SyncEntity = 'topic' | 'folder' | 'category' | 'tag' | 'attachment' | 'medication' | 'procedure' | 'approach';
 export type SyncAction = 'upsert' | 'delete';
 export type TopicSectionKey = 'definition_epidemiology' | 'clinical' | 'diagnosis_criteria' | 'treatment_management' | 'differential_diagnosis';
 export type TopicRelationType =

@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import type { ClinicalApproach } from './clinicalApproachTypes';
-import { deleteClinicalApproachLocal, getClinicalApproach, listClinicalApproachCategories, listClinicalApproaches, saveClinicalApproach } from './clinicalApproachRepository';
+import { deleteClinicalApproachLocal, getClinicalApproach, listClinicalApproachCategories, loadClinicalApproaches, saveClinicalApproach } from './clinicalApproachRepository';
 
 export const clinicalApproachesKey = ['clinical-approaches-local'];
 
 export function useClinicalApproaches() {
   const { user } = useAuth();
-  return useQuery({ queryKey: [...clinicalApproachesKey, user?.id], queryFn: () => listClinicalApproaches(user!.id), enabled: Boolean(user?.id) });
+  return useQuery({ queryKey: [...clinicalApproachesKey, user?.id], queryFn: () => loadClinicalApproaches(user!.id), enabled: Boolean(user?.id) });
 }
 
 export function useClinicalApproach(id?: string) {
@@ -27,7 +27,7 @@ export function useClinicalApproachMutations() {
     if (!user?.id) throw new Error('Se requiere una sesión local aprobada para guardar abordajes.');
     return user.id;
   };
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: clinicalApproachesKey });
+  const invalidate = () => { void queryClient.invalidateQueries({ queryKey: clinicalApproachesKey }); };
   return {
     save: useMutation({ mutationFn: (approach: ClinicalApproach) => saveClinicalApproach(requireUser(), approach), onSuccess: invalidate }),
     remove: useMutation({ mutationFn: (id: string) => deleteClinicalApproachLocal(requireUser(), id), onSuccess: invalidate })

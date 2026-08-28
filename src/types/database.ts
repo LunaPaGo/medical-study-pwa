@@ -204,6 +204,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      approaches: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          category_id: string | null;
+          status: 'draft' | 'complete';
+          content_json: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string | null;
+          category_id?: string | null;
+          status?: 'draft' | 'complete';
+          content_json: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          description?: string | null;
+          category_id?: string | null;
+          status?: 'draft' | 'complete';
+          content_json?: Json;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       topic_tags: {
         Row: {
           topic_id: string;

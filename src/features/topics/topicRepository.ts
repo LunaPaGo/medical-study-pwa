@@ -22,6 +22,10 @@ import { getDocumentForTopic, getTopicDocument } from './tiptapDocument';
 import { cleanupOrphanedAttachmentSyncItems, flushAttachmentQueueItem } from '../attachments/attachmentRepository';
 import { flushMedicationQueueItem } from '../medications/medicationRepository';
 import { flushProcedureQueueItem } from '../procedures/procedureRepository';
+import {
+  flushClinicalApproachQueueItem,
+  type ClinicalApproachQueuePayload
+} from '../approaches/clinicalApproachRepository';
 import { topicSections } from './topicSectionCatalog';
 
 type OrganizationRecord = Folder | Category | Tag;
@@ -677,6 +681,8 @@ export async function flushSyncQueue(userId: string, options: { forceRetry?: boo
         await flushMedicationQueueItem(item);
       } else if (item.entity === 'procedure') {
         await flushProcedureQueueItem(item);
+      } else if (item.entity === 'approach') {
+        await flushClinicalApproachQueueItem(item);
       } else {
         const table = entityTables[item.entity];
         if (item.action === 'delete') {
@@ -715,6 +721,17 @@ export async function flushSyncQueue(userId: string, options: { forceRetry?: boo
             (queuedItem.payload as TopicPayload).topic.id === topicId
         );
         if (!hasNewerTopicState) await db.put('sync_queue', failedItem);
+      } else if (item.entity === 'approach' && item.action === 'upsert') {
+        const approachId = (item.payload as ClinicalApproachQueuePayload).approach.id;
+        const queuedItems = await db.getAllFromIndex('sync_queue', 'user_id', userId);
+        const hasNewerApproachState = queuedItems.some(
+          (queuedItem) =>
+            queuedItem.id !== item.id &&
+            queuedItem.entity === 'approach' &&
+            queuedItem.action === 'upsert' &&
+            (queuedItem.payload as ClinicalApproachQueuePayload).approach.id === approachId
+        );
+        if (!hasNewerApproachState) await db.put('sync_queue', failedItem);
       } else {
         await db.put('sync_queue', failedItem);
       }

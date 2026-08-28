@@ -17,6 +17,8 @@ export type ClinicalApproachRecordV1 = {
   content_json: ClinicalApproachContent;
   created_at: string;
   updated_at: string;
+  /** Local-only confirmation marker; never sent to Supabase. */
+  remote_synced_at?: string;
 };
 
 export function isClinicalApproachRecordV1(value: unknown): value is ClinicalApproachRecordV1 {
