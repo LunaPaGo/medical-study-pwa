@@ -1739,6 +1739,81 @@ button:disabled,
   justify-content: flex-end;
 }
 
+.complementary-studies-heading,
+.complementary-study-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.complementary-study-empty {
+  margin: 0;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  padding: var(--space-4);
+}
+
+.complementary-study-editor-list,
+.complementary-study-editor-body,
+.complementary-study-field {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.complementary-study-editor-item {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.complementary-study-summary {
+  display: flex;
+  width: 100%;
+  min-height: var(--input-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-weight: 750;
+}
+
+.complementary-study-summary[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.complementary-study-editor-body {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: var(--space-4);
+}
+
+.complementary-study-field {
+  border-left: 2px solid var(--line);
+  padding-left: var(--space-3);
+}
+
+.complementary-study-field > strong {
+  font-size: var(--small-text-size);
+}
+
+.complementary-study-field .rich-editor-content {
+  min-height: 150px;
+}
+
+.complementary-study-actions {
+  justify-content: flex-end;
+}
+
 .approach-reader {
   display: grid;
   gap: var(--space-7);
@@ -1900,14 +1975,14 @@ button:disabled,
 
 .approach-differential-group,
 .approach-disposition-grid article,
-.approach-study-list article {
+.approach-study-item {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: var(--space-4);
 }
 
 .approach-differential-group h3,
-.approach-study-list h3 {
+.approach-study-item summary {
   margin: 0 0 var(--space-3);
   font-size: 1rem;
 }
@@ -1948,14 +2023,26 @@ button:disabled,
   background: var(--surface-muted);
 }
 
-.approach-study-list article {
+.approach-study-item summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.approach-study-body {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4);
+  padding-top: var(--space-3);
 }
 
-.approach-study-list h3 {
-  grid-column: 1 / -1;
+.approach-study-body > div {
+  min-width: 0;
+  border-left: 2px solid var(--line);
+  padding-left: var(--space-3);
+}
+
+.approach-study-body > div > strong {
+  font-size: var(--small-text-size);
 }
 
 .approach-tree-placeholder {
@@ -2014,12 +2101,8 @@ button:disabled,
 @media (max-width: 920px) {
   .approach-list,
   .approach-differential-grid,
-  .approach-study-list article {
+  .approach-study-body {
     grid-template-columns: 1fr;
-  }
-
-  .approach-study-list h3 {
-    grid-column: auto;
   }
 
   .approach-layout {

@@ -22,6 +22,16 @@ function DifferentialGroup({ title, items, variant, mode }: { title: string; ite
     : items.map((item) => <details key={item.id}><summary>{item.title}</summary><RichText document={item.explanation} /></details>)}</div>;
 }
 
+function ComplementaryStudies({ studies, mode }: { studies: ClinicalApproachContent['complementaryStudies']; mode: ClinicalApproachViewMode }) {
+  return <div className="approach-study-list">{studies.map((study) => <details key={study.id} className="approach-study-item" open={mode === 'quick'}>
+    <summary>{study.name}</summary><div className="approach-study-body">
+      <div><strong>Cuándo pedirlo</strong><RichText document={study.whenToOrder} /></div>
+      <div><strong>Qué busco</strong><RichText document={study.targetFinding} /></div>
+      {mode === 'study' && <div><strong>Interpretación / utilidad</strong><RichText document={study.interpretation} /></div>}
+    </div>
+  </details>)}</div>;
+}
+
 function SectionBody({ id, content, mode }: { id: ClinicalApproachSectionId; content: ClinicalApproachContent; mode: ClinicalApproachViewMode }) {
   switch (id) {
     case 'presentation': return <RichText document={content.presentation} />;
@@ -30,7 +40,7 @@ function SectionBody({ id, content, mode }: { id: ClinicalApproachSectionId; con
     case 'anamnesis': return <ReasoningList items={content.anamnesis} mode={mode} />;
     case 'physical-exam': return <ReasoningList items={content.physicalExam} mode={mode} />;
     case 'differential-diagnosis': return <div className="approach-differential-grid"><DifferentialGroup title="Amenazas vitales" variant="critical" items={content.differentialDiagnosis.lifeThreatening} mode={mode} /><DifferentialGroup title="Diagnósticos frecuentes" variant="common" items={content.differentialDiagnosis.common} mode={mode} /><DifferentialGroup title="Según contexto" variant="contextual" items={content.differentialDiagnosis.contextual} mode={mode} /></div>;
-    case 'complementary-studies': return <div className="approach-study-list">{content.complementaryStudies.map((study) => <article key={study.id}><h3>{study.name}</h3><div><strong>Cuándo pedirlo</strong><RichText document={study.whenToOrder} /></div><div><strong>Qué busco</strong><RichText document={study.targetFinding} /></div><div><strong>Interpretación / utilidad</strong><RichText document={study.interpretation} /></div></article>)}</div>;
+    case 'complementary-studies': return <ComplementaryStudies studies={content.complementaryStudies} mode={mode} />;
     case 'decision-tree': return <div className="approach-tree-placeholder">{content.decisionTree.nodes.map((node, index) => <div key={node.id} className={`approach-tree-node ${node.type}`}><span>{node.type}</span><strong>{node.title}</strong>{index < content.decisionTree.nodes.length - 1 && <ArrowRight size={18} aria-hidden="true" />}</div>)}</div>;
     case 'initial-treatment': return <RichText document={content.initialTreatment} />;
     case 'reassessment': return <RichText document={content.reassessment} />;
