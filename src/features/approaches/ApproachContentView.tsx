@@ -3,7 +3,7 @@ import { clinicalApproachSections, type ClinicalApproachSectionId } from './clin
 import { hasClinicalApproachSection } from './clinicalApproachContent';
 import type { ClinicalApproachContent, ClinicalApproachViewMode, DifferentialDiagnosisItem, DispositionContent, ReasoningItem, RichTextBlock } from './clinicalApproachTypes';
 import { isEmptyTipTapDocument } from '../topics/tiptapDocument';
-import { DecisionTreeFullView } from './DecisionTreeFullView';
+import { DecisionTreeRunner } from './DecisionTreeRunner';
 
 function RichText({ document }: { document: RichTextBlock }) {
   return <TopicContentViewer content={document} />;
@@ -53,7 +53,7 @@ function SectionBody({ id, content, mode }: { id: ClinicalApproachSectionId; con
     case 'physical-exam': return <ReasoningList items={content.physicalExam} mode={mode} />;
     case 'differential-diagnosis': return <div className="approach-differential-grid"><DifferentialGroup title="Amenazas vitales" variant="critical" items={content.differentialDiagnosis.lifeThreatening} mode={mode} /><DifferentialGroup title="Diagnósticos frecuentes" variant="common" items={content.differentialDiagnosis.common} mode={mode} /><DifferentialGroup title="Según contexto" variant="contextual" items={content.differentialDiagnosis.contextual} mode={mode} /></div>;
     case 'complementary-studies': return <ComplementaryStudies studies={content.complementaryStudies} mode={mode} />;
-    case 'decision-tree': return <DecisionTreeFullView tree={content.decisionTree} mode={mode} />;
+    case 'decision-tree': return <DecisionTreeRunner tree={content.decisionTree} mode={mode} />;
     case 'initial-treatment': return <RichText document={content.initialTreatment} />;
     case 'reassessment': return <RichText document={content.reassessment} />;
     case 'disposition': return <DispositionView disposition={content.disposition} mode={mode} />;
