@@ -1640,6 +1640,105 @@ button:disabled,
   justify-content: flex-end;
 }
 
+.differential-diagnosis-editor {
+  gap: var(--space-5);
+}
+
+.differential-group-editor {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  border-left: 3px solid var(--line);
+  padding: var(--space-4);
+}
+
+.differential-group-editor.differential-group-critical {
+  border-left-color: color-mix(in srgb, var(--danger) 65%, var(--line));
+  background: color-mix(in srgb, var(--danger) 5%, transparent);
+}
+
+.differential-group-editor.differential-group-common {
+  border-left-color: var(--primary);
+}
+
+.differential-group-editor.differential-group-contextual {
+  border-left-color: var(--muted);
+  background: color-mix(in srgb, var(--surface-muted) 60%, transparent);
+}
+
+.differential-group-heading,
+.differential-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.differential-group-heading h3,
+.differential-group-heading p,
+.differential-editor-empty {
+  margin: 0;
+}
+
+.differential-group-heading p,
+.differential-editor-empty {
+  color: var(--muted);
+  font-size: var(--small-text-size);
+}
+
+.differential-editor-list,
+.differential-editor-body,
+.differential-editor-field {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.differential-editor-item {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.differential-editor-summary {
+  display: flex;
+  width: 100%;
+  min-height: var(--input-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-weight: 750;
+}
+
+.differential-editor-summary[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.differential-editor-body {
+  border-top: 1px solid var(--line);
+  padding: var(--space-4);
+}
+
+.differential-editor-field > strong {
+  font-size: var(--small-text-size);
+}
+
+.differential-editor-field .rich-editor-content {
+  min-height: 150px;
+}
+
+.differential-editor-actions {
+  justify-content: flex-end;
+}
+
 .approach-reader {
   display: grid;
   gap: var(--space-7);
@@ -1813,8 +1912,40 @@ button:disabled,
   font-size: 1rem;
 }
 
-.approach-differential-group article + article {
+.approach-differential-group details + details {
   margin-top: var(--space-3);
+}
+
+.approach-differential-group details {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-3);
+}
+
+.approach-differential-group summary {
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.approach-differential-group ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.approach-differential-group li + li {
+  margin-top: var(--space-2);
+}
+
+.approach-differential-group.differential-group-critical {
+  border-left: 3px solid color-mix(in srgb, var(--danger) 65%, var(--line));
+  background: color-mix(in srgb, var(--danger) 5%, transparent);
+}
+
+.approach-differential-group.differential-group-common {
+  border-top-color: color-mix(in srgb, var(--primary) 60%, var(--line));
+}
+
+.approach-differential-group.differential-group-contextual {
+  background: var(--surface-muted);
 }
 
 .approach-study-list article {
@@ -1933,6 +2064,10 @@ button:disabled,
 
   .approach-related-list span {
     flex-direction: column;
+  }
+
+  .differential-group-editor {
+    padding: var(--space-3);
   }
 }
 

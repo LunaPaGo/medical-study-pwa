@@ -10,7 +10,7 @@ export const clinicalApproachSections: ClinicalApproachSection[] = [
   { id: 'life-threats', title: 'Amenazas vitales', quick: true },
   { id: 'anamnesis', title: 'Anamnesis dirigida', quick: true },
   { id: 'physical-exam', title: 'Examen físico dirigido', quick: true },
-  { id: 'differential-diagnosis', title: 'Diagnóstico diferencial jerarquizado', quick: false },
+  { id: 'differential-diagnosis', title: 'Diagnóstico diferencial jerarquizado', quick: true },
   { id: 'complementary-studies', title: 'Estudios complementarios', quick: true },
   { id: 'decision-tree', title: 'Razonamiento / árbol de decisión', quick: true },
   { id: 'initial-treatment', title: 'Tratamiento inicial', quick: true },

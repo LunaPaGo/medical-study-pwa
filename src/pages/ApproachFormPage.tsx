@@ -6,6 +6,7 @@ import type { ClinicalApproach, ClinicalApproachContent } from '../features/appr
 import { useClinicalApproach, useClinicalApproachCategories, useClinicalApproachMutations } from '../features/approaches/useClinicalApproaches';
 import { RichTextEditor } from '../features/topics/RichTextEditor';
 import { ReasoningSectionEditor } from '../features/approaches/ReasoningSectionEditor';
+import { DifferentialDiagnosisEditor } from '../features/approaches/DifferentialDiagnosisEditor';
 import { useAuth } from '../hooks/useAuth';
 
 function ApproachEditorForm({ initial }: { initial: ClinicalApproach }) {
@@ -37,7 +38,8 @@ function ApproachEditorForm({ initial }: { initial: ClinicalApproach }) {
       <section className="approach-editor-shell"><div><span>ClinicalApproachContent</span><h2>Contenido libre · versión {content.version}</h2><p>El TipTap JSON se persiste sin convertirlo a HTML.</p></div><div className="approach-rich-editor-stack">{clinicalApproachRichTextSections.map((section) => <section key={section.key}><h3>{section.title}</h3><RichTextEditor attachmentsEnabled={false} value={content[section.key]} onChange={({ json }) => setContent((current) => ({ ...current, [section.key]: json }))} /></section>)}</div></section>
       <ReasoningSectionEditor title="Anamnesis dirigida" titleLabel="Qué preguntar" contentLabel="Desarrollo" addLabel="Agregar pregunta" items={content.anamnesis} onChange={(anamnesis) => setContent((current) => ({ ...current, anamnesis }))} />
       <ReasoningSectionEditor title="Examen físico dirigido" titleLabel="Qué buscar" contentLabel="Desarrollo" addLabel="Agregar hallazgo / elemento" items={content.physicalExam} onChange={(physicalExam) => setContent((current) => ({ ...current, physicalExam }))} />
-      <section className="approach-editor-shell"><div><h2>Secciones estructuradas</h2><p>Se conserva su modelo completo aunque todavía no tengan editores especializados.</p></div><ol>{clinicalApproachSections.filter((section) => !['presentation', 'initial-assessment', 'life-threats', 'anamnesis', 'physical-exam', 'initial-treatment', 'reassessment', 'warnings-and-instructions', 'common-errors', 'clinical-pearls'].includes(section.id)).map((section) => <li key={section.id}><span>{section.title}</span><small>Estructura preparada</small></li>)}</ol></section>
+      <DifferentialDiagnosisEditor value={content.differentialDiagnosis} onChange={(differentialDiagnosis) => setContent((current) => ({ ...current, differentialDiagnosis }))} />
+      <section className="approach-editor-shell"><div><h2>Secciones estructuradas</h2><p>Se conserva su modelo completo aunque todavía no tengan editores especializados.</p></div><ol>{clinicalApproachSections.filter((section) => !['presentation', 'initial-assessment', 'life-threats', 'anamnesis', 'physical-exam', 'differential-diagnosis', 'initial-treatment', 'reassessment', 'warnings-and-instructions', 'common-errors', 'clinical-pearls'].includes(section.id)).map((section) => <li key={section.id}><span>{section.title}</span><small>Estructura preparada</small></li>)}</ol></section>
       {error && <div className="notice error">{error}</div>}
       <div className="form-actions"><button className="primary-button" type="submit" disabled={mutations.save.isPending}>{mutations.save.isPending ? 'Guardando localmente...' : 'Guardar abordaje'}</button><button className="ghost-button" type="button" disabled={mutations.save.isPending} onClick={() => navigate('/abordajes')}>Cancelar</button></div>
     </form>
