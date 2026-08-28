@@ -1,9 +1,10 @@
-import { BookOpen, Calculator, ClipboardList, Clock, Files, Heart, Home, Pill, Search, ShieldCheck, UploadCloud } from 'lucide-react';
+import { BookOpen, Calculator, ClipboardList, Clock, Files, GitBranch, Heart, Home, Pill, Search, ShieldCheck, UploadCloud } from 'lucide-react';
 import type { AppRoute } from '../../types/navigation';
 
 export const primaryRoutes: AppRoute[] = [
   { label: 'Inicio', path: '/', icon: Home },
   { label: 'Temas', path: '/temas', icon: BookOpen },
+  { label: 'Abordajes', path: '/abordajes', icon: GitBranch },
   { label: 'Farmacología', path: '/farmacologia', icon: Pill },
   { label: 'Procedimientos', path: '/procedimientos', icon: ClipboardList },
   { label: 'Calculadoras', path: '/calculadoras', icon: Calculator },
@@ -15,6 +16,7 @@ export const primaryRoutes: AppRoute[] = [
 export const bottomRoutes: AppRoute[] = [
   { label: 'Inicio', path: '/', icon: Home },
   { label: 'Temas', path: '/temas', icon: BookOpen },
+  { label: 'Abordajes', path: '/abordajes', icon: GitBranch },
   { label: 'Fármacos', path: '/farmacologia', icon: Pill },
   { label: 'Proced.', path: '/procedimientos', icon: ClipboardList },
   { label: 'Calculadoras', path: '/calculadoras', icon: Calculator },

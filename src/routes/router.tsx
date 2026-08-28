@@ -20,6 +20,9 @@ import { SearchPage } from '../pages/SearchPage';
 import { TopicDetailPage } from '../pages/TopicDetailPage';
 import { TopicFormPage } from '../pages/TopicFormPage';
 import { TopicsPage } from '../pages/TopicsPage';
+import { ApproachesPage } from '../pages/ApproachesPage';
+import { ApproachDetailPage } from '../pages/ApproachDetailPage';
+import { ApproachFormPage } from '../pages/ApproachFormPage';
 
 export const router = createBrowserRouter([
   {
@@ -37,6 +40,10 @@ export const router = createBrowserRouter([
       { path: 'temas/nuevo', element: <TopicFormPage /> },
       { path: 'temas/:topicId', element: <TopicDetailPage /> },
       { path: 'temas/:topicId/editar', element: <TopicFormPage /> },
+      { path: 'abordajes', element: <ApproachesPage /> },
+      { path: 'abordajes/nuevo', element: <ApproachFormPage /> },
+      { path: 'abordajes/:approachId', element: <ApproachDetailPage /> },
+      { path: 'abordajes/:approachId/editar', element: <ApproachFormPage /> },
       { path: 'farmacologia', element: <MedicationsPage /> },
       { path: 'farmacologia/nuevo', element: <MedicationFormPage /> },
       { path: 'farmacologia/comparar', element: <MedicationComparePage /> },
