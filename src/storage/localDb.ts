@@ -4,6 +4,7 @@ import type { EditingSession } from '../types/editingSession';
 import type { Medication, MedicationTag } from '../types/medication';
 import type { Procedure, ProcedureTag } from '../types/procedure';
 import type { Category, Folder, SyncQueueItem, Tag, Topic, TopicRelation, TopicTag } from '../types/topic';
+import type { ClinicalApproachRecordV1 } from '../features/approaches/clinicalApproachPersistence';
 
 type MedicalStudyDb = {
   sync_queue: {
@@ -23,6 +24,11 @@ type MedicalStudyDb = {
   topics: {
     key: string;
     value: Topic;
+    indexes: { user_id: string; updated_at: string; title: string };
+  };
+  approaches: {
+    key: string;
+    value: ClinicalApproachRecordV1;
     indexes: { user_id: string; updated_at: string; title: string };
   };
   folders: {
@@ -102,7 +108,7 @@ type MedicalStudyDb = {
   };
 };
 
-export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 10, {
+export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 11, {
   upgrade(db) {
     if (!db.objectStoreNames.contains('sync_queue')) {
       const queue = db.createObjectStore('sync_queue', { keyPath: 'id' });
@@ -126,6 +132,13 @@ export const localDbPromise = openDB<MedicalStudyDb>('medical-study-local-db', 1
       topics.createIndex('user_id', 'user_id');
       topics.createIndex('updated_at', 'updated_at');
       topics.createIndex('title', 'title');
+    }
+
+    if (!db.objectStoreNames.contains('approaches')) {
+      const approaches = db.createObjectStore('approaches', { keyPath: 'id' });
+      approaches.createIndex('user_id', 'user_id');
+      approaches.createIndex('updated_at', 'updated_at');
+      approaches.createIndex('title', 'title');
     }
 
     if (!db.objectStoreNames.contains('folders')) {

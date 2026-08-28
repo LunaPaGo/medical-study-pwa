@@ -1,4 +1,5 @@
 import type { TipTapDocument } from '../../types/topic';
+import type { Category } from '../../types/topic';
 
 export type ClinicalApproachStatus = 'draft' | 'complete';
 export type ClinicalApproachViewMode = 'study' | 'quick';
@@ -47,10 +48,11 @@ export type ClinicalApproachContent = {
 
 export type ClinicalApproach = {
   id: string;
+  userId: string;
   title: string;
   description: string;
-  category: string | null;
-  tags: string[];
+  categoryId: string | null;
+  category: Category | null;
   content: ClinicalApproachContent;
   createdAt: string;
   updatedAt: string;

@@ -1,4 +1,4 @@
-import type { ClinicalApproachContent } from './clinicalApproachTypes';
+import type { ClinicalApproachContent, ClinicalApproachStatus } from './clinicalApproachTypes';
 import { isClinicalApproachContent } from './clinicalApproachCatalog';
 
 /**
@@ -12,6 +12,8 @@ export type ClinicalApproachRecordV1 = {
   user_id: string;
   title: string;
   description: string | null;
+  category_id: string | null;
+  status: ClinicalApproachStatus;
   content_json: ClinicalApproachContent;
   created_at: string;
   updated_at: string;
@@ -20,5 +22,5 @@ export type ClinicalApproachRecordV1 = {
 export function isClinicalApproachRecordV1(value: unknown): value is ClinicalApproachRecordV1 {
   if (!value || typeof value !== 'object') return false;
   const record = value as Partial<ClinicalApproachRecordV1>;
-  return typeof record.id === 'string' && typeof record.user_id === 'string' && typeof record.title === 'string' && isClinicalApproachContent(record.content_json);
+  return typeof record.id === 'string' && typeof record.user_id === 'string' && typeof record.title === 'string' && (record.category_id === null || typeof record.category_id === 'string') && (record.status === 'draft' || record.status === 'complete') && isClinicalApproachContent(record.content_json);
 }

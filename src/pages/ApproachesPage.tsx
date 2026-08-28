@@ -1,12 +1,20 @@
-import { GitBranch, Plus } from 'lucide-react';
+import { GitBranch, Plus, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PrimaryActionButton } from '../components/ui/PrimaryActionButton';
-import { listMemoryApproaches } from '../features/approaches/clinicalApproachMemoryStore';
+import { useClinicalApproaches, useClinicalApproachMutations } from '../features/approaches/useClinicalApproaches';
 
 export function ApproachesPage() {
-  const approaches = listMemoryApproaches();
+  const { data: approaches = [], isLoading, error } = useClinicalApproaches();
+  const mutations = useClinicalApproachMutations();
+  const remove = (id: string, title: string) => {
+    if (window.confirm(`¿Eliminar localmente "${title}"?`)) mutations.remove.mutate(id);
+  };
+
   return <section className="page-stack">
     <div className="page-heading page-heading-actions"><div><span>Razonamiento orientado por problema</span><h1>Abordajes</h1><p>Organizá la evaluación clínica desde la presentación inicial, antes de conocer el diagnóstico.</p></div><PrimaryActionButton to="/abordajes/nuevo" icon={<Plus />} iconOnlyOnMobile>Nuevo</PrimaryActionButton></div>
-    <div className="approach-list">{approaches.map((approach) => <article className="approach-card" key={approach.id}><div><span className={`status-pill ${approach.status}`}>{approach.status === 'complete' ? 'Completo' : 'Borrador'}</span><GitBranch size={20} aria-hidden="true" /></div><h2>{approach.title}</h2><p>{approach.description || 'Sin descripción.'}</p><div className="chip-list">{approach.category && <span className="tag-chip">{approach.category}</span>}{approach.tags.map((tag) => <span className="tag-chip" key={tag}>{tag}</span>)}</div><div className="card-actions"><Link className="ghost-button" to={`/abordajes/${approach.id}`}>Ver</Link><Link className="ghost-button" to={`/abordajes/${approach.id}/editar`}>Editar</Link></div></article>)}</div>
+    {isLoading && <div className="panel empty-state">Cargando abordajes locales...</div>}
+    {error && <div className="notice error">No se pudieron leer los abordajes de este usuario. {error.message}</div>}
+    <div className="approach-list">{approaches.map((approach) => <article className="approach-card" key={approach.id}><div><span className={`status-pill ${approach.status}`}>{approach.status === 'complete' ? 'Completo' : 'Borrador'}</span><GitBranch size={20} aria-hidden="true" /></div><h2>{approach.title}</h2><p>{approach.description || 'Sin descripción.'}</p>{approach.category && <div className="chip-list"><span className="tag-chip">{approach.category.name}</span></div>}<div className="card-actions"><Link className="ghost-button" to={`/abordajes/${approach.id}`}>Ver</Link><Link className="ghost-button" to={`/abordajes/${approach.id}/editar`}>Editar</Link><button className="ghost-button danger-action" type="button" disabled={mutations.remove.isPending} onClick={() => remove(approach.id, approach.title)}><Trash2 size={16} />Eliminar local</button></div></article>)}</div>
+    {!isLoading && !error && approaches.length === 0 && <div className="panel empty-state">Todavía no hay abordajes guardados en este dispositivo.</div>}
   </section>;
 }
