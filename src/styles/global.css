@@ -1563,6 +1563,83 @@ button:disabled,
   min-height: 220px;
 }
 
+.reasoning-section-heading,
+.reasoning-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.reasoning-editor-empty {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: var(--space-4);
+}
+
+.reasoning-editor-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.reasoning-editor-item {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.reasoning-editor-summary {
+  display: flex;
+  width: 100%;
+  min-height: var(--input-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-weight: 750;
+}
+
+.reasoning-editor-summary[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.reasoning-editor-body,
+.reasoning-editor-field {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.reasoning-editor-body {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: var(--space-4);
+}
+
+.reasoning-editor-field > strong {
+  font-size: var(--small-text-size);
+}
+
+.reasoning-editor-field .rich-editor-content {
+  min-height: 150px;
+}
+
+.reasoning-editor-why {
+  border-left: 3px solid var(--primary);
+  padding-left: var(--space-3);
+}
+
+.reasoning-editor-actions {
+  justify-content: flex-end;
+}
+
 .approach-reader {
   display: grid;
   gap: var(--space-7);
@@ -1676,6 +1753,7 @@ button:disabled,
 }
 
 .approach-reasoning-list,
+.approach-reasoning-quick,
 .approach-study-list,
 .approach-related-list {
   display: grid;
@@ -1690,6 +1768,15 @@ button:disabled,
 .approach-reasoning-list summary {
   cursor: pointer;
   font-weight: 750;
+}
+
+.approach-reasoning-quick {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.approach-reasoning-quick li + li {
+  margin-top: var(--space-2);
 }
 
 .approach-reasoning-body,
