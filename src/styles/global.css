@@ -1901,6 +1901,230 @@ button:disabled,
   background: var(--surface-muted);
 }
 
+.decision-tree-validation,
+.decision-tree-read-warning {
+  display: grid;
+  gap: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--small-text-size);
+}
+
+.decision-tree-validation .error {
+  color: var(--danger);
+}
+
+.decision-tree-validation .warning,
+.decision-tree-read-warning {
+  color: var(--warning);
+}
+
+.decision-tree-editor-area,
+.decision-node-editor-list,
+.decision-edge-editor-list,
+.decision-node-editor-body {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.decision-tree-editor-area {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-5);
+}
+
+.decision-tree-editor-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.decision-tree-editor-heading h3,
+.decision-tree-editor-heading p,
+.decision-tree-empty {
+  margin: 0;
+}
+
+.decision-tree-editor-heading p,
+.decision-tree-empty {
+  color: var(--muted);
+  font-size: var(--small-text-size);
+}
+
+.decision-node-editor-item,
+.decision-edge-editor-list article {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.decision-node-editor-summary {
+  display: flex;
+  width: 100%;
+  min-height: var(--input-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+}
+
+.decision-node-editor-summary > span {
+  display: grid;
+  gap: 2px;
+}
+
+.decision-node-editor-summary small {
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.decision-node-editor-summary[aria-expanded="true"] > svg {
+  transform: rotate(180deg);
+}
+
+.decision-node-editor-body {
+  border-top: 1px solid var(--line);
+  padding: var(--space-4);
+}
+
+.decision-node-editor-body textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.decision-node-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.decision-edge-create,
+.decision-edge-editor-list article {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.decision-edge-editor-list article {
+  padding: var(--space-3);
+}
+
+.decision-node-editor-item.node-start,
+.decision-tree-node-card.node-start { border-left-color: var(--primary); }
+.decision-node-editor-item.node-question,
+.decision-tree-node-card.node-question { border-left-color: color-mix(in srgb, var(--primary) 55%, var(--line)); }
+.decision-node-editor-item.node-action,
+.decision-tree-node-card.node-action { border-left-color: color-mix(in srgb, var(--text) 35%, var(--line)); }
+.decision-node-editor-item.node-warning,
+.decision-tree-node-card.node-warning { border-left-color: var(--danger); background: color-mix(in srgb, var(--danger) 4%, var(--surface)); }
+.decision-node-editor-item.node-disposition,
+.decision-tree-node-card.node-disposition { border-left-color: var(--warning); }
+
+.decision-tree-full-view,
+.decision-tree-level,
+.decision-tree-unconnected {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.decision-tree-level {
+  position: relative;
+}
+
+.decision-tree-level > small {
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.decision-tree-level > div,
+.decision-tree-unconnected > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--space-3);
+}
+
+.decision-tree-node-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: var(--space-3) var(--space-4);
+}
+
+.decision-tree-node-card header,
+.decision-tree-node-card header span,
+.decision-tree-node-card li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.decision-tree-node-card header {
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.decision-tree-node-card > strong {
+  display: block;
+  margin-top: var(--space-2);
+}
+
+.decision-tree-node-card p {
+  margin: var(--space-2) 0 0;
+  color: var(--muted);
+}
+
+.decision-tree-node-card ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.decision-tree-node-card li {
+  flex-wrap: wrap;
+  font-size: var(--small-text-size);
+}
+
+.decision-tree-node-card li span:first-child {
+  color: var(--primary-strong);
+  font-weight: 750;
+}
+
+.decision-tree-unconnected {
+  margin-top: var(--space-3);
+  border-top: 1px dashed var(--line);
+  padding-top: var(--space-4);
+}
+
+.decision-tree-unconnected h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.decision-tree-full-view.compact {
+  gap: var(--space-2);
+}
+
 .approach-reader {
   display: grid;
   gap: var(--space-7);
@@ -2194,6 +2418,11 @@ button:disabled,
   .approach-list,
   .approach-differential-grid,
   .approach-study-body {
+    grid-template-columns: 1fr;
+  }
+
+  .decision-edge-create,
+  .decision-edge-editor-list article {
     grid-template-columns: 1fr;
   }
 

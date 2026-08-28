@@ -1,9 +1,9 @@
-import { ArrowRight } from 'lucide-react';
 import { TopicContentViewer } from '../topics/TopicContentViewer';
 import { clinicalApproachSections, type ClinicalApproachSectionId } from './clinicalApproachCatalog';
 import { hasClinicalApproachSection } from './clinicalApproachContent';
 import type { ClinicalApproachContent, ClinicalApproachViewMode, DifferentialDiagnosisItem, DispositionContent, ReasoningItem, RichTextBlock } from './clinicalApproachTypes';
 import { isEmptyTipTapDocument } from '../topics/tiptapDocument';
+import { DecisionTreeFullView } from './DecisionTreeFullView';
 
 function RichText({ document }: { document: RichTextBlock }) {
   return <TopicContentViewer content={document} />;
@@ -53,7 +53,7 @@ function SectionBody({ id, content, mode }: { id: ClinicalApproachSectionId; con
     case 'physical-exam': return <ReasoningList items={content.physicalExam} mode={mode} />;
     case 'differential-diagnosis': return <div className="approach-differential-grid"><DifferentialGroup title="Amenazas vitales" variant="critical" items={content.differentialDiagnosis.lifeThreatening} mode={mode} /><DifferentialGroup title="Diagnósticos frecuentes" variant="common" items={content.differentialDiagnosis.common} mode={mode} /><DifferentialGroup title="Según contexto" variant="contextual" items={content.differentialDiagnosis.contextual} mode={mode} /></div>;
     case 'complementary-studies': return <ComplementaryStudies studies={content.complementaryStudies} mode={mode} />;
-    case 'decision-tree': return <div className="approach-tree-placeholder">{content.decisionTree.nodes.map((node, index) => <div key={node.id} className={`approach-tree-node ${node.type}`}><span>{node.type}</span><strong>{node.title}</strong>{index < content.decisionTree.nodes.length - 1 && <ArrowRight size={18} aria-hidden="true" />}</div>)}</div>;
+    case 'decision-tree': return <DecisionTreeFullView tree={content.decisionTree} mode={mode} />;
     case 'initial-treatment': return <RichText document={content.initialTreatment} />;
     case 'reassessment': return <RichText document={content.reassessment} />;
     case 'disposition': return <DispositionView disposition={content.disposition} mode={mode} />;
