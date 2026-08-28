@@ -37,6 +37,12 @@ import {
 } from '../attachments/attachmentRepository';
 import { useAuth } from '../../hooks/useAuth';
 import { useAttachmentMutations, useAttachments } from '../attachments/useAttachments';
+import {
+  isRichTextLineSpacing,
+  LineSpacingExtension,
+  lineSpacingNodeTypes,
+  type RichTextLineSpacing
+} from './LineSpacingExtension';
 
 type Props = {
   value: TipTapDocument;
@@ -64,7 +70,8 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
       TableRow,
       TableHeader,
       TableCell,
-      MedicalImageNode
+      MedicalImageNode,
+      LineSpacingExtension
     ],
     content: value,
     editorProps: {
@@ -171,6 +178,20 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
     imageInputRef.current?.click();
   };
 
+  const activeLineSpacing = lineSpacingNodeTypes
+    .map((nodeType) => editor.getAttributes(nodeType).lineSpacing)
+    .find(isRichTextLineSpacing) ?? '';
+
+  const setLineSpacing = (lineSpacing: RichTextLineSpacing) => {
+    editor
+      .chain()
+      .focus()
+      .updateAttributes('paragraph', { lineSpacing })
+      .updateAttributes('heading', { lineSpacing })
+      .updateAttributes('listItem', { lineSpacing })
+      .run();
+  };
+
   return (
     <div
       className={`rich-editor ${isDraggingImage ? 'dragging' : ''}`}
@@ -211,6 +232,21 @@ export function RichTextEditor({ value, onChange, owner }: Props) {
         <button type="button" title="Lista numerada" onClick={() => editor.chain().focus().toggleOrderedList().run()}>
           <ListOrdered size={18} />
         </button>
+        <label className="editor-spacing-control" title="Interlineado">
+          <span>Interlineado</span>
+          <select
+            aria-label="Interlineado"
+            value={activeLineSpacing}
+            onChange={(event) => {
+              if (isRichTextLineSpacing(event.target.value)) setLineSpacing(event.target.value);
+            }}
+          >
+            <option disabled value="">Global</option>
+            <option value="compact">Compacto</option>
+            <option value="normal">Normal</option>
+            <option value="wide">Amplio</option>
+          </select>
+        </label>
         <button type="button" title="Tabla" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
           <TableIcon size={18} />
         </button>

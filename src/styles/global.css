@@ -36,6 +36,8 @@ html[data-theme="light"] {
   --card-title-size: calc(1.05rem * var(--density-heading-scale));
   --reader-text-size: calc(1.05rem * var(--density-font-scale));
   --editor-line-height: 1.5;
+  --editor-block-spacing: 0.75em;
+  --editor-list-item-spacing: 0.35em;
   --small-text-size: calc(0.88rem * var(--density-font-scale));
   --xsmall-text-size: calc(0.84rem * var(--density-font-scale));
   --nav-mobile-height: 58px;
@@ -71,14 +73,20 @@ html[data-density="compact"] {
 
 html[data-editor-line-spacing="compact"] {
   --editor-line-height: 1.3;
+  --editor-block-spacing: 0.38em;
+  --editor-list-item-spacing: 0.16em;
 }
 
 html[data-editor-line-spacing="normal"] {
   --editor-line-height: 1.5;
+  --editor-block-spacing: 0.75em;
+  --editor-list-item-spacing: 0.35em;
 }
 
 html[data-editor-line-spacing="wide"] {
   --editor-line-height: 1.7;
+  --editor-block-spacing: 1em;
+  --editor-list-item-spacing: 0.55em;
 }
 
 html[data-theme="dark"] {
@@ -1233,6 +1241,29 @@ button:disabled,
   padding: 0 10px;
 }
 
+.editor-toolbar .editor-spacing-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 8px;
+  font-size: var(--xsmall-text-size);
+  font-weight: 700;
+}
+
+.editor-toolbar .editor-spacing-control select {
+  width: auto;
+  min-height: 30px;
+  border: 0;
+  background: transparent;
+  padding: 0 20px 0 2px;
+  font: inherit;
+}
+
 .rich-editor.dragging {
   border-color: var(--primary);
   background: var(--surface-muted);
@@ -1247,22 +1278,74 @@ button:disabled,
 
 .rich-editor-content,
 .reader-content {
+  --rich-line-height: var(--editor-line-height, 1.5);
+  --rich-block-spacing: var(--editor-block-spacing, 0.75em);
+  --rich-list-item-spacing: var(--editor-list-item-spacing, 0.35em);
   min-height: 360px;
   padding: 20px;
-  line-height: var(--editor-line-height);
+  line-height: var(--rich-line-height);
+}
+
+.rich-editor-content.ProseMirror,
+.reader-content.ProseMirror,
+.rich-editor-content :where(p, li, blockquote, td, th, h1, h2, h3, h4, h5, h6, span, strong, em, a),
+.reader-content :where(p, li, blockquote, td, th, h1, h2, h3, h4, h5, h6, span, strong, em, a) {
+  line-height: var(--rich-line-height);
+}
+
+.rich-editor-content :where(p, li, h1, h2, h3, h4, h5, h6)[data-line-spacing="compact"],
+.reader-content :where(p, li, h1, h2, h3, h4, h5, h6)[data-line-spacing="compact"] {
+  --rich-line-height: 1.3;
+  --rich-block-spacing: 0.38em;
+  --rich-list-item-spacing: 0.16em;
+}
+
+.rich-editor-content :where(p, li, h1, h2, h3, h4, h5, h6)[data-line-spacing="normal"],
+.reader-content :where(p, li, h1, h2, h3, h4, h5, h6)[data-line-spacing="normal"] {
+  --rich-line-height: 1.5;
+  --rich-block-spacing: 0.75em;
+  --rich-list-item-spacing: 0.35em;
+}
+
+.rich-editor-content :where(p, li, h1, h2, h3, h4, h5, h6)[data-line-spacing="wide"],
+.reader-content :where(p, li, h1, h2, h3, h4, h5, h6)[data-line-spacing="wide"] {
+  --rich-line-height: 1.7;
+  --rich-block-spacing: 1em;
+  --rich-list-item-spacing: 0.55em;
 }
 
 .rich-editor-content p,
-.rich-editor-content li,
 .rich-editor-content blockquote,
 .rich-editor-content td,
 .rich-editor-content th,
 .reader-content p,
-.reader-content li,
 .reader-content blockquote,
 .reader-content td,
 .reader-content th {
-  line-height: var(--editor-line-height);
+  line-height: var(--rich-line-height);
+}
+
+.rich-editor-content p,
+.reader-content p {
+  margin-block: 0 var(--rich-block-spacing);
+}
+
+.rich-editor-content :where(ul, ol),
+.reader-content :where(ul, ol) {
+  margin-block: var(--rich-block-spacing);
+}
+
+.rich-editor-content li,
+.reader-content li {
+  margin-block: var(--rich-list-item-spacing);
+  line-height: var(--rich-line-height);
+}
+
+.rich-editor-content li > p:last-child,
+.reader-content li > p:last-child,
+.rich-editor-content > p:last-child,
+.reader-content > p:last-child {
+  margin-bottom: 0;
 }
 
 .rich-editor-content:focus {

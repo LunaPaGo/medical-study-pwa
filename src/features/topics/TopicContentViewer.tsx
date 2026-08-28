@@ -10,6 +10,7 @@ import TableRow from '@tiptap/extension-table-row';
 import Underline from '@tiptap/extension-underline';
 import type { TipTapDocument } from '../../types/topic';
 import { MedicalImageNode } from '../attachments/MedicalImageNode';
+import { LineSpacingExtension } from './LineSpacingExtension';
 
 export function TopicContentViewer({ content }: { content: TipTapDocument }) {
   const editor = useEditor({
@@ -24,7 +25,8 @@ export function TopicContentViewer({ content }: { content: TipTapDocument }) {
       TableRow,
       TableHeader,
       TableCell,
-      MedicalImageNode
+      MedicalImageNode,
+      LineSpacingExtension
     ],
     content,
     editorProps: {

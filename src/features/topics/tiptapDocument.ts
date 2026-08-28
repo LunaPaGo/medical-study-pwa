@@ -10,6 +10,7 @@ import TableRow from '@tiptap/extension-table-row';
 import Underline from '@tiptap/extension-underline';
 import type { TipTapDocument } from '../../types/topic';
 import { MedicalImageNode } from '../attachments/MedicalImageNode';
+import { LineSpacingExtension } from './LineSpacingExtension';
 
 export const emptyTipTapDocument: TipTapDocument = {
   type: 'doc',
@@ -26,13 +27,17 @@ const tiptapExtensions = [
   TableRow,
   TableHeader,
   TableCell,
-  MedicalImageNode
+  MedicalImageNode,
+  LineSpacingExtension
 ];
 
 export function isEmptyTipTapDocument(document: TipTapDocument | null | undefined) {
   if (!document || typeof document !== 'object') return true;
 
-  return JSON.stringify(document) === JSON.stringify(emptyTipTapDocument);
+  if (JSON.stringify(document) === JSON.stringify(emptyTipTapDocument)) return true;
+
+  const onlyNode = document.type === 'doc' && document.content?.length === 1 ? document.content[0] : null;
+  return Boolean(onlyNode?.type === 'paragraph' && (!onlyNode.content || onlyNode.content.length === 0));
 }
 
 export function getTopicDocument(document: TipTapDocument | null | undefined): TipTapDocument {
