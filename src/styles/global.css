@@ -2353,19 +2353,25 @@ button:disabled,
 .decision-diagram-edge-label {
   position: absolute;
   z-index: 2;
-  display: block;
-  max-width: 170px;
+  display: -webkit-box;
+  width: max-content;
+  max-width: 180px;
+  overflow: hidden;
   transform: translate(-50%, -50%);
   border: 1px solid color-mix(in srgb, var(--primary) 34%, var(--line));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  border-radius: 11px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.2);
+  background: color-mix(in srgb, var(--surface) 98%, transparent);
   color: var(--text);
   padding: 3px 9px;
   font-size: 0.7rem;
   font-weight: 750;
-  line-height: 1.2;
+  line-height: 1.25;
   overflow-wrap: anywhere;
   text-align: center;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .decision-diagram-node {
