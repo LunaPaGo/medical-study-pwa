@@ -2,6 +2,7 @@ import { FilePlus2, GitBranch, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PrimaryActionButton } from '../components/ui/PrimaryActionButton';
+import { ABDOMINAL_PAIN_APPROACH_TITLE, createAbdominalPainClinicalApproach } from '../features/approaches/abdominalPainApproachFixture';
 import { CHEST_PAIN_APPROACH_TITLE, createChestPainClinicalApproach } from '../features/approaches/chestPainApproachFixture';
 import { useClinicalApproaches, useClinicalApproachMutations } from '../features/approaches/useClinicalApproaches';
 import { useAuth } from '../hooks/useAuth';
@@ -13,6 +14,7 @@ export function ApproachesPage() {
   const mutations = useClinicalApproachMutations();
   const [fixtureError, setFixtureError] = useState('');
   const hasChestPainFixture = approaches.some((approach) => approach.title.trim().toLocaleLowerCase('es') === CHEST_PAIN_APPROACH_TITLE.toLocaleLowerCase('es'));
+  const hasAbdominalPainFixture = approaches.some((approach) => approach.title.trim().toLocaleLowerCase('es') === ABDOMINAL_PAIN_APPROACH_TITLE.toLocaleLowerCase('es'));
   const loadChestPainFixture = async () => {
     if (!user?.id || hasChestPainFixture) return;
     setFixtureError('');
@@ -23,12 +25,22 @@ export function ApproachesPage() {
       setFixtureError(loadError instanceof Error ? loadError.message : 'No se pudo cargar el ejemplo en este dispositivo.');
     }
   };
+  const loadAbdominalPainFixture = async () => {
+    if (!user?.id || hasAbdominalPainFixture) return;
+    setFixtureError('');
+    try {
+      const saved = await mutations.save.mutateAsync(createAbdominalPainClinicalApproach(user.id));
+      navigate(`/abordajes/${saved.id}`);
+    } catch (loadError) {
+      setFixtureError(loadError instanceof Error ? loadError.message : 'No se pudo cargar el ejemplo en este dispositivo.');
+    }
+  };
   const remove = (id: string, title: string) => {
     if (window.confirm(`¿Eliminar localmente "${title}"?`)) mutations.remove.mutate(id);
   };
 
   return <section className="page-stack">
-    <div className="page-heading page-heading-actions"><div><span>Razonamiento orientado por problema</span><h1>Abordajes</h1><p>Organizá la evaluación clínica desde la presentación inicial, antes de conocer el diagnóstico.</p></div><div className="approach-page-actions">{!isLoading && !hasChestPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadChestPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor torácico'}</button>}<PrimaryActionButton to="/abordajes/nuevo" icon={<Plus />} iconOnlyOnMobile>Nuevo</PrimaryActionButton></div></div>
+    <div className="page-heading page-heading-actions"><div><span>Razonamiento orientado por problema</span><h1>Abordajes</h1><p>Organizá la evaluación clínica desde la presentación inicial, antes de conocer el diagnóstico.</p></div><div className="approach-page-actions">{!isLoading && !hasChestPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadChestPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor torácico'}</button>}{!isLoading && !hasAbdominalPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadAbdominalPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor abdominal'}</button>}<PrimaryActionButton to="/abordajes/nuevo" icon={<Plus />} iconOnlyOnMobile>Nuevo</PrimaryActionButton></div></div>
     {isLoading && <div className="panel empty-state">Cargando abordajes locales...</div>}
     {error && <div className="notice error">No se pudieron leer los abordajes de este usuario. {error.message}</div>}
     {fixtureError && <div className="notice error">{fixtureError}</div>}
