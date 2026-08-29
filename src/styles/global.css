@@ -2239,108 +2239,217 @@ button:disabled,
   padding: var(--space-3);
 }
 
-.decision-node-editor-item.node-start,
-.decision-tree-node-card.node-start { border-left-color: var(--primary); }
-.decision-node-editor-item.node-question,
-.decision-tree-node-card.node-question { border-left-color: color-mix(in srgb, var(--primary) 55%, var(--line)); }
-.decision-node-editor-item.node-action,
-.decision-tree-node-card.node-action { border-left-color: color-mix(in srgb, var(--text) 35%, var(--line)); }
-.decision-node-editor-item.node-warning,
-.decision-tree-node-card.node-warning { border-left-color: var(--danger); background: color-mix(in srgb, var(--danger) 4%, var(--surface)); }
-.decision-node-editor-item.node-disposition,
-.decision-tree-node-card.node-disposition { border-left-color: var(--warning); }
+.decision-node-editor-item.node-start { border-left-color: var(--primary); }
+.decision-node-editor-item.node-question { border-left-color: color-mix(in srgb, var(--primary) 55%, var(--line)); }
+.decision-node-editor-item.node-action { border-left-color: color-mix(in srgb, var(--text) 35%, var(--line)); }
+.decision-node-editor-item.node-warning { border-left-color: var(--danger); background: color-mix(in srgb, var(--danger) 4%, var(--surface)); }
+.decision-node-editor-item.node-disposition { border-left-color: var(--warning); }
 
 .decision-tree-full-view,
-.decision-tree-level,
-.decision-tree-unconnected {
+.decision-tree-preview,
+.decision-tree-embedded-preview,
+.decision-tree-embedded-full {
   display: grid;
   min-width: 0;
+  max-width: 100%;
   gap: var(--space-3);
 }
 
-.decision-tree-level {
-  position: relative;
-}
-
-.decision-tree-level > small {
-  color: var(--muted);
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.decision-tree-level > div,
-.decision-tree-unconnected > div {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-  gap: var(--space-3);
-}
-
-.decision-tree-node-card {
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  padding: var(--space-3) var(--space-4);
-}
-
-.decision-tree-node-card header,
-.decision-tree-node-card header span,
-.decision-tree-node-card li {
+.decision-tree-preview-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.decision-tree-preview-actions span {
+  color: var(--muted);
+  font-size: var(--small-text-size);
+}
+
+.decision-tree-embedded-full > .ghost-button {
+  justify-self: start;
+}
+
+.decision-diagram-toolbar {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
 }
 
-.decision-tree-node-card header {
-  justify-content: space-between;
+.decision-diagram-toolbar > span {
+  min-width: 3.5rem;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.decision-diagram-toolbar .ghost-button {
+  min-height: 36px;
+  padding: var(--space-2) var(--space-3);
+}
+
+.decision-diagram-viewport,
+.decision-tree-preview-viewport {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background-color: color-mix(in srgb, var(--surface) 93%, var(--primary) 7%);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--line) 38%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--line) 38%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+  overscroll-behavior: contain;
+}
+
+.decision-diagram-viewport {
+  height: min(68vh, 760px);
+  min-height: 440px;
+}
+
+.decision-diagram-viewport:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.decision-diagram-scaled,
+.decision-diagram {
+  position: relative;
+  flex: none;
+}
+
+.decision-diagram {
+  width: var(--diagram-width);
+  height: var(--diagram-height);
+}
+
+.decision-diagram-connectors {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.decision-diagram-connectors > path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--primary) 58%, var(--muted));
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.decision-diagram-connectors marker path {
+  fill: color-mix(in srgb, var(--primary) 58%, var(--muted));
+}
+
+.decision-diagram-connectors path.cyclic {
+  stroke: var(--warning);
+  stroke-dasharray: 7 5;
+}
+
+.decision-diagram-edge-label {
+  position: absolute;
+  z-index: 2;
+  display: block;
+  max-width: 170px;
+  transform: translate(-50%, -50%);
+  border: 1px solid color-mix(in srgb, var(--primary) 34%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  color: var(--text);
+  padding: 3px 9px;
+  font-size: 0.7rem;
+  font-weight: 750;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.decision-diagram-node {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  align-content: center;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+  background: color-mix(in srgb, var(--surface) 97%, var(--text) 3%);
+  color: var(--text);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+}
+
+.decision-diagram-node > span {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.decision-tree-node-card > strong {
-  display: block;
-  margin-top: var(--space-2);
+.decision-diagram-node > span small {
+  margin-left: auto;
+  color: var(--warning);
 }
 
-.decision-tree-node-card p {
-  margin: var(--space-2) 0 0;
+.decision-diagram-node strong {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.decision-diagram-node:hover {
+  border-color: color-mix(in srgb, var(--primary) 65%, var(--line));
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.24), 0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.decision-diagram-node.node-start { border-left-color: var(--primary); }
+.decision-diagram-node.node-question { border-left-color: color-mix(in srgb, var(--primary) 62%, var(--line)); }
+.decision-diagram-node.node-action { border-left-color: color-mix(in srgb, var(--text) 48%, var(--line)); }
+.decision-diagram-node.node-warning { border-left-color: var(--danger); background: color-mix(in srgb, var(--danger) 7%, var(--surface)); }
+.decision-diagram-node.node-disposition { border-left-color: var(--warning); background: color-mix(in srgb, var(--warning) 5%, var(--surface)); }
+.decision-diagram-node.unreachable { border-style: dashed; opacity: 0.82; }
+
+.decision-diagram-node-description {
+  display: -webkit-box;
+  overflow: hidden;
   color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
 }
 
-.decision-tree-node-card ul {
-  display: grid;
+.decision-tree-preview-viewport {
+  height: 330px;
+  overflow: auto;
+}
+
+.decision-tree-preview > p,
+.decision-diagram-note {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
-  margin: var(--space-3) 0 0;
-  padding: var(--space-3) 0 0;
-  border-top: 1px solid var(--line);
-  list-style: none;
-}
-
-.decision-tree-node-card li {
-  flex-wrap: wrap;
+  margin: 0;
+  color: var(--muted);
   font-size: var(--small-text-size);
 }
 
-.decision-tree-node-card li span:first-child {
-  color: var(--primary-strong);
-  font-weight: 750;
-}
-
-.decision-tree-unconnected {
-  margin-top: var(--space-3);
-  border-top: 1px dashed var(--line);
-  padding-top: var(--space-4);
-}
-
-.decision-tree-unconnected h3 {
-  margin: 0;
-  color: var(--muted);
-  font-size: 1rem;
-}
-
-.decision-tree-full-view.compact {
+.decision-tree-full-view.compact,
+.decision-tree-experience.compact .decision-tree-preview {
   gap: var(--space-2);
 }
 
@@ -2857,9 +2966,29 @@ button:disabled,
 
   .decision-tree-mode-switch,
   .decision-runner-options,
-  .decision-runner-actions {
+  .decision-runner-actions,
+  .decision-tree-preview-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .decision-diagram-viewport {
+    height: 58dvh;
+    min-height: 360px;
+  }
+
+  .decision-tree-preview-viewport {
+    height: 280px;
+  }
+
+  .decision-diagram-toolbar .ghost-button {
+    flex: 1 1 calc(50% - var(--space-2));
+    justify-content: center;
+  }
+
+  .decision-diagram-toolbar > span {
+    order: -1;
+    flex-basis: 100%;
   }
 
   .decision-runner-options button {

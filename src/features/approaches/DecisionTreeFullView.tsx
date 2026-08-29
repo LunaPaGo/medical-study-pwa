@@ -1,48 +1,153 @@
-import { AlertTriangle, CirclePlay, GitBranch, ListChecks, Signpost } from 'lucide-react';
-import type { ReactNode } from 'react';
-import type { ClinicalApproachViewMode, DecisionNode, DecisionNodeType, DecisionTree } from './clinicalApproachTypes';
+import { AlertTriangle, CirclePlay, GitBranch, ListChecks, LocateFixed, Maximize2, Minus, Plus, Signpost } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import type { ClinicalApproachViewMode, DecisionEdge, DecisionNode, DecisionNodeType, DecisionTree } from './clinicalApproachTypes';
 import { validateDecisionTree } from './decisionTreeValidation';
 
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 104;
+const COLUMN_GAP = 72;
+const ROW_GAP = 116;
+const PADDING = 56;
+const MIN_SCALE = 0.45;
+const MAX_SCALE = 1.5;
+
 const nodeMeta: Record<DecisionNodeType, { label: string; icon: ReactNode }> = {
-  start: { label: 'Inicio', icon: <CirclePlay size={17} /> }, question: { label: 'Pregunta', icon: <GitBranch size={17} /> },
-  action: { label: 'Acción', icon: <ListChecks size={17} /> }, warning: { label: 'Alerta', icon: <AlertTriangle size={17} /> },
-  disposition: { label: 'Disposición', icon: <Signpost size={17} /> }
+  start: { label: 'Inicio', icon: <CirclePlay size={16} /> },
+  question: { label: 'Pregunta', icon: <GitBranch size={16} /> },
+  action: { label: 'Acción', icon: <ListChecks size={16} /> },
+  warning: { label: 'Alerta', icon: <AlertTriangle size={16} /> },
+  disposition: { label: 'Disposición', icon: <Signpost size={16} /> }
 };
 
-function getLevels(tree: DecisionTree, rootId: string | null) {
-  const levels = new Map<string, number>();
-  if (!rootId) return levels;
-  const queue: Array<{ id: string; level: number }> = [{ id: rootId, level: 0 }];
-  while (queue.length) {
-    const current = queue.shift()!;
-    if (levels.has(current.id)) continue;
-    levels.set(current.id, current.level);
-    tree.edges.filter((edge) => edge.from === current.id).forEach((edge) => queue.push({ id: edge.to, level: current.level + 1 }));
+type PositionedNode = { node: DecisionNode; x: number; y: number; unreachable: boolean };
+type GraphLayout = { nodes: PositionedNode[]; edges: DecisionEdge[]; width: number; height: number };
+
+function createPreviewTree(tree: DecisionTree): DecisionTree {
+  const visibleIds = new Set<string>();
+  const queue = tree.rootNodeId ? [tree.rootNodeId] : [];
+  while (queue.length && visibleIds.size < 8) {
+    const id = queue.shift()!;
+    if (visibleIds.has(id)) continue;
+    visibleIds.add(id);
+    tree.edges.filter((edge) => edge.from === id).forEach((edge) => queue.push(edge.to));
   }
-  return levels;
+  return {
+    rootNodeId: tree.rootNodeId,
+    nodes: tree.nodes.filter((node) => visibleIds.has(node.id)),
+    edges: tree.edges.filter((edge) => visibleIds.has(edge.from) && visibleIds.has(edge.to))
+  };
 }
 
-function NodeCard({ node, tree, compact, cyclic }: { node: DecisionNode; tree: DecisionTree; compact: boolean; cyclic: boolean }) {
-  const meta = nodeMeta[node.type];
-  const outgoing = tree.edges.filter((edge) => edge.from === node.id);
-  const nodesById = new Map(tree.nodes.map((item) => [item.id, item]));
-  return <article className={`decision-tree-node-card node-${node.type}`}>
-    <header><span>{meta.icon}{meta.label}</span>{cyclic && <small>Ciclo</small>}</header><strong>{node.title || 'Nodo sin título'}</strong>
-    {!compact && node.description && <p>{node.description}</p>}
-    {outgoing.length > 0 && <ul>{outgoing.map((edge) => <li key={edge.id}><span>{edge.label?.trim() || 'Continuar'}</span><b aria-hidden="true">→</b><span>{nodesById.get(edge.to)?.title || 'Destino inexistente'}</span></li>)}</ul>}
-  </article>;
+function calculateGraphLayout(tree: DecisionTree): GraphLayout {
+  const nodesById = new Map(tree.nodes.map((node) => [node.id, node]));
+  const validEdges = tree.edges.filter((edge) => nodesById.has(edge.from) && nodesById.has(edge.to));
+  const levels = new Map<string, number>();
+  if (tree.rootNodeId && nodesById.has(tree.rootNodeId)) {
+    const queue: Array<{ id: string; level: number }> = [{ id: tree.rootNodeId, level: 0 }];
+    while (queue.length) {
+      const current = queue.shift()!;
+      if (levels.has(current.id)) continue;
+      levels.set(current.id, current.level);
+      validEdges.filter((edge) => edge.from === current.id).forEach((edge) => {
+        if (!levels.has(edge.to)) queue.push({ id: edge.to, level: current.level + 1 });
+      });
+    }
+  }
+  const reachableLevelCount = levels.size ? Math.max(...levels.values()) + 1 : 0;
+  const unreachable = tree.nodes.filter((node) => !levels.has(node.id));
+  unreachable.forEach((node) => levels.set(node.id, reachableLevelCount));
+  const grouped = new Map<number, DecisionNode[]>();
+  tree.nodes.forEach((node) => {
+    const level = levels.get(node.id) ?? 0;
+    grouped.set(level, [...(grouped.get(level) ?? []), node]);
+  });
+  const maxColumns = Math.max(1, ...[...grouped.values()].map((nodes) => nodes.length));
+  const width = PADDING * 2 + maxColumns * NODE_WIDTH + Math.max(0, maxColumns - 1) * COLUMN_GAP;
+  const positioned: PositionedNode[] = [];
+  [...grouped.entries()].sort(([a], [b]) => a - b).forEach(([level, nodes]) => {
+    const rowWidth = nodes.length * NODE_WIDTH + Math.max(0, nodes.length - 1) * COLUMN_GAP;
+    const startX = (width - rowWidth) / 2;
+    nodes.forEach((node, index) => positioned.push({ node, x: startX + index * (NODE_WIDTH + COLUMN_GAP), y: PADDING + level * (NODE_HEIGHT + ROW_GAP), unreachable: unreachable.some((item) => item.id === node.id) }));
+  });
+  const rowCount = Math.max(1, grouped.size);
+  return { nodes: positioned, edges: validEdges, width, height: PADDING * 2 + rowCount * NODE_HEIGHT + Math.max(0, rowCount - 1) * ROW_GAP };
+}
+
+function edgeGeometry(edge: DecisionEdge, positions: Map<string, PositionedNode>) {
+  const source = positions.get(edge.from)!;
+  const target = positions.get(edge.to)!;
+  const startX = source.x + NODE_WIDTH / 2;
+  const startY = source.y + NODE_HEIGHT;
+  const endX = target.x + NODE_WIDTH / 2;
+  const endY = target.y;
+  if (endY <= startY) {
+    const offset = 42 + Math.abs(startX - endX) * 0.08;
+    return { path: `M ${startX} ${startY} C ${startX + offset} ${startY + 54}, ${endX + offset} ${endY - 54}, ${endX} ${endY}`, labelX: (startX + endX) / 2 + offset, labelY: (startY + endY) / 2 };
+  }
+  const midY = (startY + endY) / 2;
+  return { path: `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`, labelX: (startX + endX) / 2, labelY: midY };
+}
+
+function Diagram({ tree, compact = false, preview = false }: { tree: DecisionTree; compact?: boolean; preview?: boolean }) {
+  const validation = useMemo(() => validateDecisionTree(tree), [tree]);
+  const layout = useMemo(() => calculateGraphLayout(tree), [tree]);
+  const positions = new Map(layout.nodes.map((item) => [item.node.id, item]));
+  return <div className={`decision-diagram ${compact ? 'compact' : ''} ${preview ? 'preview' : ''}`} style={{ '--diagram-width': `${layout.width}px`, '--diagram-height': `${layout.height}px` } as CSSProperties}>
+    <svg className="decision-diagram-connectors" width={layout.width} height={layout.height} viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden="true">
+      <defs><marker id={preview ? 'decision-arrow-preview' : 'decision-arrow'} markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" /></marker></defs>
+      {layout.edges.map((edge) => { const geometry = edgeGeometry(edge, positions); return <path key={edge.id} d={geometry.path} markerEnd={`url(#${preview ? 'decision-arrow-preview' : 'decision-arrow'})`} className={validation.cyclicNodeIds.has(edge.from) && validation.cyclicNodeIds.has(edge.to) ? 'cyclic' : undefined} />; })}
+    </svg>
+    {layout.edges.map((edge) => {
+      if (!edge.label?.trim()) return null;
+      const geometry = edgeGeometry(edge, positions);
+      return <span className="decision-diagram-edge-label" key={edge.id} style={{ left: geometry.labelX, top: geometry.labelY }}>{edge.label.trim()}</span>;
+    })}
+    {layout.nodes.map(({ node, x, y, unreachable }) => <article key={node.id} className={`decision-diagram-node node-${node.type} ${unreachable ? 'unreachable' : ''}`} style={{ left: x, top: y, width: NODE_WIDTH, height: NODE_HEIGHT }} title={node.description || undefined} aria-label={`${nodeMeta[node.type].label}: ${node.title || 'Nodo sin título'}`}>
+      <span>{nodeMeta[node.type].icon}{nodeMeta[node.type].label}{validation.cyclicNodeIds.has(node.id) && <small>Ciclo</small>}</span>
+      <strong>{node.title || 'Nodo sin título'}</strong>
+      {!preview && node.description && <small className="decision-diagram-node-description">{node.description}</small>}
+    </article>)}
+  </div>;
+}
+
+export function DecisionTreePreview({ tree, mode }: { tree: DecisionTree; mode: ClinicalApproachViewMode }) {
+  const previewTree = useMemo(() => createPreviewTree(tree), [tree]);
+  const layout = useMemo(() => calculateGraphLayout(previewTree), [previewTree]);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const scale = 0.72;
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (viewport) viewport.scrollLeft = Math.max(0, (layout.width * scale - viewport.clientWidth) / 2);
+  }, [layout.width]);
+  return <div className="decision-tree-preview"><div className="decision-tree-preview-viewport" ref={viewportRef}><div className="decision-diagram-scaled" style={{ width: layout.width * scale, height: layout.height * scale }}><div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}><Diagram tree={previewTree} compact={mode === 'quick'} preview /></div></div></div><p>Vista previa de las primeras decisiones. Abrí el árbol completo para explorar todas las ramas.</p></div>;
 }
 
 export function DecisionTreeFullView({ tree, mode }: { tree: DecisionTree; mode: ClinicalApproachViewMode }) {
-  const validation = validateDecisionTree(tree);
-  const starts = tree.nodes.filter((node) => node.type === 'start');
-  const start = starts.length === 1 ? starts[0] : undefined;
-  const levels = getLevels(tree, start?.id ?? null);
-  const reachableLevels = [...new Set(levels.values())].sort((a, b) => a - b);
-  const nodesAt = (level: number) => tree.nodes.filter((node) => levels.get(node.id) === level);
+  const validation = useMemo(() => validateDecisionTree(tree), [tree]);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const layout = useMemo(() => calculateGraphLayout(tree), [tree]);
+  const [scale, setScale] = useState(1);
+  const clampScale = (value: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
+  const fit = () => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const next = clampScale((viewport.clientWidth - 32) / layout.width);
+    setScale(next);
+    requestAnimationFrame(() => viewport.scrollTo({ left: 0, top: 0, behavior: 'smooth' }));
+  };
+
   return <div className={`decision-tree-full-view ${mode === 'quick' ? 'compact' : ''}`}>
     {validation.errors.length > 0 && <div className="decision-tree-read-warning"><strong>Estructura incompleta</strong>{validation.errors.map((issue, index) => <span key={`${issue.code}-${index}`}>{issue.message}</span>)}</div>}
-    {reachableLevels.map((level) => <section className="decision-tree-level" key={level}><small>Nivel {level + 1}</small><div>{nodesAt(level).map((node) => <NodeCard key={node.id} node={node} tree={tree} compact={mode === 'quick'} cyclic={validation.cyclicNodeIds.has(node.id)} />)}</div></section>)}
-    {validation.unreachableNodeIds.size > 0 && <section className="decision-tree-unconnected"><h3>Nodos sin conectar</h3><div>{tree.nodes.filter((node) => validation.unreachableNodeIds.has(node.id)).map((node) => <NodeCard key={node.id} node={node} tree={tree} compact={mode === 'quick'} cyclic={validation.cyclicNodeIds.has(node.id)} />)}</div></section>}
+    <div className="decision-diagram-toolbar" aria-label="Controles de visualización del árbol">
+      <button className="ghost-button" type="button" onClick={() => setScale((value) => clampScale(value - 0.1))} disabled={scale <= MIN_SCALE}><Minus size={16} />Alejar</button>
+      <span>{Math.round(scale * 100)}%</span>
+      <button className="ghost-button" type="button" onClick={() => setScale((value) => clampScale(value + 0.1))} disabled={scale >= MAX_SCALE}><Plus size={16} />Acercar</button>
+      <button className="ghost-button" type="button" onClick={fit}><Maximize2 size={16} />Ajustar</button>
+      <button className="ghost-button" type="button" onClick={() => { setScale(1); requestAnimationFrame(() => { const viewport = viewportRef.current; if (viewport) viewport.scrollTo({ left: Math.max(0, (layout.width - viewport.clientWidth) / 2), top: 0, behavior: 'smooth' }); }); }}><LocateFixed size={16} />Restablecer</button>
+    </div>
+    <div className="decision-diagram-viewport" ref={viewportRef} tabIndex={0} aria-label="Diagrama completo del árbol de decisión">
+      <div className="decision-diagram-scaled" style={{ width: layout.width * scale, height: layout.height * scale }}><div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}><Diagram tree={tree} compact={mode === 'quick'} /></div></div>
+    </div>
+    {validation.unreachableNodeIds.size > 0 && <p className="decision-diagram-note"><AlertTriangle size={15} />Los nodos con borde discontinuo no son alcanzables desde Inicio.</p>}
   </div>;
 }

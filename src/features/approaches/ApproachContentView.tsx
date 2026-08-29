@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { TopicContentViewer } from '../topics/TopicContentViewer';
 import { clinicalApproachSections, type ClinicalApproachSectionId } from './clinicalApproachCatalog';
 import { hasClinicalApproachSection } from './clinicalApproachContent';
 import type { ClinicalApproachContent, ClinicalApproachViewMode, DifferentialDiagnosisItem, DispositionContent, ReasoningItem, RichTextBlock } from './clinicalApproachTypes';
 import { isEmptyTipTapDocument } from '../topics/tiptapDocument';
 import { DecisionTreeRunner } from './DecisionTreeRunner';
+import { DecisionTreePreview } from './DecisionTreeFullView';
 
 function RichText({ document }: { document: RichTextBlock }) {
   return <TopicContentViewer content={document} />;
@@ -44,6 +46,12 @@ function DispositionView({ disposition, mode }: { disposition: DispositionConten
   return <div className="approach-disposition-list">{dispositionBranches.filter((branch) => !isEmptyTipTapDocument(disposition[branch.key])).map((branch) => <details className={`approach-disposition-branch disposition-${branch.variant}`} key={branch.key} open={mode === 'quick'}><summary>{branch.title}</summary><div className="approach-disposition-body"><RichText document={disposition[branch.key]} /></div></details>)}</div>;
 }
 
+function DecisionTreeSection({ content, mode }: { content: ClinicalApproachContent; mode: ClinicalApproachViewMode }) {
+  const [expanded, setExpanded] = useState(false);
+  if (expanded) return <div className="decision-tree-embedded-full"><button className="ghost-button" type="button" onClick={() => setExpanded(false)}>Volver a vista previa</button><DecisionTreeRunner tree={content.decisionTree} mode={mode} /></div>;
+  return <div className="decision-tree-embedded-preview"><DecisionTreePreview tree={content.decisionTree} mode={mode} /><div className="decision-tree-preview-actions"><button className="secondary-button" type="button" onClick={() => setExpanded(true)}>Ver árbol completo</button><span>En la vista completa también podés recorrer el algoritmo paso a paso.</span></div></div>;
+}
+
 function SectionBody({ id, content, mode }: { id: ClinicalApproachSectionId; content: ClinicalApproachContent; mode: ClinicalApproachViewMode }) {
   switch (id) {
     case 'presentation': return <RichText document={content.presentation} />;
@@ -53,7 +61,7 @@ function SectionBody({ id, content, mode }: { id: ClinicalApproachSectionId; con
     case 'physical-exam': return <ReasoningList items={content.physicalExam} mode={mode} />;
     case 'differential-diagnosis': return <div className="approach-differential-grid"><DifferentialGroup title="Amenazas vitales" variant="critical" items={content.differentialDiagnosis.lifeThreatening} mode={mode} /><DifferentialGroup title="Diagnósticos frecuentes" variant="common" items={content.differentialDiagnosis.common} mode={mode} /><DifferentialGroup title="Según contexto" variant="contextual" items={content.differentialDiagnosis.contextual} mode={mode} /></div>;
     case 'complementary-studies': return <ComplementaryStudies studies={content.complementaryStudies} mode={mode} />;
-    case 'decision-tree': return <DecisionTreeRunner tree={content.decisionTree} mode={mode} />;
+    case 'decision-tree': return <DecisionTreeSection content={content} mode={mode} />;
     case 'initial-treatment': return <RichText document={content.initialTreatment} />;
     case 'reassessment': return <RichText document={content.reassessment} />;
     case 'disposition': return <DispositionView disposition={content.disposition} mode={mode} />;
