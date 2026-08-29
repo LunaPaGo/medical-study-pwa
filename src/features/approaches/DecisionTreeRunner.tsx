@@ -2,6 +2,7 @@ import { AlertTriangle, ArrowLeft, CirclePlay, GitBranch, ListChecks, RotateCcw,
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ClinicalApproachViewMode, DecisionEdge, DecisionNodeType, DecisionTree } from './clinicalApproachTypes';
 import { DecisionTreeFullView } from './DecisionTreeFullView';
+import { DecisionTreeListView } from './DecisionTreeListView';
 import { validateDecisionTree } from './decisionTreeValidation';
 
 const MAX_NODE_VISITS = 3;
@@ -30,7 +31,7 @@ export function DecisionTreeRunner({ tree, mode }: { tree: DecisionTree; mode: C
   const blockingErrors = validation.errors.filter((issue) => ['missing-start', 'multiple-starts', 'invalid-root', 'root-mismatch'].includes(issue.code));
   const rootIsUsable = Boolean(tree.rootNodeId && tree.nodes.some((node) => node.id === tree.rootNodeId));
   const canRun = blockingErrors.length === 0 && rootIsUsable;
-  const [display, setDisplay] = useState<'full' | 'runner'>('full');
+  const [display, setDisplay] = useState<'full' | 'list' | 'runner'>('full');
   const [state, setState] = useState<RunnerState | null>(() => canRun && tree.rootNodeId ? initialRunnerState(tree.rootNodeId) : null);
   const nodesById = useMemo(() => new Map(tree.nodes.map((node) => [node.id, node])), [tree.nodes]);
   const current = state ? nodesById.get(state.currentNodeId) : undefined;
@@ -60,9 +61,10 @@ export function DecisionTreeRunner({ tree, mode }: { tree: DecisionTree; mode: C
   };
 
   return <div className={`decision-tree-experience ${mode === 'quick' ? 'compact' : ''}`}>
-    <div className="decision-tree-mode-switch" aria-label="Modo del árbol"><button className={`ghost-button ${display === 'full' ? 'active' : ''}`} type="button" onClick={() => setDisplay('full')}>Ver árbol completo</button><button className={`ghost-button ${display === 'runner' ? 'active' : ''}`} type="button" disabled={!canRun} onClick={startRunner}>Recorrer algoritmo</button></div>
+    <div className="decision-tree-mode-switch" aria-label="Modo del árbol"><button className={`ghost-button ${display === 'full' ? 'active' : ''}`} type="button" onClick={() => setDisplay('full')}>Ver árbol completo</button><button className={`ghost-button ${display === 'list' ? 'active' : ''}`} type="button" onClick={() => setDisplay('list')}>Algoritmo en lista</button><button className={`ghost-button ${display === 'runner' ? 'active' : ''}`} type="button" disabled={!canRun} onClick={startRunner}>Recorrer algoritmo</button></div>
     {!canRun && <div className="decision-runner-blocked"><strong>El algoritmo necesita corrección antes de poder recorrerse.</strong>{blockingErrors.map((issue, index) => <span key={`${issue.code}-${index}`}>{issue.message}</span>)}</div>}
     {display === 'full' && <DecisionTreeFullView tree={tree} mode={mode} />}
+    {display === 'list' && <DecisionTreeListView tree={tree} mode={mode} />}
     {display === 'runner' && canRun && state && current && <div className="decision-tree-runner">
       <div className="decision-runner-route"><strong>Recorrido actual</strong><div><span>{nodesById.get(tree.rootNodeId!)?.title || 'Inicio'}</span>{state.history.map((step, index) => { const edge = tree.edges.find((item) => item.id === step.edgeId); return <span key={`${index}-${step.edgeId}`}>{edge?.label?.trim() || 'Continuar'} → {nodesById.get(step.nextNodeId)?.title || 'Nodo inexistente'}</span>; })}</div></div>
       <article className={`decision-runner-node node-${current.type}`}><header>{nodeMeta[current.type].icon}<span>{nodeMeta[current.type].label}</span></header><h3>{current.title || 'Nodo sin título'}</h3>{current.description && <p>{current.description}</p>}

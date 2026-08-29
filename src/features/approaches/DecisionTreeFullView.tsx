@@ -8,9 +8,10 @@ const NODE_HEIGHT = 104;
 const BASE_COLUMN_GAP = 72;
 const BASE_ROW_GAP = 116;
 const PADDING = 56;
-const MIN_SCALE = 0.45;
+const MIN_SCALE = 0.08;
 const MAX_SCALE = 1.5;
 const LABEL_MAX_WIDTH = 180;
+const CANVAS_MARGIN = 52;
 
 const nodeMeta: Record<DecisionNodeType, { label: string; icon: ReactNode }> = {
   start: { label: 'Inicio', icon: <CirclePlay size={16} /> },
@@ -22,7 +23,9 @@ const nodeMeta: Record<DecisionNodeType, { label: string; icon: ReactNode }> = {
 
 type PositionedNode = { node: DecisionNode; x: number; y: number; level: number; unreachable: boolean };
 type GraphLayout = { nodes: PositionedNode[]; edges: DecisionEdge[]; width: number; height: number };
-type EdgeGeometry = { path: string; labelX: number; labelY: number };
+type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
+type EdgeGeometry = { path: string; labelX: number; labelY: number; bounds: Bounds };
+type DiagramLayout = { graph: GraphLayout; geometries: Map<string, EdgeGeometry>; width: number; height: number; offsetX: number; offsetY: number };
 
 function createPreviewTree(tree: DecisionTree): DecisionTree {
   const visibleIds = new Set<string>();
@@ -76,7 +79,7 @@ function calculateGraphLayout(tree: DecisionTree): GraphLayout {
   const maxFanOut = Math.max(1, ...outgoingCounts.values());
   const maxConvergence = Math.max(1, ...incomingCounts.values());
   const maxCorridorEdges = Math.max(1, ...corridorCounts.values());
-  const columnGap = BASE_COLUMN_GAP + Math.min(56, Math.max(0, maxColumns - 3) * 6 + Math.max(0, maxFanOut - 2) * 5);
+  const columnGap = BASE_COLUMN_GAP + Math.min(38, Math.max(0, maxColumns - 3) * 4 + Math.max(0, maxFanOut - 2) * 4);
   const rowGap = BASE_ROW_GAP + Math.min(70, Math.max(0, maxCorridorEdges - 3) * 5 + Math.max(0, Math.max(maxFanOut, maxConvergence) - 2) * 5);
   const width = PADDING * 2 + maxColumns * NODE_WIDTH + Math.max(0, maxColumns - 1) * columnGap;
   const positioned: PositionedNode[] = [];
@@ -104,6 +107,10 @@ function portY(node: PositionedNode, index: number, count: number) {
 function cubicPoint(start: number, controlA: number, controlB: number, end: number, progress: number) {
   const inverse = 1 - progress;
   return inverse ** 3 * start + 3 * inverse ** 2 * progress * controlA + 3 * inverse * progress ** 2 * controlB + progress ** 3 * end;
+}
+
+function estimateLabelSize(label: string) {
+  return { width: Math.min(LABEL_MAX_WIDTH, Math.max(42, label.length * 6.4 + 20)), height: label.length > 22 ? 38 : 24 };
 }
 
 function createEdgeGeometries(layout: GraphLayout) {
@@ -137,7 +144,8 @@ function createEdgeGeometries(layout: GraphLayout) {
       geometries.set(edge.id, {
         path: `M ${startX} ${startY} C ${startX} ${laneY}, ${endX} ${laneY}, ${endX} ${endY}`,
         labelX: (startX + endX) / 2 + branchBias,
-        labelY: laneY
+        labelY: laneY,
+        bounds: { minX: Math.min(startX, endX), minY: Math.min(startY, endY), maxX: Math.max(startX, endX), maxY: laneY }
       });
       return;
     }
@@ -151,7 +159,8 @@ function createEdgeGeometries(layout: GraphLayout) {
       geometries.set(edge.id, {
         path: `M ${startX} ${sideStartY} C ${routeX} ${sideStartY}, ${routeX} ${sideEndY}, ${endX} ${sideEndY}`,
         labelX: routeX + (useRightSide ? -branchBias : branchBias),
-        labelY: (sideStartY + sideEndY) / 2
+        labelY: (sideStartY + sideEndY) / 2,
+        bounds: { minX: Math.min(startX, endX, routeX), minY: Math.min(sideStartY, sideEndY), maxX: Math.max(startX, endX, routeX), maxY: Math.max(sideStartY, sideEndY) }
       });
       return;
     }
@@ -162,7 +171,8 @@ function createEdgeGeometries(layout: GraphLayout) {
     geometries.set(edge.id, {
       path: `M ${startX} ${startY} C ${startX} ${startY + controlDistance}, ${endX} ${endY - controlDistance}, ${endX} ${endY}`,
       labelX: cubicPoint(startX, startX, endX, endX, labelProgress) + branchBias,
-      labelY: cubicPoint(startY, startY + controlDistance, endY - controlDistance, endY, labelProgress)
+      labelY: cubicPoint(startY, startY + controlDistance, endY - controlDistance, endY, labelProgress),
+      bounds: { minX: Math.min(startX, endX), minY: startY, maxX: Math.max(startX, endX), maxY: endY }
     });
   });
 
@@ -174,8 +184,7 @@ function createEdgeGeometries(layout: GraphLayout) {
   }).forEach((edge) => {
     const geometry = geometries.get(edge.id)!;
     const label = edge.label!.trim();
-    const width = Math.min(LABEL_MAX_WIDTH, Math.max(42, label.length * 6.4 + 20));
-    const height = label.length > 22 ? 38 : 24;
+    const { width, height } = estimateLabelSize(label);
     const candidates = [{ x: 0, y: 0 }, { x: 0, y: -28 }, { x: 0, y: 28 }, { x: -38, y: -14 }, { x: 38, y: 14 }, { x: -76, y: 0 }, { x: 76, y: 0 }, { x: 0, y: -56 }, { x: 0, y: 56 }, { x: -114, y: -28 }, { x: 114, y: 28 }];
     const collisionScore = (candidate: { x: number; y: number }) => {
       const x = geometry.labelX + candidate.x;
@@ -192,21 +201,47 @@ function createEdgeGeometries(layout: GraphLayout) {
   return geometries;
 }
 
+function calculateDiagramLayout(tree: DecisionTree): DiagramLayout {
+  const graph = calculateGraphLayout(tree);
+  const geometries = createEdgeGeometries(graph);
+  const nodeBounds = graph.nodes.map((item) => ({ minX: item.x, minY: item.y, maxX: item.x + NODE_WIDTH, maxY: item.y + NODE_HEIGHT }));
+  const edgeBounds = graph.edges.map((edge) => geometries.get(edge.id)!.bounds);
+  const labelBounds = graph.edges.flatMap((edge) => {
+    const label = edge.label?.trim();
+    if (!label) return [];
+    const geometry = geometries.get(edge.id)!;
+    const { width, height } = estimateLabelSize(label);
+    return [{ minX: geometry.labelX - width / 2, minY: geometry.labelY - height / 2, maxX: geometry.labelX + width / 2, maxY: geometry.labelY + height / 2 }];
+  });
+  const bounds = [...nodeBounds, ...edgeBounds, ...labelBounds];
+  const minX = bounds.length ? Math.min(...bounds.map((item) => item.minX)) : 0;
+  const minY = bounds.length ? Math.min(...bounds.map((item) => item.minY)) : 0;
+  const maxX = bounds.length ? Math.max(...bounds.map((item) => item.maxX)) : graph.width;
+  const maxY = bounds.length ? Math.max(...bounds.map((item) => item.maxY)) : graph.height;
+  return {
+    graph,
+    geometries,
+    width: Math.max(1, maxX - minX + CANVAS_MARGIN * 2),
+    height: Math.max(1, maxY - minY + CANVAS_MARGIN * 2),
+    offsetX: CANVAS_MARGIN - minX,
+    offsetY: CANVAS_MARGIN - minY
+  };
+}
+
 function Diagram({ tree, compact = false, preview = false }: { tree: DecisionTree; compact?: boolean; preview?: boolean }) {
   const validation = useMemo(() => validateDecisionTree(tree), [tree]);
-  const layout = useMemo(() => calculateGraphLayout(tree), [tree]);
-  const geometries = useMemo(() => createEdgeGeometries(layout), [layout]);
+  const layout = useMemo(() => calculateDiagramLayout(tree), [tree]);
   return <div className={`decision-diagram ${compact ? 'compact' : ''} ${preview ? 'preview' : ''}`} style={{ '--diagram-width': `${layout.width}px`, '--diagram-height': `${layout.height}px` } as CSSProperties}>
     <svg className="decision-diagram-connectors" width={layout.width} height={layout.height} viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden="true">
       <defs><marker id={preview ? 'decision-arrow-preview' : 'decision-arrow'} markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" /></marker></defs>
-      {layout.edges.map((edge) => { const geometry = geometries.get(edge.id)!; return <path key={edge.id} d={geometry.path} markerEnd={`url(#${preview ? 'decision-arrow-preview' : 'decision-arrow'})`} className={validation.cyclicNodeIds.has(edge.from) && validation.cyclicNodeIds.has(edge.to) ? 'cyclic' : undefined} />; })}
+      <g transform={`translate(${layout.offsetX} ${layout.offsetY})`}>{layout.graph.edges.map((edge) => { const geometry = layout.geometries.get(edge.id)!; return <path key={edge.id} d={geometry.path} markerEnd={`url(#${preview ? 'decision-arrow-preview' : 'decision-arrow'})`} className={validation.cyclicNodeIds.has(edge.from) && validation.cyclicNodeIds.has(edge.to) ? 'cyclic' : undefined} />; })}</g>
     </svg>
-    {layout.edges.map((edge) => {
+    {layout.graph.edges.map((edge) => {
       if (!edge.label?.trim()) return null;
-      const geometry = geometries.get(edge.id)!;
-      return <span className="decision-diagram-edge-label" key={edge.id} style={{ left: geometry.labelX, top: geometry.labelY }}>{edge.label.trim()}</span>;
+      const geometry = layout.geometries.get(edge.id)!;
+      return <span className="decision-diagram-edge-label" key={edge.id} style={{ left: geometry.labelX + layout.offsetX, top: geometry.labelY + layout.offsetY }}>{edge.label.trim()}</span>;
     })}
-    {layout.nodes.map(({ node, x, y, unreachable }) => <article key={node.id} className={`decision-diagram-node node-${node.type} ${unreachable ? 'unreachable' : ''}`} style={{ left: x, top: y, width: NODE_WIDTH, height: NODE_HEIGHT }} title={node.description || undefined} aria-label={`${nodeMeta[node.type].label}: ${node.title || 'Nodo sin título'}`}>
+    {layout.graph.nodes.map(({ node, x, y, unreachable }) => <article key={node.id} className={`decision-diagram-node node-${node.type} ${unreachable ? 'unreachable' : ''}`} style={{ left: x + layout.offsetX, top: y + layout.offsetY, width: NODE_WIDTH, height: NODE_HEIGHT }} title={node.description || undefined} aria-label={`${nodeMeta[node.type].label}: ${node.title || 'Nodo sin título'}`}>
       <span>{nodeMeta[node.type].icon}{nodeMeta[node.type].label}{validation.cyclicNodeIds.has(node.id) && <small>Ciclo</small>}</span>
       <strong>{node.title || 'Nodo sin título'}</strong>
       {!preview && node.description && <small className="decision-diagram-node-description">{node.description}</small>}
@@ -216,7 +251,7 @@ function Diagram({ tree, compact = false, preview = false }: { tree: DecisionTre
 
 export function DecisionTreePreview({ tree, mode }: { tree: DecisionTree; mode: ClinicalApproachViewMode }) {
   const previewTree = useMemo(() => createPreviewTree(tree), [tree]);
-  const layout = useMemo(() => calculateGraphLayout(previewTree), [previewTree]);
+  const layout = useMemo(() => calculateDiagramLayout(previewTree), [previewTree]);
   const viewportRef = useRef<HTMLDivElement>(null);
   const scale = 0.72;
   useEffect(() => {
@@ -229,15 +264,24 @@ export function DecisionTreePreview({ tree, mode }: { tree: DecisionTree; mode: 
 export function DecisionTreeFullView({ tree, mode }: { tree: DecisionTree; mode: ClinicalApproachViewMode }) {
   const validation = useMemo(() => validateDecisionTree(tree), [tree]);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const layout = useMemo(() => calculateGraphLayout(tree), [tree]);
+  const layout = useMemo(() => calculateDiagramLayout(tree), [tree]);
   const [scale, setScale] = useState(1);
   const clampScale = (value: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
+  const moveToUsefulPosition = (nextScale: number) => requestAnimationFrame(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    viewport.scrollTo({ left: Math.max(0, (layout.width * nextScale - viewport.clientWidth) / 2), top: 0, behavior: 'smooth' });
+  });
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (viewport) viewport.scrollTo({ left: Math.max(0, (layout.width - viewport.clientWidth) / 2), top: 0 });
+  }, [layout.width]);
   const fit = () => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const next = clampScale((viewport.clientWidth - 32) / layout.width);
+    const next = clampScale(Math.min((viewport.clientWidth - 32) / layout.width, (viewport.clientHeight - 32) / layout.height));
     setScale(next);
-    requestAnimationFrame(() => viewport.scrollTo({ left: 0, top: 0, behavior: 'smooth' }));
+    moveToUsefulPosition(next);
   };
 
   return <div className={`decision-tree-full-view ${mode === 'quick' ? 'compact' : ''}`}>
@@ -247,7 +291,7 @@ export function DecisionTreeFullView({ tree, mode }: { tree: DecisionTree; mode:
       <span>{Math.round(scale * 100)}%</span>
       <button className="ghost-button" type="button" onClick={() => setScale((value) => clampScale(value + 0.1))} disabled={scale >= MAX_SCALE}><Plus size={16} />Acercar</button>
       <button className="ghost-button" type="button" onClick={fit}><Maximize2 size={16} />Ajustar</button>
-      <button className="ghost-button" type="button" onClick={() => { setScale(1); requestAnimationFrame(() => { const viewport = viewportRef.current; if (viewport) viewport.scrollTo({ left: Math.max(0, (layout.width - viewport.clientWidth) / 2), top: 0, behavior: 'smooth' }); }); }}><LocateFixed size={16} />Restablecer</button>
+      <button className="ghost-button" type="button" onClick={() => { setScale(1); moveToUsefulPosition(1); }}><LocateFixed size={16} />Restablecer</button>
     </div>
     <div className="decision-diagram-viewport" ref={viewportRef} tabIndex={0} aria-label="Diagrama completo del árbol de decisión">
       <div className="decision-diagram-scaled" style={{ width: layout.width * scale, height: layout.height * scale }}><div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}><Diagram tree={tree} compact={mode === 'quick'} /></div></div>
