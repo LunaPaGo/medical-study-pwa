@@ -5,7 +5,9 @@ import { LoadingScreen } from '../ui/LoadingScreen';
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, profileStatus, profileError, isLoading, bootStep } = useAuth();
 
-  if (isLoading) {
+  // Connectivity revalidation must not unmount an already approved session.
+  // Keeping the protected tree mounted preserves active, unsaved editor state.
+  if (isLoading && (!session || profileStatus !== 'approved')) {
     return <LoadingScreen message={bootStep || 'Comprobando sesión...'} />;
   }
 
