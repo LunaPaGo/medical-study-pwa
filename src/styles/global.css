@@ -1473,6 +1473,14 @@ button:disabled,
   gap: var(--space-5);
 }
 
+.approach-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
 .approach-card {
   display: grid;
   gap: var(--space-4);
@@ -2772,6 +2780,11 @@ button:disabled,
 @media (max-width: 560px) {
   .approach-header {
     flex-direction: column;
+  }
+
+  .approach-page-actions,
+  .approach-page-actions > * {
+    width: 100%;
   }
 
   .approach-toolbar,

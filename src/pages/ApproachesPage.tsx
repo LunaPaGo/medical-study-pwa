@@ -1,19 +1,37 @@
-import { GitBranch, Plus, Trash2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { FilePlus2, GitBranch, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { PrimaryActionButton } from '../components/ui/PrimaryActionButton';
+import { CHEST_PAIN_APPROACH_TITLE, createChestPainClinicalApproach } from '../features/approaches/chestPainApproachFixture';
 import { useClinicalApproaches, useClinicalApproachMutations } from '../features/approaches/useClinicalApproaches';
+import { useAuth } from '../hooks/useAuth';
 
 export function ApproachesPage() {
   const { data: approaches = [], isLoading, error } = useClinicalApproaches();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const mutations = useClinicalApproachMutations();
+  const [fixtureError, setFixtureError] = useState('');
+  const hasChestPainFixture = approaches.some((approach) => approach.title.trim().toLocaleLowerCase('es') === CHEST_PAIN_APPROACH_TITLE.toLocaleLowerCase('es'));
+  const loadChestPainFixture = async () => {
+    if (!user?.id || hasChestPainFixture) return;
+    setFixtureError('');
+    try {
+      const saved = await mutations.save.mutateAsync(createChestPainClinicalApproach(user.id));
+      navigate(`/abordajes/${saved.id}`);
+    } catch (loadError) {
+      setFixtureError(loadError instanceof Error ? loadError.message : 'No se pudo cargar el ejemplo en este dispositivo.');
+    }
+  };
   const remove = (id: string, title: string) => {
     if (window.confirm(`¿Eliminar localmente "${title}"?`)) mutations.remove.mutate(id);
   };
 
   return <section className="page-stack">
-    <div className="page-heading page-heading-actions"><div><span>Razonamiento orientado por problema</span><h1>Abordajes</h1><p>Organizá la evaluación clínica desde la presentación inicial, antes de conocer el diagnóstico.</p></div><PrimaryActionButton to="/abordajes/nuevo" icon={<Plus />} iconOnlyOnMobile>Nuevo</PrimaryActionButton></div>
+    <div className="page-heading page-heading-actions"><div><span>Razonamiento orientado por problema</span><h1>Abordajes</h1><p>Organizá la evaluación clínica desde la presentación inicial, antes de conocer el diagnóstico.</p></div><div className="approach-page-actions">{!isLoading && !hasChestPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadChestPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor torácico'}</button>}<PrimaryActionButton to="/abordajes/nuevo" icon={<Plus />} iconOnlyOnMobile>Nuevo</PrimaryActionButton></div></div>
     {isLoading && <div className="panel empty-state">Cargando abordajes locales...</div>}
     {error && <div className="notice error">No se pudieron leer los abordajes de este usuario. {error.message}</div>}
+    {fixtureError && <div className="notice error">{fixtureError}</div>}
     <div className="approach-list">{approaches.map((approach) => <article className="approach-card" key={approach.id}><div><span className={`status-pill ${approach.status}`}>{approach.status === 'complete' ? 'Completo' : 'Borrador'}</span><GitBranch size={20} aria-hidden="true" /></div><h2>{approach.title}</h2><p>{approach.description || 'Sin descripción.'}</p>{approach.category && <div className="chip-list"><span className="tag-chip">{approach.category.name}</span></div>}<div className="card-actions"><Link className="ghost-button" to={`/abordajes/${approach.id}`}>Ver</Link><Link className="ghost-button" to={`/abordajes/${approach.id}/editar`}>Editar</Link><button className="ghost-button danger-action" type="button" disabled={mutations.remove.isPending} onClick={() => remove(approach.id, approach.title)}><Trash2 size={16} />Eliminar local</button></div></article>)}</div>
     {!isLoading && !error && approaches.length === 0 && <div className="panel empty-state">Todavía no hay abordajes guardados en este dispositivo.</div>}
   </section>;
