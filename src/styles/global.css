@@ -2445,7 +2445,7 @@ button:disabled,
   pointer-events: none;
 }
 
-.decision-diagram-connectors > path {
+.decision-diagram-connectors > g > path {
   fill: none;
   stroke: color-mix(in srgb, var(--primary) 58%, var(--muted));
   stroke-width: 2;

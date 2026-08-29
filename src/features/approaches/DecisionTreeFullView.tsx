@@ -234,7 +234,7 @@ function Diagram({ tree, compact = false, preview = false }: { tree: DecisionTre
   return <div className={`decision-diagram ${compact ? 'compact' : ''} ${preview ? 'preview' : ''}`} style={{ '--diagram-width': `${layout.width}px`, '--diagram-height': `${layout.height}px` } as CSSProperties}>
     <svg className="decision-diagram-connectors" width={layout.width} height={layout.height} viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden="true">
       <defs><marker id={preview ? 'decision-arrow-preview' : 'decision-arrow'} markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" /></marker></defs>
-      <g transform={`translate(${layout.offsetX} ${layout.offsetY})`}>{layout.graph.edges.map((edge) => { const geometry = layout.geometries.get(edge.id)!; return <path key={edge.id} d={geometry.path} markerEnd={`url(#${preview ? 'decision-arrow-preview' : 'decision-arrow'})`} className={validation.cyclicNodeIds.has(edge.from) && validation.cyclicNodeIds.has(edge.to) ? 'cyclic' : undefined} />; })}</g>
+      <g transform={`translate(${layout.offsetX} ${layout.offsetY})`}>{layout.graph.edges.map((edge) => { const geometry = layout.geometries.get(edge.id)!; return <path key={edge.id} d={geometry.path} fill="none" strokeLinecap="round" strokeLinejoin="round" markerEnd={`url(#${preview ? 'decision-arrow-preview' : 'decision-arrow'})`} className={validation.cyclicNodeIds.has(edge.from) && validation.cyclicNodeIds.has(edge.to) ? 'cyclic' : undefined} />; })}</g>
     </svg>
     {layout.graph.edges.map((edge) => {
       if (!edge.label?.trim()) return null;
