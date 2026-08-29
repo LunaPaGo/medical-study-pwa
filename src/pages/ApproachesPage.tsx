@@ -5,6 +5,7 @@ import { PrimaryActionButton } from '../components/ui/PrimaryActionButton';
 import { ABDOMINAL_PAIN_APPROACH_TITLE, createAbdominalPainClinicalApproach } from '../features/approaches/abdominalPainApproachFixture';
 import { CHEST_PAIN_APPROACH_TITLE, createChestPainClinicalApproach } from '../features/approaches/chestPainApproachFixture';
 import { createDyspneaClinicalApproach, DYSPNEA_APPROACH_TITLE } from '../features/approaches/dyspneaApproachFixture';
+import { createHeadacheClinicalApproach, HEADACHE_APPROACH_TITLE } from '../features/approaches/headacheApproachFixture';
 import { useClinicalApproaches, useClinicalApproachMutations } from '../features/approaches/useClinicalApproaches';
 import { useAuth } from '../hooks/useAuth';
 
@@ -17,6 +18,7 @@ export function ApproachesPage() {
   const hasChestPainFixture = approaches.some((approach) => approach.title.trim().toLocaleLowerCase('es') === CHEST_PAIN_APPROACH_TITLE.toLocaleLowerCase('es'));
   const hasAbdominalPainFixture = approaches.some((approach) => approach.title.trim().toLocaleLowerCase('es') === ABDOMINAL_PAIN_APPROACH_TITLE.toLocaleLowerCase('es'));
   const hasDyspneaFixture = approaches.some((approach) => approach.title.trim().toLocaleLowerCase('es') === DYSPNEA_APPROACH_TITLE.toLocaleLowerCase('es'));
+  const hasHeadacheFixture = approaches.some((approach) => approach.title.trim().toLocaleLowerCase('es') === HEADACHE_APPROACH_TITLE.toLocaleLowerCase('es'));
   const loadChestPainFixture = async () => {
     if (!user?.id || hasChestPainFixture) return;
     setFixtureError('');
@@ -47,12 +49,22 @@ export function ApproachesPage() {
       setFixtureError(loadError instanceof Error ? loadError.message : 'No se pudo cargar el ejemplo en este dispositivo.');
     }
   };
+  const loadHeadacheFixture = async () => {
+    if (!user?.id || hasHeadacheFixture) return;
+    setFixtureError('');
+    try {
+      const saved = await mutations.save.mutateAsync(createHeadacheClinicalApproach(user.id));
+      navigate(`/abordajes/${saved.id}`);
+    } catch (loadError) {
+      setFixtureError(loadError instanceof Error ? loadError.message : 'No se pudo cargar el ejemplo en este dispositivo.');
+    }
+  };
   const remove = (id: string, title: string) => {
     if (window.confirm(`¿Eliminar localmente "${title}"?`)) mutations.remove.mutate(id);
   };
 
   return <section className="page-stack">
-    <div className="page-heading page-heading-actions"><div><span>Razonamiento orientado por problema</span><h1>Abordajes</h1><p>Organizá la evaluación clínica desde la presentación inicial, antes de conocer el diagnóstico.</p></div><div className="approach-page-actions">{!isLoading && !hasChestPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadChestPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor torácico'}</button>}{!isLoading && !hasAbdominalPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadAbdominalPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor abdominal'}</button>}{!isLoading && !hasDyspneaFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadDyspneaFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Disnea'}</button>}<PrimaryActionButton to="/abordajes/nuevo" icon={<Plus />} iconOnlyOnMobile>Nuevo</PrimaryActionButton></div></div>
+    <div className="page-heading page-heading-actions"><div><span>Razonamiento orientado por problema</span><h1>Abordajes</h1><p>Organizá la evaluación clínica desde la presentación inicial, antes de conocer el diagnóstico.</p></div><div className="approach-page-actions">{!isLoading && !hasChestPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadChestPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor torácico'}</button>}{!isLoading && !hasAbdominalPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadAbdominalPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor abdominal'}</button>}{!isLoading && !hasDyspneaFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadDyspneaFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Disnea'}</button>}{!isLoading && !hasHeadacheFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadHeadacheFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Cefalea'}</button>}<PrimaryActionButton to="/abordajes/nuevo" icon={<Plus />} iconOnlyOnMobile>Nuevo</PrimaryActionButton></div></div>
     {isLoading && <div className="panel empty-state">Cargando abordajes locales...</div>}
     {error && <div className="notice error">No se pudieron leer los abordajes de este usuario. {error.message}</div>}
     {fixtureError && <div className="notice error">{fixtureError}</div>}
