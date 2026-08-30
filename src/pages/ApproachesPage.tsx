@@ -7,6 +7,7 @@ import { CHEST_PAIN_APPROACH_TITLE, createChestPainClinicalApproach } from '../f
 import { createDyspneaClinicalApproach, DYSPNEA_APPROACH_TITLE } from '../features/approaches/dyspneaApproachFixture';
 import { createHeadacheClinicalApproach, HEADACHE_APPROACH_TITLE } from '../features/approaches/headacheApproachFixture';
 import { createFeverClinicalApproach, FEVER_APPROACH_TITLE } from '../features/approaches/feverApproachFixture';
+import { createSepsisClinicalApproach, SEPSIS_APPROACH_TITLE } from '../features/approaches/sepsisApproachFixture';
 import { useClinicalApproaches, useClinicalApproachMutations } from '../features/approaches/useClinicalApproaches';
 import { useAuth } from '../hooks/useAuth';
 
@@ -21,6 +22,7 @@ export function ApproachesPage() {
   const hasDyspneaFixture = approaches.some((approach) => approach.title.trim().toLocaleLowerCase('es') === DYSPNEA_APPROACH_TITLE.toLocaleLowerCase('es'));
   const hasHeadacheFixture = approaches.some((approach) => approach.title.trim().toLocaleLowerCase('es') === HEADACHE_APPROACH_TITLE.toLocaleLowerCase('es'));
   const hasFeverFixture = approaches.some((approach) => approach.title.trim().toLocaleLowerCase('es') === FEVER_APPROACH_TITLE.toLocaleLowerCase('es'));
+  const hasSepsisFixture = approaches.some((approach) => approach.title.trim().toLocaleLowerCase('es') === SEPSIS_APPROACH_TITLE.toLocaleLowerCase('es'));
   const loadChestPainFixture = async () => {
     if (!user?.id || hasChestPainFixture) return;
     setFixtureError('');
@@ -71,12 +73,22 @@ export function ApproachesPage() {
       setFixtureError(loadError instanceof Error ? loadError.message : 'No se pudo cargar el ejemplo en este dispositivo.');
     }
   };
+  const loadSepsisFixture = async () => {
+    if (!user?.id || hasSepsisFixture) return;
+    setFixtureError('');
+    try {
+      const saved = await mutations.save.mutateAsync(createSepsisClinicalApproach(user.id));
+      navigate(`/abordajes/${saved.id}`);
+    } catch (loadError) {
+      setFixtureError(loadError instanceof Error ? loadError.message : 'No se pudo cargar el ejemplo en este dispositivo.');
+    }
+  };
   const remove = (id: string, title: string) => {
     if (window.confirm(`¿Eliminar localmente "${title}"?`)) mutations.remove.mutate(id);
   };
 
   return <section className="page-stack">
-    <div className="page-heading page-heading-actions"><div><span>Razonamiento orientado por problema</span><h1>Abordajes</h1><p>Organizá la evaluación clínica desde la presentación inicial, antes de conocer el diagnóstico.</p></div><div className="approach-page-actions">{!isLoading && !hasChestPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadChestPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor torácico'}</button>}{!isLoading && !hasAbdominalPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadAbdominalPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor abdominal'}</button>}{!isLoading && !hasDyspneaFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadDyspneaFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Disnea'}</button>}{!isLoading && !hasHeadacheFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadHeadacheFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Cefalea'}</button>}{!isLoading && !hasFeverFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadFeverFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Fiebre'}</button>}<PrimaryActionButton to="/abordajes/nuevo" icon={<Plus />} iconOnlyOnMobile>Nuevo</PrimaryActionButton></div></div>
+    <div className="page-heading page-heading-actions"><div><span>Razonamiento orientado por problema</span><h1>Abordajes</h1><p>Organizá la evaluación clínica desde la presentación inicial, antes de conocer el diagnóstico.</p></div><div className="approach-page-actions">{!isLoading && !hasChestPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadChestPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor torácico'}</button>}{!isLoading && !hasAbdominalPainFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadAbdominalPainFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Dolor abdominal'}</button>}{!isLoading && !hasDyspneaFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadDyspneaFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Disnea'}</button>}{!isLoading && !hasHeadacheFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadHeadacheFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Cefalea'}</button>}{!isLoading && !hasFeverFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadFeverFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Fiebre'}</button>}{!isLoading && !hasSepsisFixture && <button className="secondary-button" type="button" disabled={!user?.id || mutations.save.isPending} onClick={() => void loadSepsisFixture()}><FilePlus2 size={18} />{mutations.save.isPending ? 'Cargando ejemplo...' : 'Cargar ejemplo: Sepsis'}</button>}<PrimaryActionButton to="/abordajes/nuevo" icon={<Plus />} iconOnlyOnMobile>Nuevo</PrimaryActionButton></div></div>
     {isLoading && <div className="panel empty-state">Cargando abordajes locales...</div>}
     {error && <div className="notice error">No se pudieron leer los abordajes de este usuario. {error.message}</div>}
     {fixtureError && <div className="notice error">{fixtureError}</div>}
