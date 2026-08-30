@@ -2873,6 +2873,43 @@ button:disabled,
   border-left-color: var(--approach-section-accent);
 }
 
+.approach-study-view .approach-section-life-threats .reader-content {
+  max-width: 94ch;
+}
+
+.approach-study-view .approach-section-life-threats .reader-content > :first-child {
+  margin-top: 0;
+}
+
+.approach-study-view .approach-section-life-threats .reader-content > ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-5);
+  margin-block: var(--space-4) var(--space-6);
+  padding-left: 1.15rem;
+}
+
+.approach-study-view .approach-section-life-threats .reader-content > ul > li {
+  margin: 0;
+  padding-left: var(--space-1);
+}
+
+.approach-study-view .approach-section-life-threats .reader-content > ul > li::marker {
+  color: color-mix(in srgb, var(--danger) 70%, var(--text));
+}
+
+.approach-study-view .approach-section-life-threats .reader-content > h3 {
+  margin: var(--space-6) 0 var(--space-2);
+  border-top: 1px solid color-mix(in srgb, var(--danger) 18%, var(--line));
+  padding-top: var(--space-4);
+  color: color-mix(in srgb, var(--danger) 28%, var(--text));
+  font-size: 1.03rem;
+}
+
+.approach-study-view .approach-section-life-threats .reader-content > h3 + p {
+  margin-bottom: var(--space-4);
+}
+
 .approach-study-view .approach-section-warnings-and-instructions {
   --approach-section-accent: color-mix(in srgb, var(--warning) 68%, var(--line));
   margin-inline: calc(var(--space-3) * -1);
@@ -3165,6 +3202,56 @@ button:disabled,
   background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 6%, transparent), transparent 72%);
 }
 
+.approach-study-view :is(.approach-section-common-errors, .approach-section-clinical-pearls) .reader-content {
+  max-width: 96ch;
+}
+
+.approach-study-view :is(.approach-section-common-errors, .approach-section-clinical-pearls) .reader-content > :is(ul, ol) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.approach-study-view :is(.approach-section-common-errors, .approach-section-clinical-pearls) .reader-content > :is(ul, ol) > li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2);
+  margin: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  padding: var(--space-2) 0 var(--space-3);
+}
+
+.approach-study-view :is(.approach-section-common-errors, .approach-section-clinical-pearls) .reader-content > :is(ul, ol) > li::before {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 1px solid var(--approach-section-accent);
+  border-radius: 6px;
+  color: color-mix(in srgb, var(--approach-section-accent) 80%, var(--text));
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.approach-study-view .approach-section-common-errors .reader-content > :is(ul, ol) > li::before {
+  content: '!';
+  background: color-mix(in srgb, var(--warning) 7%, transparent);
+}
+
+.approach-study-view .approach-section-clinical-pearls .reader-content > :is(ul, ol) > li::before {
+  content: '\2726';
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+
+.approach-study-view :is(.approach-section-common-errors, .approach-section-clinical-pearls) .reader-content > :is(ul, ol) > li > p {
+  margin: 0;
+}
+
 .approach-section-initial-treatment,
 .approach-section-reassessment,
 .approach-section-disposition {
@@ -3217,6 +3304,11 @@ button:disabled,
   }
 
   .approach-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .approach-study-view .approach-section-life-threats .reader-content > ul,
+  .approach-study-view :is(.approach-section-common-errors, .approach-section-clinical-pearls) .reader-content > :is(ul, ol) {
     grid-template-columns: 1fr;
   }
 
