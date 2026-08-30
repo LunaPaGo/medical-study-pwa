@@ -16,7 +16,7 @@ export const clinicalApproachSections: ClinicalApproachSection[] = [
   { id: 'initial-treatment', title: 'Tratamiento inicial', quick: true },
   { id: 'reassessment', title: 'Reevaluación', quick: true },
   { id: 'disposition', title: 'Disposición', quick: true },
-  { id: 'warnings-and-instructions', title: 'Indicaciones y pautas de alarma', quick: false },
+  { id: 'warnings-and-instructions', title: 'Indicaciones y pautas de alarma', quick: true },
   { id: 'common-errors', title: 'Errores frecuentes', quick: false },
   { id: 'clinical-pearls', title: 'Perlas clínicas', quick: false },
   { id: 'related-content', title: 'Contenido relacionado', quick: false }

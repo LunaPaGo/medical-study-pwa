@@ -26,12 +26,12 @@ function optionLabel(edge: DecisionEdge, targetTitle: string | undefined, nodeTy
   return targetTitle ? `Ir a: ${targetTitle}` : 'Rama no disponible';
 }
 
-export function DecisionTreeRunner({ tree, mode }: { tree: DecisionTree; mode: ClinicalApproachViewMode }) {
+export function DecisionTreeRunner({ tree, mode, initialDisplay = 'full' }: { tree: DecisionTree; mode: ClinicalApproachViewMode; initialDisplay?: 'full' | 'list' | 'runner' }) {
   const validation = useMemo(() => validateDecisionTree(tree), [tree]);
   const blockingErrors = validation.errors.filter((issue) => ['missing-start', 'multiple-starts', 'invalid-root', 'root-mismatch'].includes(issue.code));
   const rootIsUsable = Boolean(tree.rootNodeId && tree.nodes.some((node) => node.id === tree.rootNodeId));
   const canRun = blockingErrors.length === 0 && rootIsUsable;
-  const [display, setDisplay] = useState<'full' | 'list' | 'runner'>('full');
+  const [display, setDisplay] = useState<'full' | 'list' | 'runner'>(initialDisplay);
   const [state, setState] = useState<RunnerState | null>(() => canRun && tree.rootNodeId ? initialRunnerState(tree.rootNodeId) : null);
   const nodesById = useMemo(() => new Map(tree.nodes.map((node) => [node.id, node])), [tree.nodes]);
   const current = state ? nodesById.get(state.currentNodeId) : undefined;

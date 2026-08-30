@@ -2768,12 +2768,292 @@ button:disabled,
   font-size: var(--small-text-size);
 }
 
+.approach-reader-quick .approach-view-note {
+  display: inline-flex;
+  border-left: 3px solid var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+  padding: var(--space-2) var(--space-3);
+}
+
+.approach-reader-quick .approach-quick-links button {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--line));
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface-muted));
+}
+
 .approach-content {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow);
   padding: 0 var(--space-9);
+}
+
+.approach-quick-view {
+  display: grid;
+  gap: var(--space-5);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.approach-quick-view .reader-content {
+  min-height: 0;
+  padding: 0;
+}
+
+.approach-quick-view .approach-section {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: var(--space-5);
+}
+
+.approach-quick-view .approach-section:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.approach-quick-section-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.approach-quick-section-heading > svg {
+  flex: 0 0 auto;
+  color: var(--primary-strong);
+}
+
+.approach-quick-section-heading > span {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.approach-quick-section-heading h2,
+.approach-quick-section-heading small {
+  margin: 0;
+}
+
+.approach-quick-section-heading h2 {
+  font-size: clamp(1.02rem, 1.7vw, 1.2rem);
+  line-height: 1.2;
+}
+
+.approach-quick-section-heading small {
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.approach-quick-priority {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 1200px) {
+  .approach-quick-priority {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.approach-quick-view .approach-section-initial-assessment {
+  border-left: 4px solid color-mix(in srgb, var(--primary) 70%, var(--line));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 7%, var(--surface)), var(--surface) 65%);
+}
+
+.approach-quick-view .approach-section-life-threats {
+  margin: 0;
+  border-left: 4px solid color-mix(in srgb, var(--danger) 72%, var(--line));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--danger) 7%, var(--surface)), var(--surface) 68%);
+  padding: var(--space-5);
+}
+
+.approach-quick-view :is(.approach-section-initial-assessment, .approach-section-life-threats) .reader-content {
+  font-size: 0.94rem;
+}
+
+.approach-quick-view :is(.approach-section-initial-assessment, .approach-section-life-threats) .reader-content :where(p, ul, ol) {
+  margin-block: 0 var(--space-3);
+}
+
+.approach-quick-view .approach-section-initial-assessment .reader-content > :is(ul, ol) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1) var(--space-5);
+  padding-left: 1.1rem;
+}
+
+.approach-quick-view .approach-section-life-threats .reader-content > ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1) var(--space-5);
+  padding-left: 1.1rem;
+}
+
+.approach-quick-view .approach-section-life-threats .reader-content > h3 {
+  margin: var(--space-4) 0 var(--space-1);
+  border-top: 1px solid color-mix(in srgb, var(--danger) 18%, var(--line));
+  padding-top: var(--space-3);
+  font-size: 0.98rem;
+}
+
+.approach-quick-assessment-grid,
+.approach-quick-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.approach-quick-view .approach-reasoning-quick {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+}
+
+.approach-quick-view .approach-reasoning-quick details {
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+
+.approach-quick-view .approach-reasoning-quick summary {
+  min-height: 40px;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-1);
+  font-weight: 720;
+  line-height: 1.3;
+}
+
+.approach-quick-view .approach-reasoning-quick details[open] summary {
+  color: var(--primary-strong);
+}
+
+.approach-reasoning-quick-detail {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-4);
+}
+
+.approach-quick-why {
+  border-left: 2px solid color-mix(in srgb, var(--primary) 50%, var(--line));
+  padding-left: var(--space-3);
+}
+
+.approach-quick-why > strong {
+  color: var(--muted);
+  font-size: var(--small-text-size);
+}
+
+.approach-quick-view .approach-differential-grid {
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.approach-quick-view .approach-differential-group {
+  padding: var(--space-3);
+}
+
+.approach-differential-quick-list {
+  display: grid;
+  gap: 0;
+}
+
+.approach-differential-quick-list details {
+  border-left: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  padding: 0;
+}
+
+.approach-differential-quick-list summary {
+  min-height: 38px;
+  padding: var(--space-2) 0;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.approach-differential-quick-list .reader-content {
+  padding: var(--space-2) 0 var(--space-3);
+  color: var(--muted);
+  font-size: var(--small-text-size);
+}
+
+.approach-quick-view .differential-group-contextual .approach-differential-quick-list {
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.approach-study-list-quick {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.approach-study-list-quick .approach-study-item {
+  align-self: start;
+}
+
+.approach-study-list-quick .approach-study-item > h3 {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+}
+
+.approach-study-list-quick .approach-study-body {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding: 0;
+}
+
+.approach-study-interpretation {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-2);
+}
+
+.approach-study-interpretation summary {
+  min-height: 36px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: var(--small-text-size);
+  font-weight: 750;
+}
+
+.approach-study-interpretation .reader-content {
+  padding-top: var(--space-2);
+}
+
+.approach-quick-view .approach-section-decision-tree {
+  border-color: color-mix(in srgb, var(--primary) 38%, var(--line));
+}
+
+.approach-quick-view .decision-tree-preview-actions .primary-button {
+  min-height: var(--input-height);
+}
+
+.approach-quick-action-grid .approach-section {
+  height: 100%;
+}
+
+.approach-quick-view .approach-section-disposition {
+  border: 1px solid color-mix(in srgb, var(--primary) 42%, var(--line));
+  border-left: 4px solid var(--primary);
+}
+
+.approach-quick-view .approach-disposition-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.approach-quick-view .approach-disposition-branch summary {
+  min-height: 48px;
+}
+
+.approach-quick-view .approach-section-warnings-and-instructions {
+  border-left: 4px solid color-mix(in srgb, var(--warning) 65%, var(--line));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--warning) 6%, var(--surface)), var(--surface) 70%);
 }
 
 .approach-section {
@@ -3307,6 +3587,10 @@ button:disabled,
     grid-template-columns: 1fr;
   }
 
+  .approach-study-list-quick {
+    grid-template-columns: 1fr;
+  }
+
   .approach-study-view .approach-section-life-threats .reader-content > ul,
   .approach-study-view :is(.approach-section-common-errors, .approach-section-clinical-pearls) .reader-content > :is(ul, ol) {
     grid-template-columns: 1fr;
@@ -3346,6 +3630,28 @@ button:disabled,
 
   .approach-content {
     padding: 0 var(--space-4);
+  }
+
+  .approach-quick-view {
+    padding: 0;
+  }
+
+  .approach-quick-view .approach-section {
+    padding: var(--space-4);
+  }
+
+  .approach-quick-assessment-grid,
+  .approach-quick-action-grid,
+  .approach-quick-view .approach-disposition-list,
+  .approach-quick-view .approach-section-initial-assessment .reader-content > :is(ul, ol),
+  .approach-quick-view .approach-section-life-threats .reader-content > ul,
+  .approach-study-list-quick .approach-study-body {
+    grid-template-columns: 1fr;
+  }
+
+  .approach-quick-view .decision-tree-preview-actions,
+  .approach-quick-view .decision-tree-preview-actions > button {
+    width: 100%;
   }
 
   .approach-study-view .approach-section-initial-treatment,
