@@ -2791,11 +2791,94 @@ button:disabled,
   font-size: 1.25rem;
 }
 
+.approach-study-view {
+  --approach-section-accent: color-mix(in srgb, var(--primary) 52%, var(--line));
+}
+
+.approach-study-view .approach-section {
+  position: relative;
+  padding-block: clamp(var(--space-7), 4vw, var(--space-9));
+}
+
+.approach-study-section-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.approach-study-section-heading > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.approach-study-section-heading h2,
+.approach-study-section-heading small {
+  margin: 0;
+}
+
+.approach-study-section-heading h2 {
+  font-size: clamp(1.18rem, 2vw, 1.38rem);
+  line-height: 1.2;
+}
+
+.approach-study-section-heading small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.approach-study-section-icon {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border: 1px solid var(--approach-section-accent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--approach-section-accent) 10%, transparent);
+  color: color-mix(in srgb, var(--approach-section-accent) 75%, var(--text));
+}
+
+.approach-study-view .approach-section-presentation {
+  margin-inline: calc(var(--space-4) * -1);
+  border-bottom-color: color-mix(in srgb, var(--primary) 35%, var(--line));
+  padding-inline: var(--space-4);
+}
+
+.approach-study-view .approach-section-presentation .approach-study-section-heading h2 {
+  font-size: clamp(1.35rem, 2.4vw, 1.65rem);
+}
+
+.approach-study-view .approach-section-initial-assessment {
+  --approach-section-accent: color-mix(in srgb, var(--primary) 72%, var(--line));
+  margin-inline: calc(var(--space-3) * -1);
+  border-left: 3px solid var(--approach-section-accent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 7%, transparent), transparent 70%);
+  padding-inline: var(--space-5) var(--space-3);
+}
+
 .approach-section-life-threats {
   margin-inline: calc(var(--space-4) * -1);
   border-left: 4px solid color-mix(in srgb, var(--danger) 65%, var(--line));
   background: color-mix(in srgb, var(--danger) 6%, transparent);
   padding-inline: var(--space-5);
+}
+
+.approach-study-view .approach-section-life-threats {
+  --approach-section-accent: color-mix(in srgb, var(--danger) 72%, var(--line));
+  border-left-color: var(--approach-section-accent);
+}
+
+.approach-study-view .approach-section-warnings-and-instructions {
+  --approach-section-accent: color-mix(in srgb, var(--warning) 68%, var(--line));
+  margin-inline: calc(var(--space-3) * -1);
+  border-left: 3px solid var(--approach-section-accent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--warning) 6%, transparent), transparent 72%);
+  padding-inline: var(--space-5) var(--space-3);
 }
 
 .approach-reasoning-list,
@@ -2807,13 +2890,33 @@ button:disabled,
 }
 
 .approach-reasoning-list details {
-  border-bottom: 1px solid var(--line);
-  padding-bottom: var(--space-4);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-left: 3px solid color-mix(in srgb, var(--primary) 42%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-muted) 48%, transparent);
 }
 
 .approach-reasoning-list summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   cursor: pointer;
+  padding: var(--space-3) var(--space-4);
   font-weight: 750;
+}
+
+.approach-reasoning-list summary small {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.approach-reasoning-list details[open] summary {
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
 }
 
 .approach-reasoning-quick {
@@ -2832,10 +2935,25 @@ button:disabled,
   padding-top: var(--space-3);
 }
 
+.approach-reasoning-body {
+  padding: var(--space-4);
+}
+
+.approach-reasoning-content {
+  min-width: 0;
+}
+
 .approach-why {
-  border-left: 3px solid var(--primary);
-  background: var(--surface-muted);
+  border-top: 1px dashed color-mix(in srgb, var(--primary) 45%, var(--line));
   padding: var(--space-3) var(--space-4);
+}
+
+.approach-why > strong {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: color-mix(in srgb, var(--primary) 70%, var(--text));
+  font-size: var(--small-text-size);
 }
 
 .approach-differential-grid {
@@ -2851,6 +2969,34 @@ button:disabled,
   padding: var(--space-4);
 }
 
+.approach-differential-group > header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px var(--space-3);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--space-3);
+}
+
+.approach-differential-group > header > span {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.approach-differential-group > header h3,
+.approach-differential-group > header small {
+  margin: 0;
+}
+
+.approach-differential-group > header small {
+  align-self: center;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
 .approach-differential-group h3,
 .approach-study-item summary {
   margin: 0 0 var(--space-3);
@@ -2862,8 +3008,8 @@ button:disabled,
 }
 
 .approach-differential-group details {
-  border-top: 1px solid var(--line);
-  padding-top: var(--space-3);
+  border-left: 2px solid color-mix(in srgb, var(--line) 78%, transparent);
+  padding: var(--space-2) 0 var(--space-2) var(--space-3);
 }
 
 .approach-differential-group summary {
@@ -2885,6 +3031,11 @@ button:disabled,
   background: color-mix(in srgb, var(--danger) 5%, transparent);
 }
 
+.approach-study-view .differential-group-critical > header > span,
+.approach-study-view .differential-group-critical > header h3 {
+  color: color-mix(in srgb, var(--danger) 70%, var(--text));
+}
+
 .approach-differential-group.differential-group-common {
   border-top-color: color-mix(in srgb, var(--primary) 60%, var(--line));
 }
@@ -2895,7 +3046,13 @@ button:disabled,
 
 .approach-study-item summary {
   cursor: pointer;
+  border-bottom: 0 solid var(--line);
   font-weight: 800;
+}
+
+.approach-study-item[open] summary {
+  border-bottom-width: 1px;
+  padding-bottom: var(--space-3);
 }
 
 .approach-study-body {
@@ -2912,7 +3069,20 @@ button:disabled,
 }
 
 .approach-study-body > div > strong {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  color: var(--muted);
   font-size: var(--small-text-size);
+}
+
+.approach-study-body .study-dimension-target {
+  border-left-color: color-mix(in srgb, var(--primary) 62%, var(--line));
+}
+
+.approach-study-body .study-dimension-interpretation {
+  border-left-color: color-mix(in srgb, var(--warning) 45%, var(--line));
 }
 
 .approach-tree-placeholder {
@@ -2939,9 +3109,24 @@ button:disabled,
 }
 
 .approach-disposition-branch summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   cursor: pointer;
   padding: var(--space-3) var(--space-4);
   font-weight: 800;
+}
+
+.approach-study-view .approach-disposition-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.approach-study-view .approach-disposition-branch {
+  align-self: start;
+}
+
+.approach-study-view .approach-disposition-branch summary svg {
+  flex: 0 0 auto;
 }
 
 .approach-disposition-body {
@@ -2968,6 +3153,18 @@ button:disabled,
   padding-inline: var(--space-4);
 }
 
+.approach-study-view .approach-section-common-errors {
+  --approach-section-accent: color-mix(in srgb, var(--warning) 65%, var(--line));
+  border-left: 3px solid var(--approach-section-accent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--warning) 6%, transparent), transparent 72%);
+}
+
+.approach-study-view .approach-section-clinical-pearls {
+  --approach-section-accent: color-mix(in srgb, var(--primary) 66%, var(--line));
+  border-left: 3px solid var(--approach-section-accent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 6%, transparent), transparent 72%);
+}
+
 .approach-section-initial-treatment,
 .approach-section-reassessment,
 .approach-section-disposition {
@@ -2975,10 +3172,42 @@ button:disabled,
   padding-left: var(--space-5);
 }
 
+.approach-study-view .approach-section-initial-treatment,
+.approach-study-view .approach-section-reassessment,
+.approach-study-view .approach-section-disposition {
+  --approach-section-accent: color-mix(in srgb, var(--primary) 62%, var(--line));
+  margin-left: var(--space-3);
+  border-left-width: 3px;
+  padding-left: var(--space-7);
+}
+
+.approach-study-view .approach-section-initial-treatment::before,
+.approach-study-view .approach-section-reassessment::before,
+.approach-study-view .approach-section-disposition::before {
+  position: absolute;
+  top: clamp(var(--space-7), 4vw, var(--space-9));
+  left: -12px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid var(--approach-section-accent);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.approach-study-view .approach-section-initial-treatment::before { content: '1'; }
+.approach-study-view .approach-section-reassessment::before { content: '2'; }
+.approach-study-view .approach-section-disposition::before { content: '3'; }
+
 @media (max-width: 920px) {
   .approach-list,
   .approach-differential-grid,
-  .approach-study-body {
+  .approach-study-body,
+  .approach-study-view .approach-disposition-list {
     grid-template-columns: 1fr;
   }
 
@@ -3025,6 +3254,21 @@ button:disabled,
 
   .approach-content {
     padding: 0 var(--space-4);
+  }
+
+  .approach-study-view .approach-section-initial-treatment,
+  .approach-study-view .approach-section-reassessment,
+  .approach-study-view .approach-section-disposition {
+    margin-left: var(--space-2);
+    padding-left: var(--space-5);
+  }
+
+  .approach-study-section-heading {
+    align-items: flex-start;
+  }
+
+  .approach-reasoning-list summary {
+    align-items: flex-start;
   }
 
   .approach-editor-shell ol {

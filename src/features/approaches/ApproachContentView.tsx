@@ -1,4 +1,24 @@
 import { useState } from 'react';
+import {
+  Activity,
+  AlertTriangle,
+  BookOpen,
+  ClipboardCheck,
+  Compass,
+  FlaskConical,
+  Gem,
+  GitBranch,
+  HeartPulse,
+  ListChecks,
+  MessageCircleQuestion,
+  RefreshCcw,
+  Search,
+  ShieldAlert,
+  Signpost,
+  Stethoscope,
+  TriangleAlert,
+  type LucideIcon
+} from 'lucide-react';
 import { TopicContentViewer } from '../topics/TopicContentViewer';
 import { clinicalApproachSections, type ClinicalApproachSectionId } from './clinicalApproachCatalog';
 import { hasClinicalApproachSection } from './clinicalApproachContent';
@@ -14,13 +34,14 @@ function RichText({ document }: { document: RichTextBlock }) {
 function ReasoningList({ items, mode }: { items: ReasoningItem[]; mode: ClinicalApproachViewMode }) {
   if (mode === 'quick') return <ul className="approach-reasoning-quick">{items.map((item) => <li key={item.id}>{item.title}</li>)}</ul>;
   return <div className="approach-reasoning-list">{items.map((item) => (
-    <details key={item.id}><summary>{item.title}</summary><div className="approach-reasoning-body"><RichText document={item.content} /><div className="approach-why"><strong>¿Por qué importa?</strong><RichText document={item.whyItMatters} /></div></div></details>
+    <details key={item.id}><summary><span>{item.title}</span><small>Ver detalle</small></summary><div className="approach-reasoning-body"><div className="approach-reasoning-content"><RichText document={item.content} /></div><div className="approach-why"><strong><MessageCircleQuestion size={16} aria-hidden="true" /> ¿Por qué importa?</strong><RichText document={item.whyItMatters} /></div></div></details>
   ))}</div>;
 }
 
 function DifferentialGroup({ title, items, variant, mode }: { title: string; items: DifferentialDiagnosisItem[]; variant: 'critical' | 'common' | 'contextual'; mode: ClinicalApproachViewMode }) {
   if (items.length === 0) return null;
-  return <div className={`approach-differential-group differential-group-${variant}`}><h3>{title}</h3>{mode === 'quick'
+  const groupLabels = { critical: 'Prioridad máxima', common: 'Más probables', contextual: 'Según escenario' };
+  return <div className={`approach-differential-group differential-group-${variant}`}>{mode === 'study' ? <header><span>{groupLabels[variant]}</span><h3>{title}</h3><small>{items.length} {items.length === 1 ? 'diagnóstico' : 'diagnósticos'}</small></header> : <h3>{title}</h3>}{mode === 'quick'
     ? <ul>{items.map((item) => <li key={item.id}>{item.title}</li>)}</ul>
     : items.map((item) => <details key={item.id}><summary>{item.title}</summary><RichText document={item.explanation} /></details>)}</div>;
 }
@@ -28,9 +49,9 @@ function DifferentialGroup({ title, items, variant, mode }: { title: string; ite
 function ComplementaryStudies({ studies, mode }: { studies: ClinicalApproachContent['complementaryStudies']; mode: ClinicalApproachViewMode }) {
   return <div className="approach-study-list">{studies.map((study) => <details key={study.id} className="approach-study-item" open={mode === 'quick'}>
     <summary>{study.name}</summary><div className="approach-study-body">
-      <div><strong>Cuándo pedirlo</strong><RichText document={study.whenToOrder} /></div>
-      <div><strong>Qué busco</strong><RichText document={study.targetFinding} /></div>
-      {mode === 'study' && <div><strong>Interpretación / utilidad</strong><RichText document={study.interpretation} /></div>}
+      <div className="study-dimension-when"><strong>{mode === 'study' && <ClipboardCheck size={15} aria-hidden="true" />} Cuándo pedirlo</strong><RichText document={study.whenToOrder} /></div>
+      <div className="study-dimension-target"><strong>{mode === 'study' && <Search size={15} aria-hidden="true" />} Qué busco</strong><RichText document={study.targetFinding} /></div>
+      {mode === 'study' && <div className="study-dimension-interpretation"><strong><FlaskConical size={15} aria-hidden="true" /> Interpretación / utilidad</strong><RichText document={study.interpretation} /></div>}
     </div>
   </details>)}</div>;
 }
@@ -42,8 +63,41 @@ const dispositionBranches: Array<{ key: keyof DispositionContent; title: string;
   { key: 'referral', title: 'Derivación / interconsulta', variant: 'referral' }
 ];
 
+const dispositionIcons: Record<keyof DispositionContent, LucideIcon> = {
+  discharge: ClipboardCheck,
+  admission: Stethoscope,
+  criticalCare: HeartPulse,
+  referral: Signpost
+};
+
 function DispositionView({ disposition, mode }: { disposition: DispositionContent; mode: ClinicalApproachViewMode }) {
-  return <div className="approach-disposition-list">{dispositionBranches.filter((branch) => !isEmptyTipTapDocument(disposition[branch.key])).map((branch) => <details className={`approach-disposition-branch disposition-${branch.variant}`} key={branch.key} open={mode === 'quick'}><summary>{branch.title}</summary><div className="approach-disposition-body"><RichText document={disposition[branch.key]} /></div></details>)}</div>;
+  return <div className="approach-disposition-list">{dispositionBranches.filter((branch) => !isEmptyTipTapDocument(disposition[branch.key])).map((branch) => {
+    const Icon = dispositionIcons[branch.key];
+    return <details className={`approach-disposition-branch disposition-${branch.variant}`} key={branch.key} open={mode === 'quick'}><summary>{mode === 'study' && <Icon size={17} aria-hidden="true" />}<span>{branch.title}</span></summary><div className="approach-disposition-body"><RichText document={disposition[branch.key]} /></div></details>;
+  })}</div>;
+}
+
+const studySectionMeta: Record<ClinicalApproachSectionId, { icon: LucideIcon; eyebrow: string }> = {
+  presentation: { icon: BookOpen, eyebrow: 'Punto de partida' },
+  'initial-assessment': { icon: Activity, eyebrow: 'Prioridad inmediata' },
+  'life-threats': { icon: ShieldAlert, eyebrow: 'No pasar por alto' },
+  anamnesis: { icon: MessageCircleQuestion, eyebrow: 'Interrogatorio dirigido' },
+  'physical-exam': { icon: Stethoscope, eyebrow: 'Evaluación dirigida' },
+  'differential-diagnosis': { icon: Compass, eyebrow: 'Jerarquización clínica' },
+  'complementary-studies': { icon: FlaskConical, eyebrow: 'Uso racional' },
+  'decision-tree': { icon: GitBranch, eyebrow: 'Integración del razonamiento' },
+  'initial-treatment': { icon: HeartPulse, eyebrow: 'Proceso clínico · 1' },
+  reassessment: { icon: RefreshCcw, eyebrow: 'Proceso clínico · 2' },
+  disposition: { icon: Signpost, eyebrow: 'Proceso clínico · 3' },
+  'warnings-and-instructions': { icon: TriangleAlert, eyebrow: 'Seguimiento seguro' },
+  'common-errors': { icon: AlertTriangle, eyebrow: 'Prevención' },
+  'clinical-pearls': { icon: Gem, eyebrow: 'Aprendizaje' },
+  'related-content': { icon: ListChecks, eyebrow: 'Para profundizar' }
+};
+
+function StudySectionHeading({ id, title }: { id: ClinicalApproachSectionId; title: string }) {
+  const { icon: Icon, eyebrow } = studySectionMeta[id];
+  return <header className="approach-study-section-heading"><span className="approach-study-section-icon" aria-hidden="true"><Icon size={19} /></span><span><small>{eyebrow}</small><h2>{title}</h2></span></header>;
 }
 
 function DecisionTreeSection({ content, mode }: { content: ClinicalApproachContent; mode: ClinicalApproachViewMode }) {
@@ -76,7 +130,7 @@ export function ApproachContentView({ content, mode }: { content: ClinicalApproa
   const sections = clinicalApproachSections.filter((section) => hasClinicalApproachSection(content, section.id) && (mode === 'study' || section.quick));
   return <div className={`approach-content approach-${mode}-view`}>{sections.map((section) => (
     <section key={section.id} id={`approach-${section.id}`} className={`approach-section approach-section-${section.id}`}>
-      <h2>{section.title}</h2><SectionBody id={section.id} content={content} mode={mode} />
+      {mode === 'study' ? <StudySectionHeading id={section.id} title={section.title} /> : <h2>{section.title}</h2>}<SectionBody id={section.id} content={content} mode={mode} />
     </section>
   ))}</div>;
 }
