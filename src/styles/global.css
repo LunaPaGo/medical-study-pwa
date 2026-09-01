@@ -169,6 +169,10 @@ a:focus-visible {
   grid-template-columns: 280px minmax(0, 1fr);
 }
 
+.app-shell.sidebar-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .sidebar {
   display: flex;
   min-height: 100dvh;
@@ -177,6 +181,40 @@ a:focus-visible {
   border-right: 1px solid var(--line);
   background: var(--surface);
   padding: var(--space-9);
+}
+
+.sidebar-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sidebar-collapse-button,
+.sidebar-reopen-button {
+  display: inline-grid;
+  width: var(--control-height);
+  height: var(--control-height);
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--muted);
+}
+
+.sidebar-collapse-button:hover,
+.sidebar-reopen-button:hover {
+  border-color: var(--primary);
+  color: var(--primary-strong);
+}
+
+.sidebar-reopen-button {
+  position: fixed;
+  top: max(var(--space-3), env(safe-area-inset-top));
+  left: max(var(--space-3), env(safe-area-inset-left));
+  z-index: 30;
+  box-shadow: var(--shadow);
 }
 
 .brand,
@@ -544,6 +582,10 @@ button:disabled,
   }
 
   .sidebar {
+    display: none;
+  }
+
+  .sidebar-reopen-button {
     display: none;
   }
 

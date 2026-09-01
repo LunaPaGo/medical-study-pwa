@@ -1,10 +1,14 @@
 import { NavLink } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { LogOut, PanelLeftClose } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useThemePreference } from '../../features/theme/useThemePreference';
 import { primaryRoutes, secondaryRoutes } from './navigation';
 
-export function Sidebar() {
+interface SidebarProps {
+  onCollapse: () => void;
+}
+
+export function Sidebar({ onCollapse }: SidebarProps) {
   const { signOut, user } = useAuth();
   const { effectiveTheme } = useThemePreference();
   const symbolSrc =
@@ -14,12 +18,23 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar" aria-label="Navegación principal">
-      <div className="brand">
-        <img className="brand-symbol" src={symbolSrc} alt="Símbolo de Askleion" />
-        <div>
-          <strong>Askleion</strong>
-          <span>Biblioteca médica</span>
+      <div className="sidebar-heading">
+        <div className="brand">
+          <img className="brand-symbol" src={symbolSrc} alt="Símbolo de Askleion" />
+          <div>
+            <strong>Askleion</strong>
+            <span>Biblioteca médica</span>
+          </div>
         </div>
+        <button
+          className="sidebar-collapse-button"
+          type="button"
+          onClick={onCollapse}
+          aria-label="Ocultar navegación principal"
+          title="Ocultar navegación"
+        >
+          <PanelLeftClose size={20} aria-hidden="true" />
+        </button>
       </div>
 
       <nav className="nav-list">
