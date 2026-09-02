@@ -7,6 +7,7 @@ import { queryClient } from './services/queryClient';
 import { router } from './routes/router';
 import { initializeEditorLineSpacing } from './features/theme/editorLineSpacing';
 import { initializeInterfaceDensity } from './features/theme/interfaceDensity';
+import { initializeInterfaceScale } from './features/theme/interfaceScale';
 import { initializeThemePreference } from './features/theme/theme';
 import { cleanupObsoleteProcedureSyncQueue } from './features/procedures/cleanupObsoleteProcedureSyncQueue';
 import './styles/global.css';
@@ -15,6 +16,7 @@ console.info('APP_BOOT_START');
 
 initializeThemePreference();
 initializeInterfaceDensity();
+initializeInterfaceScale();
 initializeEditorLineSpacing();
 cleanupObsoleteProcedureSyncQueue().catch((error) => {
   if (import.meta.env.DEV) {

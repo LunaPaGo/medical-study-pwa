@@ -2,6 +2,7 @@ import { RefreshCcw } from 'lucide-react';
 import { useAutomaticTopicSync } from '../../features/topics/useSyncQueue';
 import { useAuth } from '../../hooks/useAuth';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { InterfaceScaleControl } from './InterfaceScaleControl';
 
 export function StatusBar() {
   const isOnline = useOnlineStatus();
@@ -23,6 +24,7 @@ export function StatusBar() {
         <RefreshCcw size={16} aria-hidden="true" />
         {syncMessage}
       </div>
+      <InterfaceScaleControl />
     </header>
   );
 }
