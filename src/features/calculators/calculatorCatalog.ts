@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import { BazettQtcCalculator } from './cardiovascular/BazettQtcCalculator';
+import { AcidBaseInterpretationCalculator } from './laboratory/AcidBaseInterpretationCalculator';
 import { CorrectedSodiumCalculator } from './laboratory/CorrectedSodiumCalculator';
 import { Curb65Calculator } from './respiratory/Curb65Calculator';
 import { FenaCalculator } from './laboratory/FenaCalculator';
@@ -93,6 +94,11 @@ export const calculatorCategories: CalculatorCategory[] = [
     id: 'laboratory',
     title: '🧪 Laboratorio',
     calculators: [
+      {
+        id: 'acid-base-interpretation',
+        title: 'Interpretación ácido-base',
+        component: AcidBaseInterpretationCalculator
+      },
       {
         id: 'corrected-sodium',
         title: 'Sodio corregido por glucemia',
